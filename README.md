@@ -1,6 +1,8 @@
-# Doca Linux
+# ATLAS
 
-Dock de vidro com lente de ampliação estilo Mac para GNOME Shell 46 (Wayland/X11). Inspirado no [Doca](https://doca.racoelho.com.br/) do Windows.
+**A**mbientes, **T**arefas, **L**ançadores, **A**plicativos e **S**istema. Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11), inspirado no [Doca](https://doca.racoelho.com.br/) do Windows.
+
+> O UUID da extensão continua `doca@ixcsoft.dev` por enquanto: trocar exige novo login, então fica para quando houver outro relogin.
 
 ## MVP
 - Favoritos do GNOME + apps abertos (separados por uma linha)
