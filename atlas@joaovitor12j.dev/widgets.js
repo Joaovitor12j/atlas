@@ -9,13 +9,14 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anel, barra, cor, grafico, relogioAnalogico} from './desenho.js';
 import {
     DIAS_SEMANA, MESES, calcularProgresso, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa,
-    formatarTaxa, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes,
+    formatarTaxa, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
 } from './logica.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
@@ -1641,10 +1642,150 @@ class AreaTransferencia extends Widget {
     }
 }
 
+// ----- Slack: ícone com selo quando há mensagens não lidas -----
+// O Slack publica um item de bandeja (StatusNotifierItem) cujo tooltip diz "Nenhuma mensagem não lida" ou o
+// que está pendente. É o mesmo sinal do ícone da barra superior, lido direto pelo D-Bus. Funciona com qualquer
+// app que use a bandeja; aqui o filtro é o Id do item começar com "Slack".
+const SNI = 'org.freedesktop.StatusNotifierItem-';
+
+class Slack extends Widget {
+    get intervalo() {
+        return 5000; // os sinais avisam das mudanças; isto é só uma rede de segurança
+    }
+
+    construir() {
+        this._app = Shell.AppSystem.get_default().lookup_app('slack.desktop');
+        this._estado = {rodando: false, tem: false, n: null, texto: ''};
+        const lado = Math.round(this._tam * 0.62);
+        this._icone = new St.Icon({icon_size: lado, x_align: AL.CENTER, y_align: AL.CENTER});
+        if (this._app)
+            this._icone.gicon = this._app.get_icon();
+        else
+            this._icone.icon_name = 'mail-unread-symbolic';
+        this.actor.add_child(this._icone);
+
+        // selo no canto de cima: o número, ou só um ponto quando o texto não traz número
+        this._selo = new St.Label({
+            style_class: 'atlas-slack-selo', x_align: AL.END, y_align: AL.START, visible: false,
+            style: `font-size: ${Math.round(this._tam * 0.17)}px; min-width: ${Math.round(this._tam * 0.26)}px; height: ${Math.round(this._tam * 0.26)}px;`,
+        });
+        this.actor.add_child(this._selo);
+    }
+
+    iniciar() {
+        const bus = Gio.DBus.session;
+        const quando = () => this._ler();
+        this._subs = [
+            // um app de bandeja abriu ou fechou
+            bus.signal_subscribe('org.freedesktop.DBus', 'org.freedesktop.DBus', 'NameOwnerChanged',
+                '/org/freedesktop/DBus', null, Gio.DBusSignalFlags.NONE, quando),
+            // o tooltip, o ícone ou o status de algum item mudou
+            ...['NewToolTip', 'NewIcon', 'NewStatus', 'NewOverlayIcon'].map(sinal =>
+                bus.signal_subscribe(null, 'org.kde.StatusNotifierItem', sinal, null, null, Gio.DBusSignalFlags.NONE, quando)),
+        ];
+        super.iniciar();
+        this._ler();
+    }
+
+    parar() {
+        for (const id of this._subs ?? [])
+            Gio.DBus.session.signal_unsubscribe(id);
+        this._subs = [];
+    }
+
+    // Procura os itens de bandeja do Slack e junta o estado: qualquer um com mensagens vale.
+    _ler() {
+        if (this._lendo || this._destruido)
+            return;
+        this._lendo = true;
+        const bus = Gio.DBus.session;
+        bus.call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'ListNames', null,
+            new GLib.VariantType('(as)'), Gio.DBusCallFlags.NONE, 1000, null, (conn, res) => {
+                let nomes = [];
+                try {
+                    [nomes] = conn.call_finish(res).deepUnpack();
+                } catch (_e) { /* sem lista: tratado abaixo */ }
+                const itens = nomes.filter(n => n.startsWith(SNI));
+                const resultados = [];
+                let faltam = itens.length;
+                const fim = () => {
+                    this._lendo = false;
+                    if (this._destruido)
+                        return;
+                    this._aplicar(resultados.filter(Boolean));
+                };
+                if (!faltam) {
+                    fim();
+                    return;
+                }
+                for (const nome of itens) {
+                    bus.call(nome, '/StatusNotifierItem', 'org.freedesktop.DBus.Properties', 'GetAll',
+                        new GLib.Variant('(s)', ['org.kde.StatusNotifierItem']), new GLib.VariantType('(a{sv})'),
+                        Gio.DBusCallFlags.NONE, 1000, null, (c, r) => {
+                            try {
+                                const [p] = c.call_finish(r).recursiveUnpack();
+                                if (String(p.Id ?? '').toLowerCase().startsWith('slack'))
+                                    resultados.push({texto: String(p.ToolTip?.[2] ?? ''), status: p.Status});
+                            } catch (_e) { /* o item pode ter saído */ }
+                            if (--faltam === 0)
+                                fim();
+                        });
+                }
+            });
+    }
+
+    _aplicar(itens) {
+        const lidos = itens.map(i => ({...lerNaoLidas(i.texto), texto: i.texto}));
+        const com = lidos.filter(l => l.tem);
+        const novo = {
+            rodando: itens.length > 0,
+            tem: com.length > 0,
+            n: com.some(l => l.n !== null) ? com.reduce((a, l) => a + (l.n ?? 0), 0) : null,
+            texto: (com[0] ?? lidos[0])?.texto ?? '',
+        };
+        if (novo.tem !== this._estado.tem || novo.n !== this._estado.n || novo.rodando !== this._estado.rodando)
+            console.log(`[atlas] slack: ${novo.rodando ? (novo.tem ? `não lidas (${novo.n ?? '?'})` : 'sem novidades') : 'fechado'}`);
+        this._estado = novo;
+        this.atualizar();
+    }
+
+    get etiqueta() {
+        const e = this._estado;
+        if (!this._app)
+            return 'Slack não encontrado';
+        if (!e.rodando)
+            return 'Slack (fechado): clique para abrir';
+        return e.texto ? `Slack: ${e.texto}` : 'Slack';
+    }
+
+    atualizar() {
+        const e = this._estado;
+        this._icone.opacity = e.rodando ? 255 : 120; // fechado: esmaecido
+        this._selo.visible = e.tem;
+        if (e.tem) {
+            const t = textoDoSelo(e.n);
+            if (this._selo.text !== t)
+                this._selo.text = t;
+        }
+        this._pulsar(false);
+    }
+
+    // Em vez de abrir um painel, o clique leva ao próprio Slack.
+    aoClicar() {
+        if (!this._app)
+            return;
+        if (this._app.get_n_windows() > 0)
+            this._app.activate();
+        else
+            this._app.open_new_window(-1);
+        Main.overview.hide();
+    }
+}
+
 const CLASSES = {
     relogio: Relogio, pomodoro: Pomodoro, bateria: Bateria, musica: Musica,
     progresso: Progresso, cronometro: Cronometro, timer: Timer, atividade: Atividade, rede: Rede,
-    contagem: Contagem, nota: Nota, clipboard: AreaTransferencia,
+    contagem: Contagem, nota: Nota, clipboard: AreaTransferencia, slack: Slack,
 };
 
 // Cria e inicia o widget `id` num tile de `tam` px (`largo`: versão larga, se o widget tiver); null se não existe.

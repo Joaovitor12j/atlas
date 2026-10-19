@@ -12,6 +12,9 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Tiles pequenos mais legíveis**: fontes maiores, rótulo vazio some em vez de ocupar espaço, e cada widget mostra só o essencial dentro do anel (a Atividade deixa o RAM para o anel de dentro e o tooltip; a Área de transferência virou ícone com a contagem).
 - **Pele de vidro** nos tiles dos widgets: gradiente leve, borda de 1px e brilho especular na aresta de cima, a partir das referências de design do vault.
 
+### Adicionado (widgets)
+- Widget **Slack**: o ícone do Slack com um selo (número, ou só o ponto) quando há mensagens não lidas; fica esmaecido com o Slack fechado e o clique abre ou foca o app. Lê o mesmo sinal do ícone da barra superior (o tooltip do item de bandeja StatusNotifierItem), então não depende de extensão. Como todo widget, liga-se por ambiente.
+
 ### Corrigido
 - O tooltip podia seguir um ícone já destruído depois que a doca era reconstruída (aviso `St.Button ... already disposed` no log).
 
