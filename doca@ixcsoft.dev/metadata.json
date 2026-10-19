@@ -1,0 +1,7 @@
+{
+  "uuid": "doca@ixcsoft.dev",
+  "name": "Doca",
+  "description": "Dock de vidro com lente de ampliação estilo Mac: apps fixados, apps abertos e indicadores.",
+  "shell-version": ["46"],
+  "version": 1
+}
