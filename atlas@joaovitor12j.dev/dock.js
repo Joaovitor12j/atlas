@@ -14,6 +14,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget, pararClipboard} from './widgets.js';
+import {agendar, perfilar} from './perf.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
@@ -634,7 +635,7 @@ class DockView {
     _schedulePreview(item) {
         this._clearPreviewTimers();
         const delay = this._preview.visible ? 120 : 350;
-        this._previewShowId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+        this._previewShowId = agendar('previa-mostrar', delay, () => {
             this._previewShowId = 0;
             if (this._hoverItem === item)
                 this._showPreview(item);
@@ -649,7 +650,7 @@ class DockView {
             GLib.source_remove(this._previewShowId);
             this._previewShowId = 0;
         }
-        this._previewHideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+        this._previewHideId = agendar('previa-esconder', 250, () => {
             this._previewHideId = 0;
             if (this._preview && !this._preview.hover && !this._hoverItem)
                 this._hidePreview();
@@ -1017,7 +1018,7 @@ class DockView {
         if (!this._c.autoHide || this._hideId)
             return;
         let fora = 0;
-        this._hideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+        this._hideId = agendar('auto-ocultar', 150, () => {
             if (!this._container || !this._c.autoHide || this._hidden) {
                 this._hideId = 0;
                 return GLib.SOURCE_REMOVE;
@@ -1124,7 +1125,7 @@ class DockView {
     _startTick() {
         if (this._tickId)
             return;
-        this._tickId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._c.frameMs, () => {
+        this._tickId = agendar('lente', this._c.frameMs, () => {
             if (!this._container)
                 return GLib.SOURCE_REMOVE;
             const c = this._c;
@@ -1238,6 +1239,10 @@ export class Dock {
         } catch (e) {
             console.error(`[atlas] sem acesso ao Não perturbe: ${e}`);
         }
+        if (this._settings) {
+            perfilar(this._settings.get_boolean('perfil-ativo'));
+            this._connect(this._settings, 'changed::perfil-ativo', () => perfilar(this._settings.get_boolean('perfil-ativo')));
+        }
         this._minimizadas = new Map(); // janela -> id do sinal 'unmanaged'
         if (this._settings) {
             this._connect(this._settings, 'changed::ambiente-atual', () => this._seguirAmbiente());
@@ -1259,6 +1264,7 @@ export class Dock {
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
         this._restaurarJanelas();
+        perfilar(false);
         pararClipboard();
         this._notif = null;
         this._dndMemoria = null;

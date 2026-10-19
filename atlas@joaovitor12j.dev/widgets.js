@@ -14,6 +14,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anel, barra, cor, grafico, relogioAnalogico} from './desenho.js';
+import {agendar, agora, registrar} from './perf.js';
 import {
     DIAS_SEMANA, MESES, calcularProgresso, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa,
     formatarTaxa, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
@@ -43,6 +44,7 @@ class Camada {
         this.actor = new St.DrawingArea({style_class: classe || null, x_expand: true, y_expand: true});
         this.actor.connect('repaint', a => {
             const cr = a.get_context();
+            const t0 = agora();
             try {
                 const [w, h] = a.get_surface_size();
                 let fg = FG_MENU;
@@ -55,6 +57,7 @@ class Camada {
                 console.error(`[atlas] erro ao desenhar o widget: ${e}`);
             } finally {
                 cr.$dispose();
+                registrar('desenho', t0);
             }
         });
     }
@@ -85,7 +88,7 @@ class Animado {
         }
         if (this._id || Math.abs(alvo - this.atual) < 0.001)
             return;
-        this._id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 33, () => {
+        this._id = agendar('anel-anima', 33, () => {
             this.atual += (this.alvo - this.atual) * 0.3;
             const fim = Math.abs(this.alvo - this.atual) < 0.002;
             if (fim)
@@ -239,7 +242,7 @@ class Widget {
                 t.id = 0;
             }
         };
-        t.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+        t.id = agendar('painel-vivo', ms, () => {
             if (this._destruido || !vivo) {
                 t.id = 0;
                 return GLib.SOURCE_REMOVE;
@@ -299,7 +302,7 @@ class Widget {
     iniciar() {
         this.atualizar();
         if (this.intervalo > 0) {
-            this._timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this.intervalo, () => {
+            this._timerId = agendar(this.constructor.name, this.intervalo, () => {
                 this.atualizar();
                 return GLib.SOURCE_CONTINUE;
             });
@@ -1529,7 +1532,7 @@ function clipSoltar() {
     if (CLIP.usos > 0 || CLIP.paradaId)
         return;
     // espera um pouco: a doca destrói e recria os widgets a cada reconstrução
-    CLIP.paradaId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+    CLIP.paradaId = agendar('clipboard-parada', 2000, () => {
         CLIP.paradaId = 0;
         pararClipboard();
         return GLib.SOURCE_REMOVE;

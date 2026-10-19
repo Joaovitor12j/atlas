@@ -171,6 +171,11 @@
       <summary>Widgets em versão larga</summary>
       <description>Ids dos widgets que viram uma faixa larga com mais informação. Só vale com a doca na horizontal.</description>
     </key>
+    <key name="perfil-ativo" type="b">
+      <default>false</default>
+      <summary>Diagnóstico de desempenho</summary>
+      <description>Registra no log, a cada 30 s, quanto tempo os temporizadores e os desenhos do ATLAS gastam. Só para medir; deixe desligado.</description>
+    </key>
     <key name="relogio-24h" type="b">
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>
