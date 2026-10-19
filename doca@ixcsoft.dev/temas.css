@@ -72,3 +72,35 @@
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+/* Prévia de janelas */
+.atlas-preview {
+    background-color: rgba(28, 34, 48, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 10px;
+    spacing: 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.atlas-preview-card { padding: 8px; border-radius: 10px; background-color: transparent; }
+.atlas-preview-card:hover { background-color: rgba(255, 255, 255, 0.10); }
+.atlas-preview-title { font-size: 12px; color: #f2f2f7; }
+.atlas-preview-thumb { background-color: rgba(0, 0, 0, 0.28); border-radius: 8px; }
+.atlas-preview-close { padding: 2px; border-radius: 10px; color: #f2f2f7; }
+.atlas-preview-close:hover { background-color: rgba(226, 75, 74, 0.85); }
+
+.atlas-preview.atlas-papel {
+    background-color: #f6f1e5;
+    border: 1px solid #bdb298;
+    box-shadow: 0 6px 18px rgba(60, 50, 30, 0.28);
+}
+.atlas-papel .atlas-preview-title, .atlas-papel .atlas-preview-close { color: #2f2f2a; }
+.atlas-papel .atlas-preview-card:hover { background-color: rgba(60, 50, 30, 0.08); }
+.atlas-papel .atlas-preview-thumb { background-color: rgba(60, 50, 30, 0.10); }
+
+.atlas-preview.atlas-cristal {
+    background-color: rgba(30, 40, 70, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.atlas-cristal .atlas-preview-title, .atlas-cristal .atlas-preview-close { color: #ffffff; }
+.atlas-cristal .atlas-preview-thumb { background-color: rgba(0, 0, 0, 0.22); }

@@ -50,6 +50,11 @@
       <summary>Auto-ocultar</summary>
       <description>Esconde a doca e mostra ao encostar o ponteiro na borda da tela.</description>
     </key>
+    <key name="previa-janelas" type="b">
+      <default>true</default>
+      <summary>Prévia de janelas</summary>
+      <description>Mostra miniaturas das janelas de um app ao parar o ponteiro sobre o ícone.</description>
+    </key>
     <key name="monitores" type="s">
       <default>"principal"</default>
       <summary>Telas</summary>

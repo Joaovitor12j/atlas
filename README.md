@@ -11,6 +11,7 @@
 - Temas: **Noite** (padrão), **Papel** e **Cristal** (blur do fundo)
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
 - Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
+- Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz, X ou clique do meio fecha)
 - Menu de clique direito: ações do app, nova janela, fixar/desafixar, fechar janelas
 - Esconde no Overview e em tela cheia
 
@@ -39,4 +40,4 @@ Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Prévia de janelas, ambientes, widgets (relógio, pomodoro).
+Ambientes, widgets (relógio, pomodoro).

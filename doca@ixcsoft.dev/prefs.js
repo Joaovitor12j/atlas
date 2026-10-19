@@ -41,6 +41,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         page.add(posicao);
         posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
         posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
+        aparencia.add(this._switch(settings, 'previa-janelas', 'Prévia de janelas', 'Miniaturas das janelas ao parar o mouse num app aberto'));
         posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
         posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
 

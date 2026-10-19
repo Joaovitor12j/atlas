@@ -3,6 +3,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -10,6 +11,9 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
+
+const THUMB_W = 200;   // miniatura da prévia de janela
+const THUMB_H = 125;
 
 // Valores que não têm opção na janela de preferências (ainda).
 const FIXED = {
@@ -40,9 +44,20 @@ class DockView {
 
         this._hidden = false;
         this._hideId = 0;
+        this._previewShowId = 0;
+        this._previewHideId = 0;
         this._readConfig();
         this._tooltip = new St.Label({style_class: 'atlas-tooltip', visible: false});
         Main.layoutManager.addTopChrome(this._tooltip);
+
+        this._preview = new St.BoxLayout({style_class: 'atlas-preview', visible: false, reactive: true, track_hover: true});
+        this._preview.connect('notify::hover', () => {
+            if (this._preview.hover)
+                this._clearPreviewTimers();
+            else
+                this._schedulePreviewHide();
+        });
+        Main.layoutManager.addTopChrome(this._preview);
 
         this._container = new St.Widget({reactive: false});
         this._bg = new St.Widget({style_class: 'atlas-bg', reactive: true, track_hover: true});
@@ -112,6 +127,7 @@ class DockView {
         }
         this._cancelHide();
         this._closeMenu();
+        this._clearPreviewTimers();
         for (const [obj, id] of this._signals)
             obj.disconnect(id);
         this._signals = [];
@@ -119,7 +135,8 @@ class DockView {
         this._container?.destroy();
         this._hot?.destroy();
         this._tooltip?.destroy();
-        this._container = this._bg = this._hot = this._tooltip = null;
+        this._preview?.destroy();
+        this._container = this._bg = this._hot = this._tooltip = this._preview = null;
         this._items = [];
     }
 
@@ -134,6 +151,7 @@ class DockView {
             pos: st?.get_string('posicao') ?? 'baixo',
             margin: st?.get_int('margem') ?? 8,
             autoHide: st?.get_boolean('auto-ocultar') ?? false,
+            preview: st?.get_boolean('previa-janelas') ?? true,
         };
         c.maxPx = Math.ceil(c.iconSize * c.maxScale);
         this._c = c;
@@ -144,6 +162,7 @@ class DockView {
         const tema = this._settings?.get_string('tema') ?? 'noite';
         this._container.style_class = `atlas-${tema}`;
         this._tooltip.style_class = `atlas-tooltip atlas-${tema}`;
+        this._preview.style_class = `atlas-preview atlas-${tema}`;
         this._bg.remove_effect_by_name('atlas-blur');
         if (tema === 'cristal') {
             try {
@@ -182,6 +201,7 @@ class DockView {
     _rebuild() {
         if (!this._container)
             return;
+        this._hidePreview();
         const old = new Map(this._items.filter(i => i.key).map(i => [i.key, i.s]));
         for (const it of this._items) {
             it.actor.destroy();
@@ -264,9 +284,14 @@ class DockView {
                 this._tooltip.show();
                 this._placeTooltip();
                 this._startTick();
+                if (this._c.preview && app?.get_n_windows() > 0)
+                    this._schedulePreview(item);
+                else
+                    this._schedulePreviewHide();
             } else if (this._hoverItem === item) {
                 this._hoverItem = null;
                 this._tooltip.hide();
+                this._schedulePreviewHide();
             }
         });
         this._items.push(item);
@@ -276,6 +301,156 @@ class DockView {
         const actor = new St.Widget({style_class: 'atlas-sep'});
         this._container.add_child(actor);
         this._items.push({app: null, actor, dot: null, s: 1, base: this._c.sepWidth, sep: true});
+    }
+
+    // ----- Prévia de janelas -----
+
+    _clearPreviewTimers() {
+        for (const k of ['_previewShowId', '_previewHideId']) {
+            if (this[k]) {
+                GLib.source_remove(this[k]);
+                this[k] = 0;
+            }
+        }
+    }
+
+    _schedulePreview(item) {
+        this._clearPreviewTimers();
+        const delay = this._preview.visible ? 120 : 350;
+        this._previewShowId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+            this._previewShowId = 0;
+            if (this._hoverItem === item)
+                this._showPreview(item);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _schedulePreviewHide() {
+        if (this._previewHideId || !this._preview?.visible && !this._previewShowId)
+            return;
+        if (this._previewShowId) {
+            GLib.source_remove(this._previewShowId);
+            this._previewShowId = 0;
+        }
+        this._previewHideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+            this._previewHideId = 0;
+            if (this._preview && !this._preview.hover && !this._hoverItem)
+                this._hidePreview();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _hidePreview() {
+        this._clearPreviewTimers();
+        if (!this._preview)
+            return;
+        this._preview.hide();
+        this._preview.destroy_all_children();
+    }
+
+    _showPreview(item) {
+        const wins = item.app?.get_windows() ?? [];
+        if (!wins.length || this._menu?.isOpen)
+            return;
+        this._preview.destroy_all_children();
+        for (const win of wins)
+            this._preview.add_child(this._makeCard(win, item.app));
+        this._tooltip.hide();
+        this._preview.show();
+        this._placePreview(item);
+    }
+
+    _makeCard(win, app) {
+        const card = new St.Button({
+            style_class: 'atlas-preview-card',
+            reactive: true,
+            track_hover: true,
+            button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO,
+        });
+        const box = new St.BoxLayout({vertical: true, style: 'spacing: 6px;'});
+        card.set_child(box);
+
+        const head = new St.BoxLayout({style: 'spacing: 6px;'});
+        const title = new St.Label({
+            text: win.get_title() || app.get_name(),
+            style_class: 'atlas-preview-title',
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
+        title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        title.set_width(THUMB_W - 26);
+        const close = new St.Button({
+            style_class: 'atlas-preview-close',
+            child: new St.Icon({icon_name: 'window-close-symbolic', icon_size: 14}),
+            reactive: true,
+            track_hover: true,
+        });
+        close.connect('clicked', () => {
+            win.delete(global.get_current_time());
+            this._hidePreview();
+        });
+        head.add_child(title);
+        head.add_child(close);
+        box.add_child(head);
+
+        const thumb = new St.Widget({
+            style_class: 'atlas-preview-thumb',
+            layout_manager: new Clutter.BinLayout(),
+            width: THUMB_W,
+            height: THUMB_H,
+        });
+        const actor = win.get_compositor_private();
+        if (actor && !win.minimized) {
+            const [aw, ah] = actor.get_size();
+            const k = Math.min(THUMB_W / Math.max(aw, 1), THUMB_H / Math.max(ah, 1));
+            const clone = new Clutter.Clone({
+                source: actor,
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            clone.set_size(Math.round(aw * k), Math.round(ah * k));
+            thumb.add_child(clone);
+        } else {
+            thumb.add_child(new St.Icon({
+                gicon: app.get_icon(),
+                icon_size: 48,
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            }));
+        }
+        box.add_child(thumb);
+
+        card.connect('clicked', (_b, button) => {
+            if (button === Clutter.BUTTON_MIDDLE) {
+                win.delete(global.get_current_time());
+            } else {
+                Main.activateWindow(win);
+            }
+            this._hidePreview();
+        });
+        return card;
+    }
+
+    _placePreview(item) {
+        const mon = Main.layoutManager.monitors[this._monIdx];
+        const [x, y] = item.actor.get_transformed_position();
+        const [w, h] = item.actor.get_transformed_size();
+        const [, pw] = this._preview.get_preferred_width(-1);
+        const [, ph] = this._preview.get_preferred_height(pw);
+        let px, py;
+        if (this._c.pos === 'baixo') {
+            px = x + w / 2 - pw / 2;
+            py = y - ph - 12;
+        } else if (this._c.pos === 'esquerda') {
+            px = x + w + 12;
+            py = y + h / 2 - ph / 2;
+        } else {
+            px = x - pw - 12;
+            py = y + h / 2 - ph / 2;
+        }
+        px = Math.max(mon.x + 8, Math.min(px, mon.x + mon.width - pw - 8));
+        py = Math.max(mon.y + 8, Math.min(py, mon.y + mon.height - ph - 8));
+        this._preview.set_position(Math.round(px), Math.round(py));
     }
 
     // Menu de clique direito: ações do app, nova janela, fixar/desafixar e fechar janelas.
@@ -427,8 +602,10 @@ class DockView {
         if (this._hidden === hidden || (hidden && !this._c.autoHide))
             return;
         this._hidden = hidden;
-        if (hidden)
+        if (hidden) {
             this._tooltip.hide();
+            this._hidePreview();
+        }
         this._applyHidden(true);
         if (!hidden)
             this._scheduleHide();
@@ -445,7 +622,7 @@ class DockView {
                 this._hideId = 0;
                 return GLib.SOURCE_REMOVE;
             }
-            fora = (this._pointerZone().inside || this._menu?.isOpen) ? 0 : fora + 150;
+            fora = (this._pointerZone().inside || this._menu?.isOpen || this._preview?.visible) ? 0 : fora + 150;
             if (fora >= 450) {
                 this._hideId = 0;
                 this._setHidden(true);
