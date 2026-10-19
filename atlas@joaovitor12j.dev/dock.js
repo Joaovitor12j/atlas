@@ -11,17 +11,26 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import {TEMAS, WIDGETS} from './catalogo.js';
+import {criarWidget} from './widgets.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
 const THUMB_W = 200;   // miniatura da prévia de janela
 const THUMB_H = 125;
 
-// ----- Ambientes: conjuntos de apps, guardados como JSON no GSettings -----
+// ----- Ambientes: apps, tema, widgets e coleções, guardados como JSON no GSettings -----
+// [{id, nome, cor, apps: [ids .desktop], tema?: id, widgets?: [ids], colecoes?: [{id, nome, apps}]}]
 function lerAmbientes(st) {
     try {
         const v = JSON.parse(st?.get_string('ambientes') ?? '[]');
-        return Array.isArray(v) ? v.filter(a => a && a.id && Array.isArray(a.apps)) : [];
+        return Array.isArray(v)
+            ? v.filter(a => a && a.id && Array.isArray(a.apps)).map(a => ({
+                ...a,
+                widgets: Array.isArray(a.widgets) ? a.widgets : [],
+                colecoes: Array.isArray(a.colecoes) ? a.colecoes.filter(c => c && c.id && Array.isArray(c.apps)) : [],
+            }))
+            : [];
     } catch (_e) {
         return [];
     }
@@ -43,8 +52,6 @@ function trocarAmbiente(st, delta) {
         Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), novo.nome, null);
     } catch (_e) { /* OSD é só um aviso */ }
 }
-
-const TEMAS = [['noite', 'Noite'], ['papel', 'Papel'], ['cristal', 'Cristal']];
 
 // Conteúdo do menu do ATLAS, usado no ícone do painel e no clique direito na doca.
 function preencherMenu(menu, st, abrirPrefs, ocultarIcone) {
@@ -181,16 +188,19 @@ class DockView {
 
         if (this._settings) {
             this._connect(this._settings, 'changed', (_s, key) => {
-                if (key === 'tema') {
+                if (key === 'monitores')
+                    return;
+                this._readConfig();
+                // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica
+                if (key === 'tema' || key === 'ambiente-atual' || key === 'ambientes')
                     this._applyTheme();
-                } else if (key !== 'monitores') {
-                    this._readConfig();
-                    if (key === 'auto-ocultar') {
-                        this._cancelHide();
-                        this._hidden = this._c.autoHide;
-                    }
-                    this._queueRebuild();
+                if (key === 'tema')
+                    return;
+                if (key === 'auto-ocultar') {
+                    this._cancelHide();
+                    this._hidden = this._c.autoHide;
                 }
+                this._queueRebuild();
             });
         }
         this._applyTheme();
@@ -216,6 +226,8 @@ class DockView {
             obj.disconnect(id);
         this._signals = [];
         this._bg?.remove_effect_by_name('atlas-blur');
+        for (const it of this._items)
+            it.widget?.destruir();
         this._setStrut(false);
         this._container?.destroy();
         this._strut?.destroy();
@@ -247,12 +259,16 @@ class DockView {
         c.seletor = st?.get_boolean('mostrar-seletor') ?? true;
         c.ambientes = lerAmbientes(st);
         c.amb = ambienteAtual(st, c.ambientes);
+        c.widgets = c.amb?.widgets ?? [];
+        c.colecoes = c.amb?.colecoes ?? [];
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
     }
 
     _applyTheme() {
-        const tema = this._settings?.get_string('tema') ?? 'noite';
+        // tema do ambiente atual, quando definido e válido; senão o global
+        const doAmb = this._c.amb?.tema;
+        const tema = TEMAS.some(t => t[0] === doAmb) ? doAmb : (this._settings?.get_string('tema') ?? 'noite');
         this._container.style_class = `atlas-${tema}`;
         this._tooltip.style_class = `atlas-tooltip atlas-${tema}`;
         this._preview.style_class = `atlas-preview atlas-${tema}`;
@@ -299,11 +315,7 @@ class DockView {
             return;
         this._hidePreview();
         const old = new Map(this._items.filter(i => i.key).map(i => [i.key, i.s]));
-        for (const it of this._items) {
-            it.actor.destroy();
-            it.dot?.destroy();
-        }
-        this._items = [];
+        this._destroyItems();
 
         const {favs, running} = this._appList();
         if (this._c.ambientes.length && this._c.seletor) {
@@ -312,10 +324,17 @@ class DockView {
         }
         for (const app of favs)
             this._addApp(app, old);
-        if (favs.length && running.length)
+        for (const col of this._c.colecoes)
+            this._addCollection(col, old);
+        if ((favs.length || this._c.colecoes.length) && running.length)
             this._addSeparator();
         for (const app of running)
             this._addApp(app, old);
+        const widgets = this._c.widgets.filter(id => WIDGETS.some(w => w[0] === id));
+        if (widgets.length && this._items.length)
+            this._addSeparator();
+        for (const id of widgets)
+            this._addWidget(id, old);
         if (this._items.length)
             this._addSeparator();
         this._addAppsButton(old);
@@ -326,6 +345,15 @@ class DockView {
         this._applyScales();
     }
 
+    _destroyItems() {
+        for (const it of this._items) {
+            it.widget?.destruir();
+            it.actor.destroy();
+            it.dot?.destroy();
+        }
+        this._items = [];
+    }
+
     _addApp(app, old) {
         this._makeItem({
             key: app.get_id(),
@@ -334,6 +362,61 @@ class DockView {
             label: app.get_name(),
             onClick: button => this._activate(app, button),
         }, old);
+    }
+
+    // Widget: tile vivo; o clique abre o painel do próprio widget.
+    _addWidget(id, old) {
+        const widget = criarWidget(id, this._c.maxPx, this._settings);
+        if (!widget)
+            return;
+        const key = `w:${id}`;
+        this._makeItem({
+            key,
+            app: null,
+            child: widget.actor,
+            widget,
+            label: () => widget.etiqueta,
+            onClick: () => this._openItemMenu(key, menu => widget.fillMenu(menu)),
+        }, old);
+    }
+
+    // Coleção: um ícone que guarda um grupo de apps (mosaico 2x2); o clique abre a lista.
+    _addCollection(col, old) {
+        const sistema = Shell.AppSystem.get_default();
+        const apps = col.apps.map(id => sistema.lookup_app(id)).filter(Boolean);
+        const lado = Math.round(this._c.maxPx * 0.4);
+        const mosaico = new St.BoxLayout({
+            style_class: 'atlas-collection', vertical: true, x_expand: true, y_expand: true,
+        });
+        for (let r = 0; r < 2; r++) {
+            const linha = new St.BoxLayout({x_expand: true, y_expand: true, x_align: Clutter.ActorAlign.CENTER});
+            for (const app of apps.slice(r * 2, r * 2 + 2))
+                linha.add_child(new St.Icon({gicon: app.get_icon(), icon_size: lado}));
+            mosaico.add_child(linha);
+        }
+        const key = `c:${col.id}`;
+        this._makeItem({
+            key,
+            app: null,
+            child: mosaico,
+            label: col.nome,
+            onClick: () => this._openItemMenu(key, menu => {
+                menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(col.nome));
+                if (!apps.length)
+                    menu.addMenuItem(new PopupMenu.PopupMenuItem('Coleção vazia', {reactive: false}));
+                for (const app of apps) {
+                    const mi = new PopupMenu.PopupImageMenuItem(app.get_name(), app.get_icon());
+                    mi.connect('activate', () => this._activate(app, Clutter.BUTTON_PRIMARY));
+                    menu.addMenuItem(mi);
+                }
+            }),
+        }, old);
+    }
+
+    _openItemMenu(key, fill) {
+        const item = this._items.find(i => i.key === key);
+        if (item)
+            this._popup(item.actor, fill);
     }
 
     // Seletor de ambiente: círculo na cor do ambiente com a inicial; clique abre a lista.
@@ -363,7 +446,7 @@ class DockView {
         this._makeItem({
             key: '__apps__',
             app: null,
-            gicon: new Gio.ThemedIcon({name: 'view-app-grid-symbolic'}),
+            child: this._appsTile(),
             label: 'Mostrar aplicativos',
             onClick: () => {
                 if (Main.overview.visible)
@@ -376,7 +459,24 @@ class DockView {
         }, old);
     }
 
-    _makeItem({key, app, gicon, label, onClick, child, style}, old) {
+    // Ícone simbólico num tile: a cor vem do tema (.atlas-apps-icon), senão some em fundos claros.
+    _appsTile() {
+        const icone = new St.Icon({
+            icon_name: 'view-app-grid-symbolic',
+            icon_size: Math.round(this._c.maxPx * 0.56),
+            style_class: 'atlas-apps-icon',
+        });
+        return new St.Bin({
+            style_class: 'atlas-apps',
+            child: icone,
+            x_expand: true,
+            y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
+        });
+    }
+
+    _makeItem({key, app, gicon, label, onClick, child, style, widget}, old) {
         const c = this._c;
         const icon = child ?? new St.Icon({gicon, icon_size: c.maxPx});
         const btn = new St.Button({
@@ -396,7 +496,7 @@ class DockView {
         dot.set_size(6, 6);
         this._container.add_child(dot);
 
-        const item = {key, app, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
+        const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
         btn.connect('clicked', (_b, button) => {
             if (button === Clutter.BUTTON_SECONDARY && item.app)
                 this._openMenu(item, btn);
@@ -408,7 +508,7 @@ class DockView {
         btn.connect('notify::hover', () => {
             if (btn.hover) {
                 this._hoverItem = item;
-                this._tooltip.set_text(label);
+                this._tooltip.set_text(typeof label === 'function' ? label() : label);
                 this._tooltip.show();
                 this._placeTooltip();
                 this._startTick();
@@ -1027,6 +1127,11 @@ class DockView {
 
 // Gerenciador: carrega configuração e CSS uma vez e cria uma doca por tela conforme a opção "monitores".
 export class Dock {
+    // `dir`: pasta da extensão, dada pelo extension.js (os módulos rodam de uma cópia temporária).
+    constructor(dir) {
+        this._extDir = dir ?? Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+    }
+
     enable() {
         this._signals = [];
         this._views = [];
@@ -1200,7 +1305,7 @@ export class Dock {
     }
 
     _dir() {
-        return Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+        return this._extDir;
     }
 
     // Lê o schema da pasta da própria extensão (sem precisar instalá-lo no sistema).

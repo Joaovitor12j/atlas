@@ -6,10 +6,13 @@
         <choice value="noite"/>
         <choice value="papel"/>
         <choice value="cristal"/>
+        <choice value="neon"/>
+        <choice value="halloween"/>
+        <choice value="natal"/>
       </choices>
       <default>"noite"</default>
       <summary>Tema visual</summary>
-      <description>Aparência da doca: noite, papel ou cristal.</description>
+      <description>Aparência da doca: noite, papel, cristal, neon, halloween ou natal.</description>
     </key>
     <key name="tamanho-icone" type="i">
       <range min="32" max="96"/>
@@ -68,7 +71,7 @@
     <key name="ambientes" type="s">
       <default>"[]"</default>
       <summary>Ambientes</summary>
-      <description>Lista (JSON) de ambientes: [{id, nome, cor, apps: [ids .desktop]}]. Vazia usa os favoritos do GNOME.</description>
+      <description>Lista (JSON) de ambientes: [{id, nome, cor, apps: [ids .desktop], tema, widgets: [ids], colecoes: [{id, nome, apps}]}]. Vazia usa os favoritos do GNOME.</description>
     </key>
     <key name="ambiente-atual" type="s">
       <default>""</default>
@@ -107,6 +110,25 @@
     <key name="atalho-anterior" type="as">
       <default>["&lt;Super&gt;&lt;Alt&gt;Left"]</default>
       <summary>Atalho: ambiente anterior</summary>
+    </key>
+    <key name="pomodoro-foco" type="i">
+      <range min="1" max="180"/>
+      <default>25</default>
+      <summary>Pomodoro: duração do foco (min)</summary>
+    </key>
+    <key name="pomodoro-pausa" type="i">
+      <range min="1" max="60"/>
+      <default>5</default>
+      <summary>Pomodoro: pausa curta (min)</summary>
+    </key>
+    <key name="pomodoro-pausa-longa" type="i">
+      <range min="1" max="120"/>
+      <default>15</default>
+      <summary>Pomodoro: pausa longa (min)</summary>
+    </key>
+    <key name="relogio-24h" type="b">
+      <default>true</default>
+      <summary>Relógio: formato de 24 horas</summary>
     </key>
   </schema>
 </schemalist>
