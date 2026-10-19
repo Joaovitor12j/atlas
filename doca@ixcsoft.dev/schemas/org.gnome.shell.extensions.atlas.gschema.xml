@@ -11,5 +11,39 @@
       <summary>Tema visual</summary>
       <description>Aparência da doca: noite, papel ou cristal.</description>
     </key>
+    <key name="tamanho-icone" type="i">
+      <range min="32" max="96"/>
+      <default>52</default>
+      <summary>Tamanho dos ícones</summary>
+      <description>Tamanho base dos ícones, em pixels.</description>
+    </key>
+    <key name="lente-forca" type="d">
+      <range min="1.0" max="2.5"/>
+      <default>1.75</default>
+      <summary>Força da lente</summary>
+      <description>Ampliação máxima do ícone sob o ponteiro (1.0 desliga a lente).</description>
+    </key>
+    <key name="lente-largura" type="i">
+      <range min="30" max="160"/>
+      <default>70</default>
+      <summary>Largura da lente</summary>
+      <description>Quantos ícones vizinhos a lente alcança, em pixels.</description>
+    </key>
+    <key name="posicao" type="s">
+      <choices>
+        <choice value="baixo"/>
+        <choice value="esquerda"/>
+        <choice value="direita"/>
+      </choices>
+      <default>"baixo"</default>
+      <summary>Posição</summary>
+      <description>Borda da tela onde a doca fica.</description>
+    </key>
+    <key name="margem" type="i">
+      <range min="0" max="60"/>
+      <default>8</default>
+      <summary>Margem da borda</summary>
+      <description>Distância entre a doca e a borda da tela, em pixels.</description>
+    </key>
   </schema>
 </schemalist>

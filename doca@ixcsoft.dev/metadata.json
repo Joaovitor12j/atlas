@@ -2,6 +2,9 @@
   "uuid": "doca@ixcsoft.dev",
   "name": "ATLAS",
   "description": "ATLAS (Ambientes, Tarefas, Lançadores, Aplicativos e Sistema): dock com lente de ampliação, ambientes e widgets.",
-  "shell-version": ["46"],
-  "version": 1
+  "shell-version": [
+    "46"
+  ],
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.atlas"
 }

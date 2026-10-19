@@ -1,4 +1,4 @@
-// Doca: dock com lente de ampliação para GNOME Shell (Wayland/X11).
+// ATLAS: dock com lente de ampliação para GNOME Shell (Wayland/X11).
 // Mutter não aceita layer-shell, então o dock é um actor "chrome" desenhado pelo próprio Shell.
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -8,35 +8,37 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 
-const CONFIG = {
-    iconSize: 52,       // tamanho base do ícone (px)
-    maxScale: 1.75,     // ampliação máxima sob o ponteiro
-    lensWidth: 70,      // largura (sigma) da lente, em px
+const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
+
+// Valores que não têm opção na janela de preferências (ainda).
+const FIXED = {
     gap: 8,             // espaço entre ícones
-    padH: 14,           // margem horizontal do vidro
-    padV: 10,           // margem vertical do vidro
-    bottomMargin: 8,    // distância da borda inferior da tela
-    dotArea: 8,         // faixa abaixo dos ícones para o indicador de app aberto
-    sepWidth: 14,       // largura do separador favoritos | abertos
+    padH: 14,           // margem do vidro ao longo da doca
+    padV: 10,           // margem do vidro no sentido transversal
+    dotArea: 8,         // faixa entre o ícone e a borda da tela para o indicador de app aberto
+    sepWidth: 14,       // espaço do separador favoritos | abertos
     smoothing: 0.35,    // 0..1, fração do caminho percorrida por quadro
     frameMs: 16,
 };
+
+// Ponto de ancoragem (pivô) da ampliação: o ícone cresce a partir da borda da tela.
+const PIVOT = {baixo: [0, 1], esquerda: [0, 0], direita: [1, 0]};
 
 export class Dock {
     enable() {
         this._items = [];
         this._signals = [];
-        this._hovering = false;
         this._tickId = 0;
         this._rebuildId = 0;
 
         this._settings = this._loadSettings();
+        this._readConfig();
         this._loadThemeCss();
-        this._tooltip = new St.Label({style_class: 'doca-tooltip', visible: false});
+        this._tooltip = new St.Label({style_class: 'atlas-tooltip', visible: false});
         Main.layoutManager.addTopChrome(this._tooltip);
 
         this._container = new St.Widget({reactive: false});
-        this._bg = new St.Widget({style_class: 'doca-bg', reactive: true, track_hover: true});
+        this._bg = new St.Widget({style_class: 'atlas-bg', reactive: true, track_hover: true});
         this._container.add_child(this._bg);
         Main.layoutManager.addChrome(this._container, {
             affectsStruts: false,
@@ -60,12 +62,20 @@ export class Dock {
         this._connect(Main.overview, 'hiding', () => this._container.show());
         this._connect(global.display, 'window-created', () => this._queueRebuild());
 
-        if (this._settings)
-            this._connect(this._settings, 'changed::tema', () => this._applyTheme());
+        if (this._settings) {
+            this._connect(this._settings, 'changed', (_s, key) => {
+                if (key === 'tema') {
+                    this._applyTheme();
+                } else {
+                    this._readConfig();
+                    this._queueRebuild();
+                }
+            });
+        }
         this._applyTheme();
 
         this._rebuild();
-        console.log(`[doca] ativo: ${this._items.length} itens, container ${this._cw}x${this._ch}`);
+        console.log(`[atlas] ativo: ${this._items.length} itens, posição ${this._c.pos}`);
     }
 
     disable() {
@@ -89,23 +99,41 @@ export class Dock {
         this._items = [];
     }
 
+    _dir() {
+        return Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+    }
+
     // Lê o schema da pasta da própria extensão (sem precisar instalá-lo no sistema).
     _loadSettings() {
         try {
-            const dir = Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
             const src = Gio.SettingsSchemaSource.new_from_directory(
-                dir.get_child('schemas').get_path(), Gio.SettingsSchemaSource.get_default(), false);
-            return new Gio.Settings({settings_schema: src.lookup('org.gnome.shell.extensions.atlas', true)});
+                this._dir().get_child('schemas').get_path(), Gio.SettingsSchemaSource.get_default(), false);
+            return new Gio.Settings({settings_schema: src.lookup(SCHEMA_ID, true)});
         } catch (e) {
-            console.error(`[atlas] sem GSettings, usando tema padrão: ${e}`);
+            console.error(`[atlas] sem GSettings, usando valores padrão: ${e}`);
             return null;
         }
     }
 
+    // Junta as opções da janela de preferências com os valores fixos.
+    _readConfig() {
+        const st = this._settings;
+        const c = {
+            ...FIXED,
+            iconSize: st?.get_int('tamanho-icone') ?? 52,
+            maxScale: st?.get_double('lente-forca') ?? 1.75,
+            lensWidth: st?.get_int('lente-largura') ?? 70,
+            pos: st?.get_string('posicao') ?? 'baixo',
+            margin: st?.get_int('margem') ?? 8,
+        };
+        c.maxPx = Math.ceil(c.iconSize * c.maxScale);
+        this._c = c;
+        this._v = c.pos !== 'baixo'; // doca vertical
+    }
+
     // O Shell só lê stylesheet.css no login; temas.css é carregado aqui para valer ao recarregar.
     _loadThemeCss() {
-        const dir = Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
-        this._themeCss = dir.get_child('temas.css');
+        this._themeCss = this._dir().get_child('temas.css');
         this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
         this._theme.load_stylesheet(this._themeCss);
     }
@@ -119,7 +147,7 @@ export class Dock {
     _applyTheme() {
         const tema = this._settings?.get_string('tema') ?? 'noite';
         this._container.style_class = `atlas-${tema}`;
-        this._tooltip.style_class = `doca-tooltip atlas-${tema}`;
+        this._tooltip.style_class = `atlas-tooltip atlas-${tema}`;
         this._bg.remove_effect_by_name('atlas-blur');
         if (tema === 'cristal') {
             try {
@@ -177,7 +205,7 @@ export class Dock {
         this._addAppsButton(old);
 
         this._layoutGeometry();
-        this._applyScales(true);
+        this._applyScales();
     }
 
     _addApp(app, old) {
@@ -209,24 +237,24 @@ export class Dock {
     }
 
     _makeItem({key, app, gicon, label, onClick}, old) {
-        const max = Math.ceil(CONFIG.iconSize * CONFIG.maxScale);
-        const icon = new St.Icon({gicon, icon_size: max});
+        const c = this._c;
+        const icon = new St.Icon({gicon, icon_size: c.maxPx});
         const btn = new St.Button({
-            style_class: 'doca-item',
+            style_class: 'atlas-item',
             child: icon,
             reactive: true,
             track_hover: true,
             button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO,
         });
-        btn.set_size(max, max);
-        btn.set_pivot_point(0, 1);
+        btn.set_size(c.maxPx, c.maxPx);
+        btn.set_pivot_point(...PIVOT[c.pos]);
         this._container.add_child(btn);
 
-        const dot = new St.Widget({style_class: 'doca-dot'});
+        const dot = new St.Widget({style_class: 'atlas-dot'});
         dot.set_size(6, 6);
         this._container.add_child(dot);
 
-        const item = {key, app, actor: btn, dot, s: old.get(key) ?? 1, base: CONFIG.iconSize};
+        const item = {key, app, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
         btn.connect('clicked', (_b, button) => onClick(button));
         btn.connect('notify::hover', () => {
             if (btn.hover) {
@@ -244,10 +272,9 @@ export class Dock {
     }
 
     _addSeparator() {
-        const actor = new St.Widget({style_class: 'doca-sep'});
-        actor.set_size(2, CONFIG.iconSize * 0.7);
+        const actor = new St.Widget({style_class: 'atlas-sep'});
         this._container.add_child(actor);
-        this._items.push({app: null, actor, dot: null, s: 1, base: CONFIG.sepWidth, sep: true});
+        this._items.push({app: null, actor, dot: null, s: 1, base: this._c.sepWidth, sep: true});
     }
 
     _activate(app, button) {
@@ -259,90 +286,145 @@ export class Dock {
         Main.overview.hide();
     }
 
-    // Tamanho do container (cabe a lente toda) e posição na tela.
+    // Tamanho do container (cabe a lente toda) e posição na tela, conforme a borda escolhida.
     _layoutGeometry() {
+        const c = this._c;
         const mon = Main.layoutManager.primaryMonitor;
+        const wa = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
         const n = this._items.length;
-        const baseW = this._items.reduce((w, i) => w + i.base, 0) + CONFIG.gap * Math.max(0, n - 1);
-        const growth = CONFIG.iconSize * (CONFIG.maxScale - 1) * 3.2; // sobra horizontal máxima da lente
-        this._cw = Math.ceil(baseW + growth + CONFIG.padH * 2);
-        const maxH = CONFIG.iconSize * CONFIG.maxScale;
-        this._ch = Math.ceil(maxH + CONFIG.padV * 2 + CONFIG.dotArea);
-        this._baseline = this._ch - CONFIG.padV - CONFIG.dotArea; // y da base dos ícones
+        const baseLen = this._items.reduce((w, i) => w + i.base, 0) + c.gap * Math.max(0, n - 1);
+        const growth = c.iconSize * (c.maxScale - 1) * 3.2; // sobra máxima da lente ao longo da doca
 
+        this._len = Math.ceil(baseLen + growth + c.padH * 2);                  // eixo da doca
+        this._thick = Math.ceil(c.maxPx + c.padV * 2 + c.dotArea);             // eixo transversal
+        this._d0 = c.dotArea + c.padV;                                          // borda da tela até a base dos ícones
+        this._cw = this._v ? this._thick : this._len;
+        this._ch = this._v ? this._len : this._thick;
+
+        let x, y;
+        if (c.pos === 'baixo') {
+            x = mon.x + (mon.width - this._cw) / 2;
+            y = mon.y + mon.height - this._ch - c.margin;
+        } else if (c.pos === 'esquerda') {
+            x = mon.x + c.margin;
+            y = wa.y + (wa.height - this._ch) / 2;
+        } else {
+            x = mon.x + mon.width - this._cw - c.margin;
+            y = wa.y + (wa.height - this._ch) / 2;
+        }
         this._container.set_size(this._cw, this._ch);
-        this._container.set_position(
-            Math.round(mon.x + (mon.width - this._cw) / 2),
-            Math.round(mon.y + mon.height - this._ch - CONFIG.bottomMargin));
-        // keep tooltip above everything else
+        this._container.set_position(Math.round(x), Math.round(y));
         Main.layoutManager.uiGroup.set_child_above_sibling(this._tooltip, null);
     }
 
-    // Posiciona cada ícone conforme sua escala; o vidro acompanha a largura total.
+    // Posiciona cada ícone conforme sua escala; o vidro acompanha o tamanho total.
     _applyScales() {
-        const max = Math.ceil(CONFIG.iconSize * CONFIG.maxScale);
+        const c = this._c;
+        const max = c.maxPx;
         const widths = this._items.map(i => i.sep ? i.base : i.base * i.s);
-        const total = widths.reduce((a, b) => a + b, 0) + CONFIG.gap * Math.max(0, widths.length - 1);
-        let x = (this._cw - total) / 2;
-        const B = this._baseline;
+        const total = widths.reduce((a, b) => a + b, 0) + c.gap * Math.max(0, widths.length - 1);
+        const start = (this._len - total) / 2;
+        const d0 = this._d0;
+        const dotDepth = d0 - 7; // centro do indicador, medido a partir da borda da tela
+        const sepLen = Math.round(c.iconSize * 0.7);
+        let a = start;
 
         this._items.forEach((it, idx) => {
             const w = widths[idx];
+            const mid = a + w / 2;
             if (it.sep) {
-                it.actor.set_position(Math.round(x + w / 2 - 1), Math.round(B - CONFIG.iconSize * 0.85));
+                const [sw, sh] = this._v ? [sepLen, 2] : [2, sepLen];
+                it.actor.set_size(sw, sh);
+                const [sx, sy] = this._point(mid, d0 + c.iconSize * 0.15 + sepLen / 2, sw, sh);
+                it.actor.set_position(sx, sy);
             } else {
                 const f = (it.base * it.s) / max;
                 it.actor.set_scale(f, f);
-                it.actor.set_position(Math.round(x), Math.round(B - max));
-                const running = !!it.app && it.app.get_n_windows() > 0;
-                it.dot.visible = running;
-                it.dot.set_position(Math.round(x + w / 2 - 3), Math.round(B + 4));
+                const [x, y] = this._boxOrigin(a, d0, max);
+                it.actor.set_position(x, y);
+                it.dot.visible = !!it.app && it.app.get_n_windows() > 0;
+                const [dx, dy] = this._point(mid, dotDepth, 6, 6);
+                it.dot.set_position(dx, dy);
             }
-            x += w + CONFIG.gap;
+            a += w + c.gap;
         });
 
-        const bgX = (this._cw - total) / 2 - CONFIG.padH;
-        const bgTop = B - CONFIG.iconSize - CONFIG.padV;
-        this._bg.set_position(Math.round(bgX), Math.round(bgTop));
-        this._bg.set_size(Math.round(total + CONFIG.padH * 2),
-            Math.round(CONFIG.iconSize + CONFIG.padV * 2 + CONFIG.dotArea));
+        const thickBg = d0 + c.iconSize + c.padV;
+        const bgA = Math.round(start - c.padH);
+        const bgLen = Math.round(total + c.padH * 2);
+        if (c.pos === 'baixo') {
+            this._bg.set_position(bgA, this._ch - thickBg);
+            this._bg.set_size(bgLen, thickBg);
+        } else if (c.pos === 'esquerda') {
+            this._bg.set_position(0, bgA);
+            this._bg.set_size(thickBg, bgLen);
+        } else {
+            this._bg.set_position(this._cw - thickBg, bgA);
+            this._bg.set_size(thickBg, bgLen);
+        }
     }
 
+    // Canto superior esquerdo do quadrado (max x max) de um ícone, dado o ponto ao longo da doca `a`
+    // e a distância `d0` da borda da tela até a base do ícone.
+    _boxOrigin(a, d0, max) {
+        if (this._c.pos === 'baixo')
+            return [Math.round(a), Math.round(this._ch - d0 - max)];
+        if (this._c.pos === 'esquerda')
+            return [Math.round(d0), Math.round(a)];
+        return [Math.round(this._cw - d0 - max), Math.round(a)];
+    }
+
+    // Posição do canto superior esquerdo de um actor w x h cujo centro está em (`mid` ao longo da doca,
+    // `depth` a partir da borda da tela).
+    _point(mid, depth, w, h) {
+        if (this._c.pos === 'baixo')
+            return [Math.round(mid - w / 2), Math.round(this._ch - depth - h / 2)];
+        if (this._c.pos === 'esquerda')
+            return [Math.round(depth - w / 2), Math.round(mid - h / 2)];
+        return [Math.round(this._cw - depth - w / 2), Math.round(mid - h / 2)];
+    }
+
+    // Posição do ponteiro ao longo da doca e se ele está na zona da lente.
     _pointerZone() {
+        const c = this._c;
         const [cx, cy] = this._container.get_transformed_position();
         const [px, py] = global.get_pointer();
-        const lensH = CONFIG.iconSize * (CONFIG.maxScale - 1);
-        const top = cy + this._baseline - CONFIG.iconSize - CONFIG.padV - lensH;
-        const inside = px >= cx && px <= cx + this._cw && py >= top && py <= cy + this._ch;
-        return {inside, px: px - cx};
+        const rx = px - cx;
+        const ry = py - cy;
+        const lens = c.iconSize * (c.maxScale - 1);
+        const reach = this._d0 + c.iconSize + c.padV + lens; // até onde a lente alcança, a partir da borda
+        const along = this._v ? ry : rx;
+        const depth = c.pos === 'baixo' ? this._ch - ry : c.pos === 'esquerda' ? rx : this._cw - rx;
+        const inside = along >= 0 && along <= this._len && depth >= 0 && depth <= Math.min(reach, this._thick);
+        return {inside, along};
     }
 
     _startTick() {
         if (this._tickId)
             return;
-        this._tickId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, CONFIG.frameMs, () => {
+        this._tickId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._c.frameMs, () => {
             if (!this._container)
                 return GLib.SOURCE_REMOVE;
-            const {inside, px} = this._pointerZone();
-            const sigma = CONFIG.lensWidth;
-            const max = CONFIG.maxScale;
+            const c = this._c;
+            const {inside, along} = this._pointerZone();
+            const sigma = c.lensWidth;
 
             // centro de cada item sem ampliação, para a lente não "fugir" do ponteiro
             const widths = this._items.map(i => i.base);
-            const total = widths.reduce((a, b) => a + b, 0) + CONFIG.gap * Math.max(0, widths.length - 1);
-            let x = (this._cw - total) / 2;
+            const total = widths.reduce((a, b) => a + b, 0) + c.gap * Math.max(0, widths.length - 1);
+            let a = (this._len - total) / 2;
             let moving = false;
 
             this._items.forEach((it, idx) => {
-                const center = x + widths[idx] / 2;
-                x += widths[idx] + CONFIG.gap;
+                const center = a + widths[idx] / 2;
+                a += widths[idx] + c.gap;
                 if (it.sep)
                     return;
-                const d = px - center;
-                const target = inside ? 1 + (max - 1) * Math.exp(-(d * d) / (2 * sigma * sigma)) : 1;
+                const d = along - center;
+                const target = inside ? 1 + (c.maxScale - 1) * Math.exp(-(d * d) / (2 * sigma * sigma)) : 1;
                 const diff = target - it.s;
                 if (Math.abs(diff) > 0.003) {
-                    it.s += diff * CONFIG.smoothing;
+                    it.s += diff * c.smoothing;
                     moving = true;
                 } else {
                     it.s = target;
@@ -364,8 +446,19 @@ export class Dock {
         if (!this._hoverItem || !this._tooltip?.visible)
             return;
         const [x, y] = this._hoverItem.actor.get_transformed_position();
-        const [w] = this._hoverItem.actor.get_transformed_size();
-        const [tw] = this._tooltip.get_size();
-        this._tooltip.set_position(Math.round(x + w / 2 - tw / 2), Math.round(y - this._tooltip.height - 8));
+        const [w, h] = this._hoverItem.actor.get_transformed_size();
+        const [tw, th] = this._tooltip.get_size();
+        let tx, ty;
+        if (this._c.pos === 'baixo') {
+            tx = x + w / 2 - tw / 2;
+            ty = y - th - 8;
+        } else if (this._c.pos === 'esquerda') {
+            tx = x + w + 8;
+            ty = y + h / 2 - th / 2;
+        } else {
+            tx = x - tw - 8;
+            ty = y + h / 2 - th / 2;
+        }
+        this._tooltip.set_position(Math.round(tx), Math.round(ty));
     }
 }
