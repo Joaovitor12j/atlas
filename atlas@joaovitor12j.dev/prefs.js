@@ -6,6 +6,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
+import {diasAte} from './logica.js';
 
 const POSICOES = [
     ['baixo', 'Embaixo'],
@@ -351,6 +352,10 @@ export default class AtlasPrefs extends ExtensionPreferences {
             ['depois', 'Depois dos apps (no fim)'],
             ['antes', 'Antes dos apps (logo após o seletor)'],
         ]));
+        geral.add(this._texto(settings, 'contagem-nome', 'Contagem regressiva: nome', v => v.length <= 40));
+        geral.add(this._texto(settings, 'contagem-data', 'Contagem regressiva: data (AAAA-MM-DD)',
+            v => v === '' || diasAte({ano: 2000, mes: 1, dia: 1}, v) !== null));
+        geral.add(this._texto(settings, 'nota-texto', 'Nota', v => v.length <= 200));
         geral.add(this._switch(settings, 'relogio-24h', 'Relógio em 24 horas', 'Desligado mostra 12 horas'));
 
         const ler = () => {
@@ -442,6 +447,21 @@ export default class AtlasPrefs extends ExtensionPreferences {
                 render();
         });
         return page;
+    }
+
+    // Campo de texto ligado a uma chave string; só grava se `valido(texto)`, senão marca erro.
+    _texto(settings, key, title, valido) {
+        const row = new Adw.EntryRow({title, text: settings.get_string(key), show_apply_button: true});
+        row.connect('apply', () => {
+            const texto = row.text.trim();
+            if (!valido(texto)) {
+                row.add_css_class('error');
+                return;
+            }
+            row.remove_css_class('error');
+            settings.set_string(key, texto);
+        });
+        return row;
     }
 
     // Campo de atalho de teclado; só grava se o texto for um atalho válido.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
-    decidirDnd, normalizarAmbientes, pct, percentualCpu, proximaFase,
+    decidirDnd, diasAte, normalizarAmbientes, pct, percentualCpu, proximaFase,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 test('duracao: minutos e horas', () => {
@@ -135,4 +135,25 @@ test('decidirDnd: desligar sem ter ligado por aqui não faz nada; ambiente de or
     assert.equal(decidirDnd([{id: 'a'}], 'a', false, null).ir, null);
     const r = decidirDnd([{id: 'b'}], 'b', false, {de: 'sumiu', para: 'b'});
     assert.equal(r.ir, null);
+});
+
+test('diasAte: futuro, hoje e passado', () => {
+    const hoje = {ano: 2026, mes: 10, dia: 19};
+    assert.equal(diasAte(hoje, '2026-10-19'), 0);
+    assert.equal(diasAte(hoje, '2026-10-20'), 1);
+    assert.equal(diasAte(hoje, '2026-10-18'), -1);
+    assert.equal(diasAte(hoje, '2026-12-25'), 67);
+    assert.equal(diasAte(hoje, '2027-10-19'), 365);
+});
+
+test('diasAte: vira de ano e conta o 29/02 de ano bissexto', () => {
+    assert.equal(diasAte({ano: 2026, mes: 12, dia: 31}, '2027-01-01'), 1);
+    assert.equal(diasAte({ano: 2028, mes: 2, dia: 28}, '2028-03-01'), 2);
+    assert.equal(diasAte({ano: 2027, mes: 2, dia: 28}, '2027-03-01'), 1);
+});
+
+test('diasAte: datas inválidas viram null', () => {
+    const hoje = {ano: 2026, mes: 10, dia: 19};
+    for (const ruim of ['', undefined, 'amanhã', '2026-13-01', '2026-02-30', '2026-2-3', '19/10/2026'])
+        assert.equal(diasAte(hoje, ruim), null, `esperava null para ${ruim}`);
 });
