@@ -2,8 +2,6 @@
 
 **A**mbientes, **T**arefas, **L**ançadores, **A**plicativos e **S**istema. Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11), inspirado no [Doca](https://doca.racoelho.com.br/) do Windows.
 
-> O UUID da extensão continua `doca@ixcsoft.dev` (nome da pasta `doca@ixcsoft.dev/`). Trocar para `atlas@ixcsoft.dev` exige novo login, então fica para o próximo.
-
 ## Recursos
 - Favoritos do GNOME + apps abertos (separados por uma linha) e botão de grade de apps
 - Lente de ampliação suave, indicador de app aberto, tooltip com o nome
@@ -23,19 +21,19 @@
 ./tema.sh noite|papel|cristal   # troca de tema pelo terminal
 ```
 As opções são GSettings (`org.gnome.shell.extensions.atlas`); o dock reage ao vivo.
-Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs doca@ixcsoft.dev` também abrem a janela.
+Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs atlas@ixcsoft.dev` também abrem a janela.
 
 ## Instalar
 ```bash
 ./install.sh                         # symlink em ~/.local/share/gnome-shell/extensions
-gnome-extensions enable doca@ixcsoft.dev   # após relogin (Wayland)
+gnome-extensions enable atlas@ixcsoft.dev   # após relogin (Wayland)
 gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   # evita dois docks
 ```
 
 ## Desenvolvimento sem relogin
 `extension.js` copia `dock.js` para um nome único a cada enable (o GJS ignora `?query` no import). Edite `dock.js`, `temas.css` ou `prefs.js` e rode:
 ```bash
-gnome-extensions disable doca@ixcsoft.dev && gnome-extensions enable doca@ixcsoft.dev
+gnome-extensions disable atlas@ixcsoft.dev && gnome-extensions enable atlas@ixcsoft.dev
 ```
 Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 

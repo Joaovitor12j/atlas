@@ -7,7 +7,7 @@ import GLib from 'gi://GLib';
 Gio.Resource.load('/usr/share/gnome-shell/org.gnome.Shell.Extensions.src.gresource')._register();
 
 const raiz = GLib.path_get_dirname(import.meta.url.replace('file://', ''));
-const path = `${raiz}/doca@ixcsoft.dev`;
+const path = `${raiz}/atlas@ixcsoft.dev`;
 const metadata = JSON.parse(new TextDecoder().decode(GLib.file_get_contents(`${path}/metadata.json`)[1]));
 metadata.path = path;
 metadata.dir = Gio.File.new_for_path(path);
