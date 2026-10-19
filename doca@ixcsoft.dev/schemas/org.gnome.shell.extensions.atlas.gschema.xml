@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.atlas" path="/org/gnome/shell/extensions/atlas/">
+    <key name="tema" type="s">
+      <choices>
+        <choice value="noite"/>
+        <choice value="papel"/>
+        <choice value="cristal"/>
+      </choices>
+      <default>"noite"</default>
+      <summary>Tema visual</summary>
+      <description>Aparência da doca: noite, papel ou cristal.</description>
+    </key>
+  </schema>
+</schemalist>

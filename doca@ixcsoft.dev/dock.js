@@ -30,6 +30,7 @@ export class Dock {
         this._tickId = 0;
         this._rebuildId = 0;
 
+        this._settings = this._loadSettings();
         this._tooltip = new St.Label({style_class: 'doca-tooltip', visible: false});
         Main.layoutManager.addTopChrome(this._tooltip);
 
@@ -58,6 +59,10 @@ export class Dock {
         this._connect(Main.overview, 'hiding', () => this._container.show());
         this._connect(global.display, 'window-created', () => this._queueRebuild());
 
+        if (this._settings)
+            this._connect(this._settings, 'changed::tema', () => this._applyTheme());
+        this._applyTheme();
+
         this._rebuild();
         console.log(`[doca] ativo: ${this._items.length} itens, container ${this._cw}x${this._ch}`);
     }
@@ -74,10 +79,41 @@ export class Dock {
         for (const [obj, id] of this._signals)
             obj.disconnect(id);
         this._signals = [];
+        this._bg?.remove_effect_by_name('atlas-blur');
+        this._settings = null;
         this._container?.destroy();
         this._tooltip?.destroy();
         this._container = this._bg = this._tooltip = null;
         this._items = [];
+    }
+
+    // Lê o schema da pasta da própria extensão (sem precisar instalá-lo no sistema).
+    _loadSettings() {
+        try {
+            const dir = Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+            const src = Gio.SettingsSchemaSource.new_from_directory(
+                dir.get_child('schemas').get_path(), Gio.SettingsSchemaSource.get_default(), false);
+            return new Gio.Settings({settings_schema: src.lookup('org.gnome.shell.extensions.atlas', true)});
+        } catch (e) {
+            console.error(`[atlas] sem GSettings, usando tema padrão: ${e}`);
+            return null;
+        }
+    }
+
+    _applyTheme() {
+        const tema = this._settings?.get_string('tema') ?? 'noite';
+        this._container.style_class = `atlas-${tema}`;
+        this._tooltip.style_class = `doca-tooltip atlas-${tema}`;
+        this._bg.remove_effect_by_name('atlas-blur');
+        if (tema === 'cristal') {
+            try {
+                this._bg.add_effect_with_name('atlas-blur', new Shell.BlurEffect({
+                    mode: Shell.BlurMode.BACKGROUND, radius: 40, brightness: 0.95,
+                }));
+            } catch (e) {
+                console.error(`[atlas] blur indisponível: ${e}`);
+            }
+        }
     }
 
     _connect(obj, name, cb) {
