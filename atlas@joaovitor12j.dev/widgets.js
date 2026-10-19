@@ -611,7 +611,7 @@ const ICONE_MUSICA = 'audio-x-generic-symbolic';
 
 class Musica extends Widget {
     static FONTES = [0.13, 0.17, 0.14];
-    static LARGURA = 2.2;
+    static LARGURA = 5.2; // pílula: capa, título, barra e controles
 
     constructor(tam, largo) {
         super(tam, largo);
@@ -624,27 +624,77 @@ class Musica extends Widget {
     }
 
     construir() {
-        this._criarTexto();
-        const lado = this._largo ? this._tam - 14 : this._tam - 10;
-        this._arte = new St.Icon({
-            icon_name: ICONE_MUSICA, icon_size: lado, style: 'border-radius: 10px;',
-            x_align: this._largo ? AL.START : AL.CENTER, y_align: AL.CENTER,
-        });
-        if (this._largo)
-            this._arte.style += ' margin-left: 7px;';
-        this.actor.insert_child_below(this._arte, this._texto);
         if (this._largo) {
-            this._camada((cr, w, h) => barra(cr, this._tam + 4, h - 15, w - this._tam - 18, 4, this._frac(), cor(COR.ok)));
-            this._texto.set_width(this._larg - this._tam);
-            this._texto.x_align = AL.END;
-            for (const l of [this._topo, this._meio, this._base])
-                l.style += ' text-align: left; padding-right: 8px;';
-            this._base.y_expand = false;
-        } else {
-            this._texto.y_align = AL.START;
-            this._meio.hide();
-            this._base.hide();
+            this._construirLargo();
+            return;
         }
+        // quadrado: só a capa, com o estado no canto de cima
+        this._criarTexto();
+        this._arte = new St.Icon({
+            icon_name: ICONE_MUSICA, icon_size: this._tam - 10, style: 'border-radius: 10px;',
+            x_align: AL.CENTER, y_align: AL.CENTER,
+        });
+        this.actor.insert_child_below(this._arte, this._texto);
+        this._texto.y_align = AL.START;
+        this._meio.hide();
+        this._base.hide();
+    }
+
+    // Pílula de vidro: capa à esquerda; título, artista e barra no meio; anterior, play e próxima à direita.
+    _construirLargo() {
+        const t = this._tam;
+        const pad = Math.round(t * 0.12);
+        this.actor.add_style_class_name('atlas-musica-largo');
+        const fila = new St.BoxLayout({
+            x_expand: true, y_expand: true, style: `padding: ${pad}px; spacing: ${Math.round(t * 0.14)}px;`,
+        });
+        this._arte = new St.Icon({
+            icon_name: ICONE_MUSICA, icon_size: t - pad * 2, y_align: AL.CENTER, style: 'border-radius: 14px;',
+        });
+        const texto = (fator, classe, extra = '') => {
+            const l = new St.Label({
+                style_class: classe,
+                style: `font-size: ${Math.round(t * fator)}px; text-align: left; ${extra}`,
+            });
+            l.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            return l;
+        };
+        this._titulo = texto(0.2, 'atlas-widget-txt');
+        this._artista = texto(0.15, 'atlas-widget-sub', 'font-weight: normal;');
+        this._barra = new Camada((cr, w, h, fg) => barra(cr, 0, h / 2 - 1.5, w, 3, this._frac(),
+            [fg[0], fg[1], fg[2], 0.95], [fg[0], fg[1], fg[2], 0.22]));
+        this._barra.actor.set_height(Math.round(t * 0.1));
+        const coluna = new St.BoxLayout({
+            vertical: true, x_expand: true, y_expand: true, y_align: AL.CENTER, style: `spacing: ${Math.round(t * 0.02)}px;`,
+        });
+        for (const a of [this._titulo, this._artista, this._barra.actor])
+            coluna.add_child(a);
+
+        const controles = new St.BoxLayout({y_align: AL.CENTER, style: `spacing: ${Math.round(t * 0.04)}px;`});
+        const botao = (icone, lado, aoClicar, classe = '') => {
+            const b = new St.Button({
+                style_class: `atlas-widget-txt atlas-musica-btn ${classe}`, reactive: true, can_focus: false,
+                style: `width: ${lado + 10}px; height: ${lado + 10}px;`,
+                child: new St.Icon({icon_name: icone, icon_size: lado}),
+            });
+            b.connect('clicked', () => {
+                const p = this._ativo();
+                if (p)
+                    aoClicar(p);
+            });
+            controles.add_child(b);
+            return b;
+        };
+        const lado = Math.round(t * 0.2);
+        botao('media-skip-backward-symbolic', lado, p => this._chamar(p, 'Previous'));
+        this._play = botao('media-playback-start-symbolic', Math.round(t * 0.24), p => this._chamar(p, 'PlayPause'), 'atlas-musica-play');
+        botao('media-skip-forward-symbolic', lado, p => this._chamar(p, 'Next'));
+
+        fila.add_child(this._arte);
+        fila.add_child(coluna);
+        fila.add_child(controles);
+        this.actor.add_child(fila);
+        this._camadas.push(this._barra);
     }
 
     iniciar() {
@@ -785,6 +835,10 @@ class Musica extends Widget {
     }
 
     atualizar() {
+        if (this._largo) {
+            this._atualizarLargo();
+            return;
+        }
         const p = this._ativo();
         if (!p) {
             this._aplicarArte(this._arte, '');
@@ -799,8 +853,21 @@ class Musica extends Widget {
         this._txt(this._topo, tocando ? '▶' : '❚❚');
         this._txt(this._meio, m.titulo);
         this._txt(this._base, m.artista);
-        if (this._largo && tocando)
+        this._redesenhar();
+    }
+
+    _atualizarLargo() {
+        const p = this._ativo();
+        const tocando = !!p && this._estado(p) === 'Playing';
+        const m = p ? this._meta(p) : {titulo: 'Nada tocando', artista: 'Abra um player de música', arte: ''};
+        this._aplicarArte(this._arte, m.arte);
+        this._txt(this._titulo, m.titulo);
+        this._txt(this._artista, m.artista);
+        this._play.child.icon_name = tocando ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
+        if (tocando)
             this._pedirPosicao(p);
+        else if (!p)
+            this._pos = 0;
         this._redesenhar();
     }
 
