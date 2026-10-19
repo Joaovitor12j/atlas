@@ -53,6 +53,11 @@ function trocarAmbiente(st, delta) {
     } catch (_e) { /* OSD é só um aviso */ }
 }
 
+// Apps que pertencem a um ambiente: os fixados e os das coleções.
+function appsDoAmbiente(amb) {
+    return new Set([...amb.apps, ...amb.colecoes.flatMap(c => c.apps)]);
+}
+
 // Conteúdo do menu do ATLAS, usado no ícone do painel e no clique direito na doca.
 function preencherMenu(menu, st, abrirPrefs, ocultarIcone) {
     menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('ATLAS'));
@@ -1174,6 +1179,16 @@ export class Dock {
         }
         if (this._settings)
             this._connect(this._settings, 'changed::monitores', () => this._buildViews());
+        this._minimizadas = new Map(); // janela -> id do sinal 'unmanaged'
+        if (this._settings) {
+            this._connect(this._settings, 'changed::ambiente-atual', () => this._seguirAmbiente());
+            this._connect(this._settings, 'changed::janelas-seguem', () => {
+                if (this._settings.get_boolean('janelas-seguem'))
+                    this._seguirAmbiente();
+                else
+                    this._restaurarJanelas();
+            });
+        }
         this._buildViews();
     }
 
@@ -1184,6 +1199,7 @@ export class Dock {
         for (const chave of this._atalhos ?? [])
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
+        this._restaurarJanelas();
         this._destroyViews();
         this._restoreDash();
         this._destroyIndicator();
@@ -1193,6 +1209,58 @@ export class Dock {
 
     _connect(obj, name, cb) {
         this._signals.push([obj, obj.connect(name, cb)]);
+    }
+
+    // ----- Janelas seguem o ambiente -----
+
+    // Minimiza as janelas de apps que são de outros ambientes e restaura as que esta troca minimizou antes.
+    // Apps que não estão em nenhum ambiente, janelas de diálogo e o que o usuário já minimizou ficam como estão.
+    _seguirAmbiente() {
+        if (!this._settings?.get_boolean('janelas-seguem'))
+            return;
+        const lista = lerAmbientes(this._settings);
+        const atual = ambienteAtual(this._settings, lista);
+        if (!atual)
+            return;
+        const doAtual = appsDoAmbiente(atual);
+        const deAlgum = new Set(lista.flatMap(a => [...appsDoAmbiente(a)]));
+        const rastreador = Shell.WindowTracker.get_default();
+        let minimizou = 0;
+        let devolveu = 0;
+
+        for (const win of global.get_window_actors().map(a => a.meta_window)) {
+            if (win.get_window_type() !== Meta.WindowType.NORMAL || win.is_skip_taskbar() || win.get_transient_for())
+                continue;
+            const id = rastreador.get_window_app(win)?.get_id();
+            if (!id)
+                continue;
+            if (doAtual.has(id)) {
+                if (this._minimizadas.has(win)) {
+                    this._devolver(win);
+                    devolveu++;
+                }
+            } else if (deAlgum.has(id) && !win.minimized) {
+                this._minimizadas.set(win, win.connect('unmanaged', () => this._minimizadas.delete(win)));
+                win.minimize();
+                minimizou++;
+            }
+        }
+        console.log(`[atlas] ambiente ${atual.nome}: ${minimizou} janela(s) minimizada(s), ${devolveu} devolvida(s)`);
+    }
+
+    _devolver(win) {
+        const sinal = this._minimizadas.get(win);
+        this._minimizadas.delete(win);
+        try {
+            win.disconnect(sinal);
+            win.unminimize();
+        } catch (_e) { /* janela já fechada */ }
+    }
+
+    // Traz de volta tudo o que esta função minimizou (ao desligar a opção ou a extensão).
+    _restaurarJanelas() {
+        for (const win of [...(this._minimizadas?.keys() ?? [])])
+            this._devolver(win);
     }
 
     _buildViews() {

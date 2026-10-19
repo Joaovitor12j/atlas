@@ -99,6 +99,11 @@
       <default>true</default>
       <summary>Mostrar o seletor de ambiente na doca</summary>
     </key>
+    <key name="janelas-seguem" type="b">
+      <default>false</default>
+      <summary>Janelas seguem o ambiente</summary>
+      <description>Ao trocar de ambiente, minimiza as janelas dos apps de outros ambientes e restaura as que foram minimizadas por essa troca.</description>
+    </key>
     <key name="atalhos-ativos" type="b">
       <default>true</default>
       <summary>Trocar ambiente com atalhos de teclado</summary>
