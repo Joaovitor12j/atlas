@@ -58,6 +58,9 @@ O CI (GitHub Actions) roda a checagem de sintaxe, o schema em modo estrito e os 
 
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
+## Desempenho
+O ATLAS é leve: cerca de **0,14% de um núcleo** em uso normal (**~0,03%** com a doca escondida, **zero** sem widgets) e na faixa de **2 a 5 MB** de memória, dentro do `gnome-shell`. Os números, o método e o que ficou sem medir estão em [docs/DESEMPENHO.md](docs/DESEMPENHO.md).
+
 ## Versões
 O histórico de mudanças está no [CHANGELOG](CHANGELOG.md).
 
