@@ -41,11 +41,11 @@ gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   
 ```
 
 ## Desenvolvimento sem relogin
-`extension.js` copia `dock.js` para um nome único a cada enable (o GJS ignora `?query` no import). Edite `dock.js`, `temas.css` ou `prefs.js` e rode:
+`extension.js` copia `dock.js`, `widgets.js` e `catalogo.js` para uma pasta temporária a cada enable (o GJS ignora `?query` no import e guarda os módulos em cache). Edite esses arquivos, `temas.css` ou `prefs.js` e rode:
 ```bash
 gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas@joaovitor12j.dev
 ```
-Mudanças em `extension.js`, `metadata.json`, `widgets.js` e `catalogo.js` só valem após novo login (o GJS guarda esses módulos em cache).
+Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 

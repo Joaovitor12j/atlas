@@ -104,3 +104,98 @@
 }
 .atlas-cristal .atlas-preview-title, .atlas-cristal .atlas-preview-close { color: #ffffff; }
 .atlas-cristal .atlas-preview-thumb { background-color: rgba(0, 0, 0, 0.22); }
+
+/* Widgets e coleções */
+.atlas-widget {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 2px;
+}
+.atlas-widget-txt { color: #f2f2f7; font-weight: bold; }
+.atlas-widget-sub { color: rgba(242, 242, 247, 0.7); font-weight: bold; }
+.atlas-collection {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    padding: 4px;
+}
+.atlas-papel .atlas-widget { background-color: rgba(60, 50, 30, 0.08); border-color: rgba(60, 50, 30, 0.22); }
+.atlas-papel .atlas-widget-txt { color: #2f2f2a; }
+.atlas-papel .atlas-widget-sub { color: rgba(47, 47, 42, 0.7); }
+.atlas-papel .atlas-collection { background-color: rgba(60, 50, 30, 0.10); }
+
+/* Tema Neon: preto com contorno ciano e magenta */
+.atlas-neon .atlas-bg {
+    background-color: rgba(8, 6, 18, 0.94);
+    border: 2px solid #19e6ff;
+    box-shadow: 0 0 14px rgba(25, 230, 255, 0.55), 0 0 28px rgba(255, 43, 214, 0.35);
+}
+.atlas-neon .atlas-dot { background-color: #ff2bd6; }
+.atlas-neon .atlas-sep { background-color: rgba(25, 230, 255, 0.55); }
+.atlas-neon .atlas-widget { border-color: rgba(255, 43, 214, 0.55); }
+.atlas-neon .atlas-widget-txt { color: #19e6ff; }
+.atlas-tooltip.atlas-neon {
+    background-color: rgba(8, 6, 18, 0.96);
+    color: #19e6ff;
+    border: 1px solid #ff2bd6;
+}
+.atlas-preview.atlas-neon {
+    background-color: rgba(8, 6, 18, 0.96);
+    border: 2px solid #19e6ff;
+    box-shadow: 0 0 14px rgba(25, 230, 255, 0.45);
+}
+.atlas-neon .atlas-preview-title, .atlas-neon .atlas-preview-close { color: #19e6ff; }
+
+/* Tema Halloween: roxo escuro e laranja */
+.atlas-halloween .atlas-bg {
+    background-color: rgba(36, 18, 52, 0.94);
+    border: 1px solid #ff7a1a;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 12px rgba(255, 122, 26, 0.35);
+}
+.atlas-halloween .atlas-dot { background-color: #ff7a1a; }
+.atlas-halloween .atlas-sep { background-color: rgba(255, 122, 26, 0.5); }
+.atlas-halloween .atlas-widget { border-color: rgba(255, 122, 26, 0.5); }
+.atlas-halloween .atlas-widget-txt { color: #ffb36b; }
+.atlas-tooltip.atlas-halloween {
+    background-color: rgba(36, 18, 52, 0.96);
+    color: #ffb36b;
+    border: 1px solid #ff7a1a;
+}
+.atlas-preview.atlas-halloween {
+    background-color: rgba(36, 18, 52, 0.96);
+    border: 1px solid #ff7a1a;
+}
+.atlas-halloween .atlas-preview-title, .atlas-halloween .atlas-preview-close { color: #ffb36b; }
+
+/* Tema Natal: vinho e verde-pinheiro */
+.atlas-natal .atlas-bg {
+    background-color: rgba(70, 16, 28, 0.94);
+    border: 2px solid #2f8f4e;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.atlas-natal .atlas-dot { background-color: #f4d35e; }
+.atlas-natal .atlas-sep { background-color: rgba(47, 143, 78, 0.8); }
+.atlas-natal .atlas-widget { border-color: rgba(47, 143, 78, 0.7); }
+.atlas-natal .atlas-widget-txt { color: #fbeed0; }
+.atlas-tooltip.atlas-natal {
+    background-color: rgba(70, 16, 28, 0.96);
+    color: #fbeed0;
+    border: 1px solid #2f8f4e;
+}
+.atlas-preview.atlas-natal {
+    background-color: rgba(70, 16, 28, 0.96);
+    border: 2px solid #2f8f4e;
+}
+.atlas-natal .atlas-preview-title, .atlas-natal .atlas-preview-close { color: #fbeed0; }
+
+/* Botão "Mostrar aplicativos": tile com ícone na cor do tema */
+.atlas-apps { background-color: rgba(255, 255, 255, 0.12); border-radius: 14px; }
+.atlas-apps-icon { color: #f2f2f7; }
+.atlas-papel .atlas-apps { background-color: rgba(60, 50, 30, 0.14); }
+.atlas-papel .atlas-apps-icon { color: #2f2f2a; }
+.atlas-neon .atlas-apps { background-color: rgba(25, 230, 255, 0.12); border: 1px solid rgba(25, 230, 255, 0.55); }
+.atlas-neon .atlas-apps-icon { color: #19e6ff; }
+.atlas-halloween .atlas-apps { background-color: rgba(255, 122, 26, 0.18); }
+.atlas-halloween .atlas-apps-icon { color: #ffb36b; }
+.atlas-natal .atlas-apps { background-color: rgba(47, 143, 78, 0.28); }
+.atlas-natal .atlas-apps-icon { color: #fbeed0; }

@@ -4,12 +4,8 @@ import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {TEMAS, WIDGETS} from './catalogo.js';
 
-const TEMAS = [
-    ['noite', 'Noite', 'Grafite-azulado, âmbar e verde-água'],
-    ['papel', 'Papel', 'Creme com linhas finas'],
-    ['cristal', 'Cristal', 'Vidro translúcido com blur'],
-];
 const POSICOES = [
     ['baixo', 'Embaixo'],
     ['esquerda', 'Esquerda'],
@@ -49,6 +45,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
 
         window.add(this._paginaAmbientes(settings, window));
+        window.add(this._paginaWidgets(settings));
 
         const rodape = new Adw.PreferencesGroup();
         page.add(rodape);
@@ -124,7 +121,44 @@ export default class AtlasPrefs extends ExtensionPreferences {
 
         let linhas = [];
         let aberto = null;
-        const render = () => {
+        let abertoCol = null;
+        let render = () => {};
+
+        // Linhas de apps (subir, descer, remover, adicionar) de uma lista dentro de `exp`.
+        // `lista` só serve para desenhar; as gravações usam `alvo(ambiente)`, que devolve o array vivo.
+        const linhasApps = (exp, ambId, lista, alvo, colId = null) => {
+            lista.forEach((id, i) => {
+                const info = Gio.DesktopAppInfo.new(id);
+                const row = new Adw.ActionRow({title: info?.get_name() ?? id, use_markup: false, subtitle: info ? '' : 'não encontrado'});
+                if (info?.get_icon())
+                    row.add_prefix(new Gtk.Image({gicon: info.get_icon(), pixel_size: 32}));
+                const botao = (icone, dica, fn, ativo = true) => {
+                    const b = new Gtk.Button({icon_name: icone, tooltip_text: dica, valign: Gtk.Align.CENTER, css_classes: ['flat'], sensitive: ativo});
+                    b.connect('clicked', () => { aberto = ambId; abertoCol = colId; fn(); render(); });
+                    row.add_suffix(b);
+                };
+                const mover = d => alterar(ambId, a => {
+                    const arr = alvo(a);
+                    const [x] = arr.splice(i, 1);
+                    arr.splice(i + d, 0, x);
+                });
+                botao('go-up-symbolic', 'Subir', () => mover(-1), i > 0);
+                botao('go-down-symbolic', 'Descer', () => mover(1), i < lista.length - 1);
+                botao('user-trash-symbolic', 'Remover', () => alterar(ambId, a => alvo(a).splice(i, 1)));
+                exp.add_row(row);
+            });
+            const add = new Adw.ActionRow({title: 'Adicionar aplicativo', activatable: true});
+            add.add_prefix(new Gtk.Image({icon_name: 'list-add-symbolic'}));
+            add.connect('activated', () => this._escolherApp(window, id => {
+                aberto = ambId;
+                abertoCol = colId;
+                alterar(ambId, a => { const arr = alvo(a); if (!arr.includes(id)) arr.push(id); });
+                render();
+            }));
+            exp.add_row(add);
+        };
+
+        render = () => {
             for (const r of linhas)
                 grupo.remove(r);
             linhas = [];
@@ -151,34 +185,59 @@ export default class AtlasPrefs extends ExtensionPreferences {
                 });
                 exp.add_row(nome);
 
-                amb.apps.forEach((id, i) => {
-                    const info = Gio.DesktopAppInfo.new(id);
-                    const row = new Adw.ActionRow({title: info?.get_name() ?? id, use_markup: false, subtitle: info ? '' : 'não encontrado'});
-                    if (info?.get_icon())
-                        row.add_prefix(new Gtk.Image({gicon: info.get_icon(), pixel_size: 32}));
-                    const botao = (icone, dica, fn, ativo = true) => {
-                        const b = new Gtk.Button({icon_name: icone, tooltip_text: dica, valign: Gtk.Align.CENTER, css_classes: ['flat'], sensitive: ativo});
-                        b.connect('clicked', () => { aberto = amb.id; fn(); render(); });
-                        row.add_suffix(b);
-                    };
-                    const mover = d => alterar(amb.id, a => {
-                        const [x] = a.apps.splice(i, 1);
-                        a.apps.splice(i + d, 0, x);
-                    });
-                    botao('go-up-symbolic', 'Subir', () => mover(-1), i > 0);
-                    botao('go-down-symbolic', 'Descer', () => mover(1), i < amb.apps.length - 1);
-                    botao('user-trash-symbolic', 'Remover do ambiente', () => alterar(amb.id, a => a.apps.splice(i, 1)));
-                    exp.add_row(row);
+                const tema = new Adw.ComboRow({
+                    title: 'Tema deste ambiente',
+                    model: Gtk.StringList.new(['Padrão (o da aba Geral)', ...TEMAS.map(t => t[1])]),
                 });
-
-                const add = new Adw.ActionRow({title: 'Adicionar aplicativo', activatable: true});
-                add.add_prefix(new Gtk.Image({icon_name: 'list-add-symbolic'}));
-                add.connect('activated', () => this._escolherApp(window, id => {
-                    aberto = amb.id;
-                    alterar(amb.id, a => { if (!a.apps.includes(id)) a.apps.push(id); });
-                    render();
+                tema.selected = Math.max(0, TEMAS.findIndex(t => t[0] === amb.tema) + 1);
+                tema.connect('notify::selected', () => alterar(amb.id, a => {
+                    a.tema = tema.selected > 0 ? TEMAS[tema.selected - 1][0] : '';
                 }));
-                exp.add_row(add);
+                exp.add_row(tema);
+
+                linhasApps(exp, amb.id, amb.apps, a => a.apps);
+
+                const colecoes = new Adw.ExpanderRow({
+                    title: 'Coleções',
+                    subtitle: 'Um ícone na doca que guarda um grupo de apps',
+                    expanded: amb.id === aberto && abertoCol !== null,
+                });
+                for (const col of amb.colecoes ?? []) {
+                    const alvo = a => a.colecoes.find(c => c.id === col.id);
+                    const linhaCol = new Adw.ExpanderRow({title: col.nome, subtitle: `${col.apps.length} apps`, expanded: col.id === abertoCol});
+                    const nomeCol = new Adw.EntryRow({title: 'Nome', text: col.nome});
+                    nomeCol.connect('changed', () => {
+                        alterar(amb.id, a => { alvo(a).nome = nomeCol.text; });
+                        linhaCol.title = nomeCol.text;
+                    });
+                    linhaCol.add_row(nomeCol);
+                    linhasApps(linhaCol, amb.id, col.apps, a => alvo(a).apps, col.id);
+                    const apagarCol = new Adw.ActionRow({title: 'Excluir coleção'});
+                    const bCol = new Gtk.Button({label: 'Excluir', valign: Gtk.Align.CENTER, css_classes: ['destructive-action']});
+                    bCol.connect('clicked', () => {
+                        aberto = amb.id;
+                        alterar(amb.id, a => { a.colecoes = a.colecoes.filter(c => c.id !== col.id); });
+                        abertoCol = null;
+                        render();
+                    });
+                    apagarCol.add_suffix(bCol);
+                    linhaCol.add_row(apagarCol);
+                    colecoes.add_row(linhaCol);
+                }
+                const novaCol = new Adw.ActionRow({title: 'Nova coleção', activatable: true});
+                novaCol.add_prefix(new Gtk.Image({icon_name: 'list-add-symbolic'}));
+                novaCol.connect('activated', () => {
+                    const id = `c${Date.now()}`;
+                    aberto = amb.id;
+                    abertoCol = id;
+                    alterar(amb.id, a => {
+                        a.colecoes = a.colecoes ?? [];
+                        a.colecoes.push({id, nome: `Coleção ${a.colecoes.length + 1}`, apps: []});
+                    });
+                    render();
+                });
+                colecoes.add_row(novaCol);
+                exp.add_row(colecoes);
 
                 const apagar = new Adw.ActionRow({title: 'Excluir ambiente'});
                 const bApagar = new Gtk.Button({label: 'Excluir', valign: Gtk.Align.CENTER, css_classes: ['destructive-action']});
@@ -234,6 +293,86 @@ export default class AtlasPrefs extends ExtensionPreferences {
         render();
         settings.connect('changed::ambientes', () => {
             // mudanças vindas de fora (ex.: fixar app pelo menu da doca): redesenha a lista
+            if (!interno)
+                render();
+        });
+        return page;
+    }
+
+    // ----- Widgets -----
+
+    // Um grupo por ambiente, com um interruptor para cada widget. Fica numa aba própria
+    // porque os widgets são o que mais se liga e desliga.
+    _paginaWidgets(settings) {
+        const page = new Adw.PreferencesPage({title: 'Widgets', icon_name: 'view-pin-symbolic'});
+
+        const geral = new Adw.PreferencesGroup({
+            title: 'Opções gerais',
+            description: 'Valem para todos os ambientes.',
+        });
+        page.add(geral);
+        geral.add(this._spin(settings, 'pomodoro-foco', 'Pomodoro: foco', 'Minutos de foco', 1, 180, 1, 0));
+        geral.add(this._spin(settings, 'pomodoro-pausa', 'Pomodoro: pausa curta', 'Minutos', 1, 60, 1, 0));
+        geral.add(this._spin(settings, 'pomodoro-pausa-longa', 'Pomodoro: pausa longa', 'Minutos, a cada 4 focos', 1, 120, 1, 0));
+        geral.add(this._switch(settings, 'relogio-24h', 'Relógio em 24 horas', 'Desligado mostra 12 horas'));
+
+        const ler = () => {
+            try {
+                const v = JSON.parse(settings.get_string('ambientes'));
+                return Array.isArray(v) ? v : [];
+            } catch (_e) {
+                return [];
+            }
+        };
+        let interno = false; // as próprias gravações não redesenham a lista
+        const alterar = (id, fn) => {
+            const lista = ler();
+            const amb = lista.find(a => a.id === id);
+            if (!amb)
+                return;
+            fn(amb);
+            interno = true;
+            settings.set_string('ambientes', JSON.stringify(lista));
+            interno = false;
+        };
+
+        let grupos = [];
+        const render = () => {
+            for (const g of grupos)
+                page.remove(g);
+            grupos = [];
+            const lista = ler();
+
+            if (!lista.length) {
+                const vazio = new Adw.PreferencesGroup({
+                    title: 'Widgets',
+                    description: 'Widgets ficam dentro de um ambiente. Crie um na aba Ambientes para ligá-los.',
+                });
+                page.add(vazio);
+                grupos.push(vazio);
+                return;
+            }
+
+            for (const amb of lista) {
+                const grupo = new Adw.PreferencesGroup({
+                    title: amb.nome,
+                    description: grupos.length ? '' : 'Tiles vivos no fim da doca; o clique abre um painel. Cada ambiente tem os seus.',
+                });
+                for (const [wid, nome, desc] of WIDGETS) {
+                    const sw = new Adw.SwitchRow({title: nome, subtitle: desc, active: (amb.widgets ?? []).includes(wid)});
+                    sw.connect('notify::active', () => alterar(amb.id, a => {
+                        a.widgets = (a.widgets ?? []).filter(x => x !== wid);
+                        if (sw.active)
+                            a.widgets.push(wid);
+                    }));
+                    grupo.add(sw);
+                }
+                page.add(grupo);
+                grupos.push(grupo);
+            }
+        };
+        render();
+        settings.connect('changed::ambientes', () => {
             if (!interno)
                 render();
         });
