@@ -141,6 +141,10 @@ class DockView {
         });
 
         // Zona fina na borda da tela que traz a doca de volta no modo auto-ocultar.
+        // Faixa transparente que reserva espaço (strut) para as janelas maximizadas não ficarem sob a doca.
+        this._strut = new St.Widget({reactive: false, visible: false});
+        Main.layoutManager.addChrome(this._strut, {affectsStruts: true, trackFullscreen: true});
+
         this._hot = new St.Widget({reactive: true, visible: false});
         Main.layoutManager.addChrome(this._hot, {affectsStruts: false, trackFullscreen: true});
         this._hot.connect('enter-event', () => {
@@ -166,7 +170,12 @@ class DockView {
         this._connect(apps, 'app-state-changed', () => this._queueRebuild());
         this._connect(apps, 'installed-changed', () => this._queueRebuild());
         this._connect(favs, 'changed', () => this._queueRebuild());
-        this._connect(Main.overview, 'showing', () => { this._container.hide(); this._tooltip.hide(); });
+        this._connect(Main.overview, 'showing', () => {
+            if (!this._c.noOverview) {
+                this._container.hide();
+                this._tooltip.hide();
+            }
+        });
         this._connect(Main.overview, 'hiding', () => this._container.show());
         this._connect(global.display, 'window-created', () => this._queueRebuild());
 
@@ -208,10 +217,11 @@ class DockView {
         this._signals = [];
         this._bg?.remove_effect_by_name('atlas-blur');
         this._container?.destroy();
+        this._strut?.destroy();
         this._hot?.destroy();
         this._tooltip?.destroy();
         this._preview?.destroy();
-        this._container = this._bg = this._hot = this._tooltip = this._preview = null;
+        this._container = this._bg = this._hot = this._strut = this._tooltip = this._preview = null;
         this._items = [];
     }
 
@@ -229,6 +239,8 @@ class DockView {
             preview: st?.get_boolean('previa-janelas') ?? true,
         };
         c.maxPx = Math.ceil(c.iconSize * c.maxScale);
+        c.reserve = st?.get_boolean('reservar-espaco') ?? true;
+        c.noOverview = st?.get_boolean('no-overview') ?? true;
         c.trocaRoda = st?.get_boolean('troca-roda') ?? true;
         c.rodaInverter = st?.get_boolean('roda-inverter') ?? false;
         c.seletor = st?.get_boolean('mostrar-seletor') ?? true;
@@ -746,8 +758,28 @@ class DockView {
         this._container.set_size(this._cw, this._ch);
         this._container.set_position(Math.round(x), Math.round(y));
         this._placeHotZone(mon, wa);
+        this._placeStrut(mon);
         this._applyHidden(false);
         Main.layoutManager.uiGroup.set_child_above_sibling(this._tooltip, null);
+    }
+
+    // Reserva da borda até a face externa do vidro. O Mutter converte isso em uma faixa que vai de ponta
+    // a ponta da tela, então só importa de qual lado o actor encosta.
+    _placeStrut(mon) {
+        const c = this._c;
+        this._strut.visible = c.reserve && !c.autoHide;
+        const t = Math.ceil(this._d0 + c.iconSize + c.padV + c.margin);
+        const [cx, cy] = [this._container.x, this._container.y];
+        if (c.pos === 'baixo') {
+            this._strut.set_size(mon.width - 2, t);
+            this._strut.set_position(mon.x + 1, mon.y + mon.height - t);
+        } else if (c.pos === 'esquerda') {
+            this._strut.set_size(t, this._len);
+            this._strut.set_position(mon.x, cy);
+        } else {
+            this._strut.set_size(t, this._len);
+            this._strut.set_position(mon.x + mon.width - t, cy);
+        }
     }
 
     // Faixa de 2px na borda da tela, do tamanho da doca, que a faz reaparecer.
@@ -991,6 +1023,12 @@ export class Dock {
 
         this._connect(Main.layoutManager, 'monitors-changed', () => this._buildViews());
         if (this._settings)
+            this._connect(this._settings, 'changed::no-overview', () => {
+                this._syncDash();
+                this._buildViews();
+            });
+        this._syncDash();
+        if (this._settings)
             this._connect(this._settings, 'changed::mostrar-icone-painel', () => this._syncIndicator());
         this._syncIndicator();
         this._atalhos = [];
@@ -1017,6 +1055,7 @@ export class Dock {
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
         this._destroyViews();
+        this._restoreDash();
         this._destroyIndicator();
         this._unloadThemeCss();
         this._settings = null;
@@ -1050,6 +1089,33 @@ export class Dock {
                 return [alvo.i];
         }
         return [Main.layoutManager.primaryIndex];
+    }
+
+    // O dock original do GNOME (no Overview) fica escondido enquanto o ATLAS ocupa o lugar dele.
+    _syncDash() {
+        const quer = this._settings?.get_boolean('no-overview') ?? true;
+        if (quer)
+            this._hideDash();
+        else
+            this._restoreDash();
+    }
+
+    _hideDash() {
+        const dash = Main.overview.dash;
+        if (!dash || this._dashHidden)
+            return;
+        this._dashHidden = true;
+        dash.hide();
+        dash.set_height(0);
+    }
+
+    _restoreDash() {
+        const dash = Main.overview.dash;
+        if (!dash || !this._dashHidden)
+            return;
+        this._dashHidden = false;
+        dash.set_height(-1);
+        dash.show();
     }
 
     // Ícone no painel superior (some pela opção "Mostrar o ícone do ATLAS no painel").

@@ -45,6 +45,11 @@
       <summary>Margem da borda</summary>
       <description>Distância entre a doca e a borda da tela, em pixels.</description>
     </key>
+    <key name="reservar-espaco" type="b">
+      <default>true</default>
+      <summary>Reservar espaço para a doca</summary>
+      <description>Janelas maximizadas terminam acima da doca em vez de ficarem por baixo dela. Não vale com o auto-ocultar ligado.</description>
+    </key>
     <key name="auto-ocultar" type="b">
       <default>false</default>
       <summary>Auto-ocultar</summary>
@@ -69,6 +74,11 @@
       <default>""</default>
       <summary>Ambiente atual</summary>
       <description>Id do ambiente em uso.</description>
+    </key>
+    <key name="no-overview" type="b">
+      <default>true</default>
+      <summary>ATLAS na tela de aplicativos</summary>
+      <description>Mantém a doca ATLAS visível no Overview e esconde o dock original do GNOME ali.</description>
     </key>
     <key name="mostrar-icone-painel" type="b">
       <default>true</default>

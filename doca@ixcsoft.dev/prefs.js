@@ -41,8 +41,10 @@ export default class AtlasPrefs extends ExtensionPreferences {
         page.add(posicao);
         posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
         posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
+        aparencia.add(this._switch(settings, 'no-overview', 'ATLAS na tela de aplicativos', 'Mantém a doca visível ao abrir todos os aplicativos e esconde o dock original do GNOME'));
         aparencia.add(this._switch(settings, 'mostrar-icone-painel', 'Ícone no painel superior', 'Menu do ATLAS na barra de cima; também dá para ocultar pelo próprio menu'));
         aparencia.add(this._switch(settings, 'previa-janelas', 'Prévia de janelas', 'Miniaturas das janelas ao parar o mouse num app aberto'));
+        posicao.add(this._switch(settings, 'reservar-espaco', 'Reservar espaço', 'Janelas maximizadas terminam acima da doca (não vale com auto-ocultar)'));
         posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
         posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
 
