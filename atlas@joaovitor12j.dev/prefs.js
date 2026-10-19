@@ -102,6 +102,12 @@ export default class AtlasPrefs extends ExtensionPreferences {
         atalhos.add(this._atalho(settings, 'atalho-proximo', 'Atalho: próximo ambiente'));
         atalhos.add(this._atalho(settings, 'atalho-anterior', 'Atalho: ambiente anterior'));
 
+        const dnd = new Adw.PreferencesGroup({
+            title: 'Não perturbe',
+            description: 'Para um ambiente entrar sozinho quando você liga o Não perturbe do GNOME, expanda o ambiente na lista abaixo e ligue "Entra com Não perturbe". Ao desligar, o ATLAS volta ao ambiente anterior.',
+        });
+        page.add(dnd);
+
         const grupo = new Adw.PreferencesGroup({
             title: 'Ambientes',
             description: 'Cada ambiente é um conjunto de apps com uma cor. Sem ambientes, a doca usa os favoritos do GNOME.',

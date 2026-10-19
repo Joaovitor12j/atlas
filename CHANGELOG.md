@@ -5,6 +5,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Adicionado
+- Widget **Área de transferência**: histórico do que você copiou (só texto, até 20 itens) e textos fixados, com um clique para copiar de volta. O histórico fica só na memória e some ao desligar a extensão; só os fixados ficam salvos. Conteúdo marcado por gerenciadores de senha não entra, e o monitor para sozinho quando nenhum widget o usa.
+- Dica do **Não perturbe** na aba Ambientes e um aviso único, na primeira vez que o Não perturbe liga sem nenhum ambiente marcado, explicando onde marcar.
+
 ## [0.2.0] - 2026-10-19
 
 ### Adicionado

@@ -23,5 +23,6 @@ export const WIDGETS = [
     ['atividade', 'Atividade', 'Processador e memória em uso'],
     ['rede', 'Rede', 'Velocidade de download e upload'],
     ['contagem', 'Contagem regressiva', 'Quantos dias faltam para uma data; nome e data nas opções gerais'],
+    ['clipboard', 'Área de transferência', 'Histórico do que você copiou (só texto, só na memória); os fixados ficam salvos'],
     ['nota', 'Nota', 'Um recado fixo na doca; edite pelo clique ou nas opções gerais'],
 ];

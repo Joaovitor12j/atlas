@@ -157,6 +157,15 @@
       <default>""</default>
       <summary>Texto da nota fixa na doca</summary>
     </key>
+    <key name="clipboard-fixados" type="as">
+      <default>[]</default>
+      <summary>Área de transferência: textos fixados</summary>
+      <description>Só os fixados ficam salvos; o histórico do que foi copiado fica apenas na memória.</description>
+    </key>
+    <key name="dica-dnd-vista" type="b">
+      <default>false</default>
+      <summary>Dica do Não perturbe já mostrada</summary>
+    </key>
     <key name="relogio-24h" type="b">
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>

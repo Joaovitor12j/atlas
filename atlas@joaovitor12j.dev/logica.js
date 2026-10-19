@@ -112,3 +112,22 @@ export function diasAte(hoje, alvo) {
         return null;
     return Math.round((dt.getTime() - Date.UTC(hoje.ano, hoje.mes - 1, hoje.dia)) / 86400000);
 }
+
+// Quando avisar (uma vez) que o Não perturbe não faz nada por falta de um ambiente marcado.
+export function deveAvisarDnd(lista, dnd, jaAvisou) {
+    return dnd && !jaAvisou && lista.length > 0 && !lista.some(a => a.naoperturbe);
+}
+
+// Histórico da área de transferência: o texto mais recente primeiro, sem repetir, no máximo `max` itens.
+// Texto vazio ou maior que `maxChars` não entra (cortar mudaria o que o usuário copiou).
+export function registrarCopia(historico, texto, {max = 20, maxChars = 5000} = {}) {
+    if (typeof texto !== 'string' || !texto.trim() || texto.length > maxChars)
+        return historico;
+    return [texto, ...historico.filter(t => t !== texto)].slice(0, max);
+}
+
+// Primeira linha, sem espaços repetidos, cortada em `max` caracteres com reticências.
+export function resumirTexto(texto, max = 50) {
+    const linha = (texto ?? '').trim().split(/\r?\n/)[0].replace(/\s+/g, ' ').trim();
+    return linha.length > max ? `${linha.slice(0, max - 1)}…` : linha;
+}
