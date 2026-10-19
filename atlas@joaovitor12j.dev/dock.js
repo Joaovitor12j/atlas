@@ -565,13 +565,15 @@ class DockView {
             return;
         if (modo === 'surgir') {
             this._container.opacity = 0;
-            this._container.ease({opacity: 255, duration: 400, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+            this._container.ease({
+                opacity: 255, duration: 1100, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
         } else {
             const [tx, ty] = this._hideShift();
             this._container.translation_x = tx;
             this._container.translation_y = ty;
             this._container.ease({
-                translation_x: 0, translation_y: 0, duration: 420, mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                translation_x: 0, translation_y: 0, duration: 1000, mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             });
         }
     }
