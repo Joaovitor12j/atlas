@@ -58,5 +58,8 @@ O CI (GitHub Actions) roda a checagem de sintaxe, o schema em modo estrito e os 
 
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
+## Versões
+O histórico de mudanças está no [CHANGELOG](CHANGELOG.md).
+
 ## Próximos passos
 Prateleira de arquivos, clima e calendário.
