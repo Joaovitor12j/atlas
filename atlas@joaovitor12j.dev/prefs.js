@@ -24,6 +24,15 @@ export default class AtlasPrefs extends ExtensionPreferences {
         const aparencia = new Adw.PreferencesGroup({title: 'Aparência'});
         page.add(aparencia);
         aparencia.add(this._combo(settings, 'tema', 'Tema', TEMAS.map(([v, n, d]) => [v, `${n}: ${d}`])));
+        aparencia.add(this._combo(settings, 'efeito-hover', 'Efeito ao passar o mouse', [
+            ['nenhum', 'Só a lente'], ['brilho', 'Brilho no fundo do ícone'], ['elevar', 'Ícone sobe'],
+        ]));
+        aparencia.add(this._combo(settings, 'estilo-indicador', 'Indicador de app aberto', [
+            ['ponto', 'Ponto'], ['barra', 'Barra'], ['nenhum', 'Nenhum'],
+        ]));
+        aparencia.add(this._combo(settings, 'animacao-abertura', 'Animação de abertura', [
+            ['nenhuma', 'Nenhuma'], ['deslizar', 'Deslizar da borda'], ['surgir', 'Surgir (fade)'],
+        ]));
         aparencia.add(this._spin(settings, 'tamanho-icone', 'Tamanho dos ícones', 'Em pixels', 32, 96, 2, 0));
 
         const lente = new Adw.PreferencesGroup({
@@ -88,6 +97,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         atalhos.add(this._switch(settings, 'troca-roda', 'Roda do mouse', 'Troca de ambiente ao rolar sobre a doca'));
         atalhos.add(this._switch(settings, 'roda-inverter', 'Inverter a roda', 'Troca a direção ao rolar'));
         atalhos.add(this._switch(settings, 'atalhos-ativos', 'Atalhos de teclado', 'Liga ou desliga os dois atalhos abaixo'));
+        atalhos.add(this._switch(settings, 'atalho-numero-ativo', 'Ctrl+Alt+1 a 9', 'Vai direto ao ambiente da posição N da lista'));
         atalhos.add(this._atalho(settings, 'atalho-proximo', 'Atalho: próximo ambiente'));
         atalhos.add(this._atalho(settings, 'atalho-anterior', 'Atalho: ambiente anterior'));
 

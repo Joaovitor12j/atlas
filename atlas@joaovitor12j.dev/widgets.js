@@ -9,6 +9,9 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {
+    calcularProgresso, duracao, formatarCrono, formatarTaxa, pct, percentualCpu, proximaFase,
+} from './logica.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
 let CFG = null;
@@ -17,12 +20,6 @@ function linha(menu, texto) {
     const mi = new PopupMenu.PopupMenuItem(texto, {reactive: false, can_focus: false});
     menu.addMenuItem(mi);
     return mi;
-}
-
-function duracao(segundos) {
-    const h = Math.floor(segundos / 3600);
-    const m = Math.floor((segundos % 3600) / 60);
-    return h > 0 ? `${h}h ${String(m).padStart(2, '0')}` : `${m} min`;
 }
 
 class Widget {
@@ -145,12 +142,9 @@ function pomoTrocarFase(fase) {
 
 // Foco concluído conta um ciclo; a cada 4 vem a pausa longa.
 function pomoAvancar() {
-    if (POMO.fase === 'foco') {
-        POMO.ciclos++;
-        pomoTrocarFase(POMO.ciclos % 4 === 0 ? 'longa' : 'pausa');
-    } else {
-        pomoTrocarFase('foco');
-    }
+    const prox = proximaFase(POMO.fase, POMO.ciclos);
+    POMO.ciclos = prox.ciclos;
+    pomoTrocarFase(prox.fase);
 }
 
 // Idempotente: vários widgets (um por tela) chamam isto, só o primeiro encontra o fim vencido.
@@ -435,18 +429,15 @@ class Musica extends Widget {
 
 
 // ----- Progresso do tempo -----
-const bissexto = a => (a % 4 === 0 && a % 100 !== 0) || a % 400 === 0;
-
 function progresso() {
     const d = GLib.DateTime.new_now_local();
-    const dia = (d.get_hour() * 3600 + d.get_minute() * 60 + d.get_second()) / 86400;
-    const semana = (d.get_day_of_week() - 1 + dia) / 7; // semana começa na segunda
-    const mes = (d.get_day_of_month() - 1 + dia) / GLib.Date.get_days_in_month(d.get_month(), d.get_year());
-    const ano = (d.get_day_of_year() - 1 + dia) / (bissexto(d.get_year()) ? 366 : 365);
-    return {dia, semana, mes, ano};
+    return calcularProgresso({
+        hora: d.get_hour(), minuto: d.get_minute(), segundo: d.get_second(),
+        diaSemana: d.get_day_of_week(), diaMes: d.get_day_of_month(),
+        diasNoMes: GLib.Date.get_days_in_month(d.get_month(), d.get_year()),
+        diaAno: d.get_day_of_year(), ano: d.get_year(),
+    });
 }
-
-const pct = f => `${Math.floor(f * 100)}%`;
 
 class Progresso extends Widget {
     get intervalo() {
@@ -477,14 +468,6 @@ class Progresso extends Widget {
 const CRONO = {inicio: 0, acumulado: 0, voltas: []};
 
 const cronoMs = () => CRONO.acumulado + (CRONO.inicio ? agoraMs() - CRONO.inicio : 0);
-
-function formatarCrono(ms) {
-    const t = Math.floor(ms / 1000);
-    const h = Math.floor(t / 3600);
-    const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0');
-    const s = String(t % 60).padStart(2, '0');
-    return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
-}
 
 class Cronometro extends Widget {
     get intervalo() {
@@ -632,10 +615,7 @@ class Atividade extends Widget {
 
     atualizar() {
         const agora = this._lerCpu();
-        if (agora && this._ant && agora.total > this._ant.total) {
-            const dt = agora.total - this._ant.total;
-            this._cpu = Math.round((1 - (agora.ocioso - this._ant.ocioso) / dt) * 100);
-        }
+        this._cpu = percentualCpu(this._ant, agora) ?? this._cpu;
         this._ant = agora ?? this._ant;
         this._mem = this._lerMem();
         this._txt(this._topo, 'CPU');
@@ -652,14 +632,6 @@ class Atividade extends Widget {
 }
 
 // ----- Rede (bytes por segundo, via /proc/net/dev) -----
-function formatarTaxa(bps) {
-    if (bps >= 1048576)
-        return `${(bps / 1048576).toFixed(1)}M`;
-    if (bps >= 1024)
-        return `${Math.round(bps / 1024)}K`;
-    return `${Math.round(bps)}B`;
-}
-
 class Rede extends Widget {
     static FONTES = [0.15, 0.2, 0.2];
 

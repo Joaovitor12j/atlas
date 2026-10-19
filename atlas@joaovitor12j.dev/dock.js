@@ -12,6 +12,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
+import {appsDoAmbiente, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget} from './widgets.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
@@ -22,23 +23,11 @@ const THUMB_H = 125;
 // ----- Ambientes: apps, tema, widgets e coleções, guardados como JSON no GSettings -----
 // [{id, nome, cor, apps: [ids .desktop], tema?: id, widgets?: [ids], colecoes?: [{id, nome, apps}]}]
 function lerAmbientes(st) {
-    try {
-        const v = JSON.parse(st?.get_string('ambientes') ?? '[]');
-        return Array.isArray(v)
-            ? v.filter(a => a && a.id && Array.isArray(a.apps)).map(a => ({
-                ...a,
-                widgets: Array.isArray(a.widgets) ? a.widgets : [],
-                colecoes: Array.isArray(a.colecoes) ? a.colecoes.filter(c => c && c.id && Array.isArray(c.apps)) : [],
-            }))
-            : [];
-    } catch (_e) {
-        return [];
-    }
+    return normalizarAmbientes(st?.get_string('ambientes'));
 }
 
 function ambienteAtual(st, lista) {
-    const id = st?.get_string('ambiente-atual');
-    return lista.find(a => a.id === id) ?? lista[0] ?? null;
+    return escolherAmbiente(lista, st?.get_string('ambiente-atual'));
 }
 
 function trocarAmbiente(st, delta) {
@@ -46,16 +35,22 @@ function trocarAmbiente(st, delta) {
     if (lista.length < 2)
         return;
     const i = lista.indexOf(ambienteAtual(st, lista));
-    const novo = lista[(i + delta + lista.length) % lista.length];
-    st.set_string('ambiente-atual', novo.id);
+    selecionarAmbiente(st, lista[(i + delta + lista.length) % lista.length]);
+}
+
+function selecionarAmbiente(st, amb) {
+    st.set_string('ambiente-atual', amb.id);
     try {
-        Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), novo.nome, null);
+        Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), amb.nome, null);
     } catch (_e) { /* OSD é só um aviso */ }
 }
 
-// Apps que pertencem a um ambiente: os fixados e os das coleções.
-function appsDoAmbiente(amb) {
-    return new Set([...amb.apps, ...amb.colecoes.flatMap(c => c.apps)]);
+// Ctrl+Alt+N: vai direto ao N-ésimo ambiente (1 = primeiro da lista).
+function irParaAmbiente(st, n) {
+    const lista = lerAmbientes(st);
+    const amb = lista[n - 1];
+    if (amb && amb.id !== ambienteAtual(st, lista)?.id)
+        selecionarAmbiente(st, amb);
 }
 
 // Conteúdo do menu do ATLAS, usado no ícone do painel e no clique direito na doca.
@@ -212,6 +207,7 @@ class DockView {
 
         this._hidden = this._c.autoHide;
         this._rebuild();
+        this._animarAbertura();
         console.log(`[atlas] tela ${this._monIdx}: ${this._items.length} itens, posição ${this._c.pos}`);
     }
 
@@ -266,6 +262,12 @@ class DockView {
         c.amb = ambienteAtual(st, c.ambientes);
         c.widgets = c.amb?.widgets ?? [];
         c.colecoes = c.amb?.colecoes ?? [];
+        c.hover = st?.get_string('efeito-hover') ?? 'nenhum';
+        c.abertura = st?.get_string('animacao-abertura') ?? 'nenhuma';
+        c.indicador = st?.get_string('estilo-indicador') ?? 'ponto';
+        const vertical = c.pos !== 'baixo';
+        // ponto 6x6; barra fina ao longo da doca
+        [c.dotW, c.dotH] = c.indicador === 'barra' ? (vertical ? [3, 16] : [16, 3]) : [6, 6];
         c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
@@ -511,7 +513,7 @@ class DockView {
         this._container.add_child(btn);
 
         const dot = new St.Widget({style_class: 'atlas-dot'});
-        dot.set_size(6, 6);
+        dot.set_size(c.dotW, c.dotH);
         this._container.add_child(dot);
 
         const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
@@ -524,6 +526,7 @@ class DockView {
                 onClick(button);
         });
         btn.connect('notify::hover', () => {
+            this._efeitoHover(btn);
             if (btn.hover) {
                 this._hoverItem = item;
                 this._tooltip.set_text(typeof label === 'function' ? label() : label);
@@ -541,6 +544,38 @@ class DockView {
             }
         });
         this._items.push(item);
+    }
+
+    // Efeito extra ao passar o mouse (a lente é independente): brilho no fundo ou ícone que sobe.
+    _efeitoHover(btn) {
+        const c = this._c;
+        if (c.hover === 'brilho') {
+            btn.style_class = btn.hover ? 'atlas-item atlas-item-hover' : 'atlas-item';
+        } else if (c.hover === 'elevar') {
+            const d = btn.hover ? Math.round(c.iconSize * 0.14) : 0;
+            const eixo = c.pos === 'baixo' ? {translation_y: -d} : {translation_x: c.pos === 'esquerda' ? d : -d};
+            btn.ease({...eixo, duration: 120, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+        }
+    }
+
+    // Entrada da doca ao ser criada: surge (fade) ou desliza da borda da tela.
+    _animarAbertura() {
+        const modo = this._c.abertura;
+        if (modo === 'nenhuma' || this._hidden || !this._container)
+            return;
+        if (modo === 'surgir') {
+            this._container.opacity = 0;
+            this._container.ease({
+                opacity: 255, duration: 1100, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            const [tx, ty] = this._hideShift();
+            this._container.translation_x = tx;
+            this._container.translation_y = ty;
+            this._container.ease({
+                translation_x: 0, translation_y: 0, duration: 1000, mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
     }
 
     _addSeparator() {
@@ -1022,8 +1057,8 @@ class DockView {
                 it.actor.set_scale(f, f);
                 const [x, y] = this._boxOrigin(a, d0, max);
                 it.actor.set_position(x, y);
-                it.dot.visible = !!it.app && it.app.get_n_windows() > 0;
-                const [dx, dy] = this._point(mid, dotDepth, 6, 6);
+                it.dot.visible = c.indicador !== 'nenhum' && !!it.app && it.app.get_n_windows() > 0;
+                const [dx, dy] = this._point(mid, dotDepth, c.dotW, c.dotH);
                 it.dot.set_position(dx, dy);
             }
             a += w + c.gap;
@@ -1173,6 +1208,15 @@ export class Dock {
                     Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW, () => {
                         if (this._settings.get_boolean('atalhos-ativos'))
                             trocarAmbiente(this._settings, delta);
+                    });
+                this._atalhos.push(chave);
+            }
+            for (let n = 1; n <= 9; n++) {
+                const chave = `atalho-ambiente-${n}`;
+                Main.wm.addKeybinding(chave, this._settings, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
+                    Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW, () => {
+                        if (this._settings.get_boolean('atalhos-ativos') && this._settings.get_boolean('atalho-numero-ativo'))
+                            irParaAmbiente(this._settings, n);
                     });
                 this._atalhos.push(chave);
             }

@@ -18,12 +18,13 @@ Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
 - Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
 - Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz, X ou clique do meio fecha)
-- Ambientes: conjuntos de apps com nome e cor, criados na janela de preferências. Seletor redondo na doca, roda do mouse sobre a doca e atalhos de teclado (Super+Alt+←/→) trocam de ambiente; cada forma pode ser desligada
+- Ambientes: conjuntos de apps com nome e cor, criados na janela de preferências. Seletor redondo na doca, roda do mouse sobre a doca e atalhos de teclado (Super+Alt+←/→, ou Ctrl+Alt+1 a 9 para ir direto ao N-ésimo) trocam de ambiente; cada forma pode ser desligada
 - Widgets por ambiente (tiles vivos que abrem um painel ao clicar): **Relógio**, **Pomodoro**, **Bateria** (UPower), **Música** (qualquer player MPRIS), **Progresso do tempo**, **Cronômetro**, **Timer**, **Atividade** (CPU/RAM) e **Rede**; ordem e posição (antes ou depois dos apps) configuráveis na aba Widgets
 - Coleções: um ícone com mosaico que guarda um grupo de apps e abre a lista ao clicar
 - Janelas seguem o ambiente (opcional, desligado por padrão): ao trocar, minimiza as janelas dos apps de outros ambientes e as traz de volta ao retornar
 - Ícone do ATLAS no painel superior (menu com ambientes, temas, auto-ocultar e Configurações; pode ser ocultado)
 - Menu de clique direito nos ícones: ações do app, nova janela, fixar/desafixar, fechar janelas; no vidro ou no seletor: menu geral com Configurações
+- Aparência ajustável: efeito ao passar o mouse (brilho ou ícone que sobe), indicador (ponto, barra ou nenhum) e animação de abertura (deslizar ou surgir)
 - Esconde no Overview e em tela cheia
 
 ## Configurar
@@ -48,7 +49,13 @@ gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas
 ```
 Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 
+Testes (lógica pura em `logica.js` e consistência do catálogo, schema e temas):
+```bash
+npm test
+```
+O CI (GitHub Actions) roda a checagem de sintaxe, o schema em modo estrito e os testes a cada PR.
+
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Clima e calendário, prateleira de arquivos.
+Ambiente automático com Não perturbe, prateleira de arquivos, clima e calendário.
