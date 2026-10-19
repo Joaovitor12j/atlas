@@ -361,6 +361,9 @@ class DockView {
     }
 
     _destroyItems() {
+        // o item sob o ponteiro vai ser destruído: sem isto o tooltip seguia um actor já descartado
+        this._hoverItem = null;
+        this._tooltip?.hide();
         for (const it of this._items) {
             it.widget?.destruir();
             it.actor.destroy();
@@ -383,7 +386,9 @@ class DockView {
     _addWidget(id, old) {
         let widget = null;
         try {
-            widget = criarWidget(id, this._c.maxPx, this._settings);
+            // versão larga só com a doca na horizontal (num lado, a faixa ficaria comprida demais)
+            const largo = !this._v && (this._settings?.get_strv('widgets-largos') ?? []).includes(id);
+            widget = criarWidget(id, this._c.maxPx, this._settings, largo);
         } catch (e) {
             console.error(`[atlas] widget ${id} falhou: ${e}\n${e.stack}`); // um widget com defeito não derruba a doca
         }
@@ -395,6 +400,7 @@ class DockView {
             app: null,
             child: widget.actor,
             widget,
+            larg: widget.larg,
             label: () => widget.etiqueta,
             onClick: () => this._openItemMenu(key, menu => widget.fillMenu(menu)),
         }, old);
@@ -496,7 +502,7 @@ class DockView {
         });
     }
 
-    _makeItem({key, app, gicon, label, onClick, child, style, widget}, old) {
+    _makeItem({key, app, gicon, label, onClick, child, style, widget, larg = 1}, old) {
         const c = this._c;
         const icon = child ?? new St.Icon({gicon, icon_size: c.maxPx});
         const btn = new St.Button({
@@ -508,7 +514,7 @@ class DockView {
             button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE,
         });
         this._hookScroll(btn);
-        btn.set_size(c.maxPx, c.maxPx);
+        btn.set_size(Math.round(c.maxPx * larg), c.maxPx);
         btn.set_pivot_point(...PIVOT[c.pos]);
         this._container.add_child(btn);
 
@@ -516,7 +522,7 @@ class DockView {
         dot.set_size(c.dotW, c.dotH);
         this._container.add_child(dot);
 
-        const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
+        const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize * larg};
         btn.connect('clicked', (_b, button) => {
             if (button === Clutter.BUTTON_SECONDARY && item.app)
                 this._openMenu(item, btn);
@@ -1053,7 +1059,7 @@ class DockView {
                 const [sx, sy] = this._point(mid, d0 + c.iconSize * 0.15 + sepLen / 2, sw, sh);
                 it.actor.set_position(sx, sy);
             } else {
-                const f = (it.base * it.s) / max;
+                const f = (c.iconSize * it.s) / max; // a escala vem da altura; um tile largo cresce na mesma proporção
                 it.actor.set_scale(f, f);
                 const [x, y] = this._boxOrigin(a, d0, max);
                 it.actor.set_position(x, y);

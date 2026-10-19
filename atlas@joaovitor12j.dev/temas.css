@@ -107,9 +107,13 @@
 
 /* Widgets e coleções */
 .atlas-widget {
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.14);
-    border-radius: 14px;
+    /* vidro: gradiente leve, borda fina de 1px e brilho especular na aresta de cima */
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(255, 255, 255, 0.15);
+    background-gradient-end: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
     padding: 2px;
 }
 .atlas-widget-txt { color: #f2f2f7; font-weight: bold; }
@@ -119,7 +123,12 @@
     border-radius: 14px;
     padding: 4px;
 }
-.atlas-papel .atlas-widget { background-color: rgba(60, 50, 30, 0.08); border-color: rgba(60, 50, 30, 0.22); }
+.atlas-papel .atlas-widget {
+    background-gradient-start: rgba(60, 50, 30, 0.12);
+    background-gradient-end: rgba(60, 50, 30, 0.04);
+    border-color: rgba(60, 50, 30, 0.24);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
 .atlas-papel .atlas-widget-txt { color: #2f2f2a; }
 .atlas-papel .atlas-widget-sub { color: rgba(47, 47, 42, 0.7); }
 .atlas-papel .atlas-collection { background-color: rgba(60, 50, 30, 0.10); }
@@ -206,3 +215,11 @@
 .atlas-neon .atlas-item-hover { background-color: rgba(25, 230, 255, 0.16); }
 .atlas-halloween .atlas-item-hover { background-color: rgba(255, 122, 26, 0.22); }
 .atlas-natal .atlas-item-hover { background-color: rgba(47, 143, 78, 0.35); }
+
+/* Tile largo da música: pílula de vidro com capa, título, barra fina e controles */
+.atlas-musica-largo { border-radius: 22px; }
+.atlas-musica-btn { border-radius: 99px; padding: 0; background-color: transparent; }
+.atlas-musica-btn:hover { background-color: rgba(255, 255, 255, 0.16); }
+.atlas-musica-play { background-color: rgba(255, 255, 255, 0.18); }
+.atlas-papel .atlas-musica-btn:hover { background-color: rgba(60, 50, 30, 0.12); }
+.atlas-papel .atlas-musica-play { background-color: rgba(60, 50, 30, 0.14); }

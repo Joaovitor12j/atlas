@@ -384,6 +384,22 @@ export default class AtlasPrefs extends ExtensionPreferences {
             interno = false;
         };
 
+        const largos = new Adw.PreferencesGroup({
+            title: 'Tiles largos',
+            description: 'O widget vira uma faixa com mais informação (música com título e progresso, relógio digital, gráfico de CPU e rede). Só vale com a doca embaixo.',
+        });
+        page.add(largos);
+        for (const [wid, nome] of WIDGETS.filter(w => w[3])) {
+            const sw = new Adw.SwitchRow({title: nome, active: settings.get_strv('widgets-largos').includes(wid)});
+            sw.connect('notify::active', () => {
+                const lista = settings.get_strv('widgets-largos').filter(x => x !== wid);
+                if (sw.active)
+                    lista.push(wid);
+                settings.set_strv('widgets-largos', lista);
+            });
+            largos.add(sw);
+        }
+
         let grupos = [];
         const render = () => {
             for (const g of grupos)

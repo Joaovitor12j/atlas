@@ -166,6 +166,11 @@
       <default>false</default>
       <summary>Dica do Não perturbe já mostrada</summary>
     </key>
+    <key name="widgets-largos" type="as">
+      <default>[]</default>
+      <summary>Widgets em versão larga</summary>
+      <description>Ids dos widgets que viram uma faixa larga com mais informação. Só vale com a doca na horizontal.</description>
+    </key>
     <key name="relogio-24h" type="b">
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>

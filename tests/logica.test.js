@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
-    decidirDnd, deveAvisarDnd, diasAte, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto,
+    decidirDnd, deveAvisarDnd, diasAte, escalaGrafico, formatarFaixa, mudarMes, semanasDoMes, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 test('duracao: minutos e horas', () => {
@@ -189,4 +189,39 @@ test('resumirTexto: primeira linha, espaços colapsados, corte com reticências'
     assert.equal(resumirTexto(undefined), '');
     assert.equal(resumirTexto('abcdefghij', 5), 'abcd…');
     assert.equal(resumirTexto('abcde', 5), 'abcde');
+});
+
+test('semanasDoMes: outubro de 2026 começa numa quinta', () => {
+    const s = semanasDoMes(2026, 10);
+    assert.deepEqual(s[0], [null, null, null, null, 1, 2, 3]);
+    assert.deepEqual(s[s.length - 1].filter(Boolean).slice(-1), [31]);
+    assert.ok(s.every(sem => sem.length === 7));
+    assert.equal(s.flat().filter(Boolean).length, 31);
+});
+
+test('semanasDoMes: fevereiro bissexto e mês que começa no domingo', () => {
+    assert.equal(semanasDoMes(2028, 2).flat().filter(Boolean).length, 29);
+    assert.equal(semanasDoMes(2027, 2).flat().filter(Boolean).length, 28);
+    assert.equal(semanasDoMes(2026, 2)[0][0], 1); // 1º de fevereiro de 2026 é domingo
+    assert.equal(semanasDoMes(2026, 2).length, 4);
+});
+
+test('mudarMes: vira o ano nos dois sentidos', () => {
+    assert.deepEqual(mudarMes({ano: 2026, mes: 10}, 1), {ano: 2026, mes: 11});
+    assert.deepEqual(mudarMes({ano: 2026, mes: 12}, 1), {ano: 2027, mes: 1});
+    assert.deepEqual(mudarMes({ano: 2026, mes: 1}, -1), {ano: 2025, mes: 12});
+});
+
+test('escalaGrafico: usa o piso quando os valores são pequenos', () => {
+    assert.equal(escalaGrafico([[1, 2], [3]], 10), 10);
+    assert.equal(escalaGrafico([[100, 2], [3]], 10), 100);
+    assert.equal(escalaGrafico([[], []], 10), 10);
+});
+
+test('formatarFaixa: microssegundos em m:ss', () => {
+    assert.equal(formatarFaixa(0), '0:00');
+    assert.equal(formatarFaixa(65_000_000), '1:05');
+    assert.equal(formatarFaixa(3_725_000_000), '62:05');
+    assert.equal(formatarFaixa(undefined), '0:00');
+    assert.equal(formatarFaixa(-5), '0:00');
 });
