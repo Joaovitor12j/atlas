@@ -118,7 +118,6 @@ export class Dock {
 
     _applyTheme() {
         const tema = this._settings?.get_string('tema') ?? 'noite';
-        console.log(`[atlas] tema=${tema} settings=${!!this._settings} css=${!!this._theme}`);
         this._container.style_class = `atlas-${tema}`;
         this._tooltip.style_class = `doca-tooltip atlas-${tema}`;
         this._bg.remove_effect_by_name('atlas-blur');
