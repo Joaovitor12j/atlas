@@ -207,6 +207,26 @@ export default class AtlasPrefs extends ExtensionPreferences {
                 }));
                 exp.add_row(tema);
 
+                const dnd = new Adw.SwitchRow({
+                    title: 'Entra com Não perturbe',
+                    subtitle: 'Ao ligar o Não perturbe do GNOME, o ATLAS muda para este ambiente e volta ao anterior ao desligar. Só um ambiente por vez',
+                    active: !!amb.naoperturbe,
+                });
+                dnd.connect('notify::active', () => {
+                    alterar(amb.id, (a, lista) => {
+                        for (const outro of lista)
+                            delete outro.naoperturbe;
+                        if (dnd.active)
+                            a.naoperturbe = true;
+                    });
+                    aberto = amb.id;
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                        render();
+                        return GLib.SOURCE_REMOVE;
+                    });
+                });
+                exp.add_row(dnd);
+
                 linhasApps(exp, amb.id, amb.apps, a => a.apps);
 
                 const colecoes = new Adw.ExpanderRow({

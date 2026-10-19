@@ -12,7 +12,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
-import {appsDoAmbiente, escolherAmbiente, normalizarAmbientes} from './logica.js';
+import {appsDoAmbiente, decidirDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget} from './widgets.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
@@ -1223,6 +1223,14 @@ export class Dock {
         }
         if (this._settings)
             this._connect(this._settings, 'changed::monitores', () => this._buildViews());
+        // Não perturbe (GNOME): show-banners = false. O ambiente marcado com `naoperturbe` entra sozinho.
+        this._dndMemoria = null;
+        try {
+            this._notif = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
+            this._connect(this._notif, 'changed::show-banners', () => this._seguirNaoPerturbe());
+        } catch (e) {
+            console.error(`[atlas] sem acesso ao Não perturbe: ${e}`);
+        }
         this._minimizadas = new Map(); // janela -> id do sinal 'unmanaged'
         if (this._settings) {
             this._connect(this._settings, 'changed::ambiente-atual', () => this._seguirAmbiente());
@@ -1244,6 +1252,8 @@ export class Dock {
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
         this._restaurarJanelas();
+        this._notif = null;
+        this._dndMemoria = null;
         this._destroyViews();
         this._restoreDash();
         this._destroyIndicator();
@@ -1253,6 +1263,22 @@ export class Dock {
 
     _connect(obj, name, cb) {
         this._signals.push([obj, obj.connect(name, cb)]);
+    }
+
+    // Liga o ambiente marcado quando o Não perturbe liga e volta ao anterior quando desliga.
+    _seguirNaoPerturbe() {
+        if (!this._settings || !this._notif)
+            return;
+        const lista = lerAmbientes(this._settings);
+        const atual = ambienteAtual(this._settings, lista);
+        const dnd = !this._notif.get_boolean('show-banners');
+        const r = decidirDnd(lista, atual?.id, dnd, this._dndMemoria);
+        this._dndMemoria = r.memoria;
+        const alvo = r.ir && lista.find(a => a.id === r.ir);
+        if (alvo) {
+            console.log(`[atlas] Não perturbe ${dnd ? 'ligado' : 'desligado'}: ambiente ${alvo.nome}`);
+            selecionarAmbiente(this._settings, alvo);
+        }
     }
 
     // ----- Janelas seguem o ambiente -----

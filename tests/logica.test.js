@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
-    normalizarAmbientes, pct, percentualCpu, proximaFase,
+    decidirDnd, normalizarAmbientes, pct, percentualCpu, proximaFase,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 test('duracao: minutos e horas', () => {
@@ -104,4 +104,35 @@ test('escolherAmbiente: id, ou o primeiro', () => {
 test('appsDoAmbiente: fixados e coleções, sem repetir', () => {
     const amb = {apps: ['a', 'b'], colecoes: [{apps: ['b', 'c']}, {apps: ['d']}]};
     assert.deepEqual([...appsDoAmbiente(amb)].sort(), ['a', 'b', 'c', 'd']);
+});
+
+test('decidirDnd: ida e volta', () => {
+    const lista = [{id: 'a'}, {id: 'b', naoperturbe: true}, {id: 'c'}];
+    const ida = decidirDnd(lista, 'a', true, null);
+    assert.equal(ida.ir, 'b');
+    assert.deepEqual(ida.memoria, {de: 'a', para: 'b'});
+    const volta = decidirDnd(lista, 'b', false, ida.memoria);
+    assert.equal(volta.ir, 'a');
+    assert.equal(volta.memoria, null);
+});
+
+test('decidirDnd: sem ambiente marcado ou já nele, não faz nada', () => {
+    assert.equal(decidirDnd([{id: 'a'}], 'a', true, null).ir, null);
+    const lista = [{id: 'a', naoperturbe: true}];
+    const r = decidirDnd(lista, 'a', true, null);
+    assert.equal(r.ir, null);
+    assert.equal(r.memoria, null);
+});
+
+test('decidirDnd: se o usuário já saiu do ambiente, a volta não o puxa de lá', () => {
+    const lista = [{id: 'a'}, {id: 'b', naoperturbe: true}, {id: 'c'}];
+    const r = decidirDnd(lista, 'c', false, {de: 'a', para: 'b'});
+    assert.equal(r.ir, null);
+    assert.equal(r.memoria, null);
+});
+
+test('decidirDnd: desligar sem ter ligado por aqui não faz nada; ambiente de origem apagado também não', () => {
+    assert.equal(decidirDnd([{id: 'a'}], 'a', false, null).ir, null);
+    const r = decidirDnd([{id: 'b'}], 'b', false, {de: 'sumiu', para: 'b'});
+    assert.equal(r.ir, null);
 });
