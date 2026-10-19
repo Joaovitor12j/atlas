@@ -149,5 +149,74 @@
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>
     </key>
+    <key name="atalho-ambiente-1" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;1"]</default>
+      <summary>Atalho: ir ao ambiente 1</summary>
+    </key>
+    <key name="atalho-ambiente-2" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;2"]</default>
+      <summary>Atalho: ir ao ambiente 2</summary>
+    </key>
+    <key name="atalho-ambiente-3" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;3"]</default>
+      <summary>Atalho: ir ao ambiente 3</summary>
+    </key>
+    <key name="atalho-ambiente-4" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;4"]</default>
+      <summary>Atalho: ir ao ambiente 4</summary>
+    </key>
+    <key name="atalho-ambiente-5" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;5"]</default>
+      <summary>Atalho: ir ao ambiente 5</summary>
+    </key>
+    <key name="atalho-ambiente-6" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;6"]</default>
+      <summary>Atalho: ir ao ambiente 6</summary>
+    </key>
+    <key name="atalho-ambiente-7" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;7"]</default>
+      <summary>Atalho: ir ao ambiente 7</summary>
+    </key>
+    <key name="atalho-ambiente-8" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;8"]</default>
+      <summary>Atalho: ir ao ambiente 8</summary>
+    </key>
+    <key name="atalho-ambiente-9" type="as">
+      <default>["&lt;Control&gt;&lt;Alt&gt;9"]</default>
+      <summary>Atalho: ir ao ambiente 9</summary>
+    </key>
+    <key name="atalho-numero-ativo" type="b">
+      <default>true</default>
+      <summary>Ir direto ao ambiente N com Ctrl+Alt+número</summary>
+    </key>
+    <key name="efeito-hover" type="s">
+      <choices>
+        <choice value="nenhum"/>
+        <choice value="brilho"/>
+        <choice value="elevar"/>
+      </choices>
+      <default>"nenhum"</default>
+      <summary>Efeito ao passar o mouse</summary>
+      <description>Além da lente: "brilho" acende o fundo do ícone, "elevar" sobe o ícone alguns pixels.</description>
+    </key>
+    <key name="animacao-abertura" type="s">
+      <choices>
+        <choice value="nenhuma"/>
+        <choice value="deslizar"/>
+        <choice value="surgir"/>
+      </choices>
+      <default>"nenhuma"</default>
+      <summary>Animação de abertura</summary>
+      <description>Como a doca aparece ao ser criada (ao ligar a extensão ou mudar de tela).</description>
+    </key>
+    <key name="estilo-indicador" type="s">
+      <choices>
+        <choice value="ponto"/>
+        <choice value="barra"/>
+        <choice value="nenhum"/>
+      </choices>
+      <default>"ponto"</default>
+      <summary>Indicador de app aberto</summary>
+    </key>
   </schema>
 </schemalist>

@@ -46,11 +46,22 @@ function trocarAmbiente(st, delta) {
     if (lista.length < 2)
         return;
     const i = lista.indexOf(ambienteAtual(st, lista));
-    const novo = lista[(i + delta + lista.length) % lista.length];
-    st.set_string('ambiente-atual', novo.id);
+    selecionarAmbiente(st, lista[(i + delta + lista.length) % lista.length]);
+}
+
+function selecionarAmbiente(st, amb) {
+    st.set_string('ambiente-atual', amb.id);
     try {
-        Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), novo.nome, null);
+        Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), amb.nome, null);
     } catch (_e) { /* OSD é só um aviso */ }
+}
+
+// Ctrl+Alt+N: vai direto ao N-ésimo ambiente (1 = primeiro da lista).
+function irParaAmbiente(st, n) {
+    const lista = lerAmbientes(st);
+    const amb = lista[n - 1];
+    if (amb && amb.id !== ambienteAtual(st, lista)?.id)
+        selecionarAmbiente(st, amb);
 }
 
 // Apps que pertencem a um ambiente: os fixados e os das coleções.
@@ -212,6 +223,7 @@ class DockView {
 
         this._hidden = this._c.autoHide;
         this._rebuild();
+        this._animarAbertura();
         console.log(`[atlas] tela ${this._monIdx}: ${this._items.length} itens, posição ${this._c.pos}`);
     }
 
@@ -266,6 +278,12 @@ class DockView {
         c.amb = ambienteAtual(st, c.ambientes);
         c.widgets = c.amb?.widgets ?? [];
         c.colecoes = c.amb?.colecoes ?? [];
+        c.hover = st?.get_string('efeito-hover') ?? 'nenhum';
+        c.abertura = st?.get_string('animacao-abertura') ?? 'nenhuma';
+        c.indicador = st?.get_string('estilo-indicador') ?? 'ponto';
+        const vertical = c.pos !== 'baixo';
+        // ponto 6x6; barra fina ao longo da doca
+        [c.dotW, c.dotH] = c.indicador === 'barra' ? (vertical ? [3, 16] : [16, 3]) : [6, 6];
         c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
@@ -511,7 +529,7 @@ class DockView {
         this._container.add_child(btn);
 
         const dot = new St.Widget({style_class: 'atlas-dot'});
-        dot.set_size(6, 6);
+        dot.set_size(c.dotW, c.dotH);
         this._container.add_child(dot);
 
         const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
@@ -524,6 +542,7 @@ class DockView {
                 onClick(button);
         });
         btn.connect('notify::hover', () => {
+            this._efeitoHover(btn);
             if (btn.hover) {
                 this._hoverItem = item;
                 this._tooltip.set_text(typeof label === 'function' ? label() : label);
@@ -541,6 +560,36 @@ class DockView {
             }
         });
         this._items.push(item);
+    }
+
+    // Efeito extra ao passar o mouse (a lente é independente): brilho no fundo ou ícone que sobe.
+    _efeitoHover(btn) {
+        const c = this._c;
+        if (c.hover === 'brilho') {
+            btn.style_class = btn.hover ? 'atlas-item atlas-item-hover' : 'atlas-item';
+        } else if (c.hover === 'elevar') {
+            const d = btn.hover ? Math.round(c.iconSize * 0.14) : 0;
+            const eixo = c.pos === 'baixo' ? {translation_y: -d} : {translation_x: c.pos === 'esquerda' ? d : -d};
+            btn.ease({...eixo, duration: 120, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+        }
+    }
+
+    // Entrada da doca ao ser criada: surge (fade) ou desliza da borda da tela.
+    _animarAbertura() {
+        const modo = this._c.abertura;
+        if (modo === 'nenhuma' || this._hidden || !this._container)
+            return;
+        if (modo === 'surgir') {
+            this._container.opacity = 0;
+            this._container.ease({opacity: 255, duration: 400, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+        } else {
+            const [tx, ty] = this._hideShift();
+            this._container.translation_x = tx;
+            this._container.translation_y = ty;
+            this._container.ease({
+                translation_x: 0, translation_y: 0, duration: 420, mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
     }
 
     _addSeparator() {
@@ -1022,8 +1071,8 @@ class DockView {
                 it.actor.set_scale(f, f);
                 const [x, y] = this._boxOrigin(a, d0, max);
                 it.actor.set_position(x, y);
-                it.dot.visible = !!it.app && it.app.get_n_windows() > 0;
-                const [dx, dy] = this._point(mid, dotDepth, 6, 6);
+                it.dot.visible = c.indicador !== 'nenhum' && !!it.app && it.app.get_n_windows() > 0;
+                const [dx, dy] = this._point(mid, dotDepth, c.dotW, c.dotH);
                 it.dot.set_position(dx, dy);
             }
             a += w + c.gap;
@@ -1173,6 +1222,15 @@ export class Dock {
                     Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW, () => {
                         if (this._settings.get_boolean('atalhos-ativos'))
                             trocarAmbiente(this._settings, delta);
+                    });
+                this._atalhos.push(chave);
+            }
+            for (let n = 1; n <= 9; n++) {
+                const chave = `atalho-ambiente-${n}`;
+                Main.wm.addKeybinding(chave, this._settings, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
+                    Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW, () => {
+                        if (this._settings.get_boolean('atalhos-ativos') && this._settings.get_boolean('atalho-numero-ativo'))
+                            irParaAmbiente(this._settings, n);
                     });
                 this._atalhos.push(chave);
             }

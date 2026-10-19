@@ -199,3 +199,10 @@
 .atlas-halloween .atlas-apps-icon { color: #ffb36b; }
 .atlas-natal .atlas-apps { background-color: rgba(47, 143, 78, 0.28); }
 .atlas-natal .atlas-apps-icon { color: #fbeed0; }
+
+/* Efeito "brilho" ao passar o mouse */
+.atlas-item-hover { background-color: rgba(255, 255, 255, 0.16); border-radius: 14px; }
+.atlas-papel .atlas-item-hover { background-color: rgba(60, 50, 30, 0.14); }
+.atlas-neon .atlas-item-hover { background-color: rgba(25, 230, 255, 0.16); }
+.atlas-halloween .atlas-item-hover { background-color: rgba(255, 122, 26, 0.22); }
+.atlas-natal .atlas-item-hover { background-color: rgba(47, 143, 78, 0.35); }
