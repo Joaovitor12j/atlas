@@ -145,6 +145,18 @@
       <summary>Posição dos widgets</summary>
       <description>"depois": no fim da doca, depois dos apps. "antes": logo depois do seletor de ambiente, antes dos apps.</description>
     </key>
+    <key name="contagem-nome" type="s">
+      <default>""</default>
+      <summary>Contagem regressiva: nome do evento</summary>
+    </key>
+    <key name="contagem-data" type="s">
+      <default>""</default>
+      <summary>Contagem regressiva: data (AAAA-MM-DD)</summary>
+    </key>
+    <key name="nota-texto" type="s">
+      <default>""</default>
+      <summary>Texto da nota fixa na doca</summary>
+    </key>
     <key name="relogio-24h" type="b">
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>
