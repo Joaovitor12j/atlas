@@ -5,31 +5,23 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+## [0.3.0] - 2026-10-19
+
+### Adicionado
+- **Widgets novos:** **Slack** (o ícone com um selo quando há mensagens não lidas, lido do mesmo sinal do ícone da barra superior; fica esmaecido com o app fechado e o clique abre ou foca o Slack) e **Área de transferência** (histórico de texto com até 20 itens e textos fixados, clique para copiar de volta; o histórico fica só na memória, só os fixados ficam salvos, e conteúdo marcado por gerenciadores de senha não entra).
+- **Painéis ricos ao clicar**, no lugar das listas: calendário do mês com navegação (Relógio), capa, progresso e controles (Música), gráficos de CPU e rede, anéis grandes (Pomodoro, Timer, Bateria, Cronômetro) e barras (Progresso do tempo).
+- **Tiles largos** opcionais (aba Widgets, só com a doca embaixo) para Relógio digital, Atividade e Rede com gráfico; a **Música** larga é uma pílula de vidro com capa arredondada, título, artista, barra de progresso fina e os controles no próprio tile.
+- Dica do **Não perturbe** na aba Ambientes e um aviso único, na primeira vez que o modo liga sem nenhum ambiente marcado, explicando onde marcar.
+- **Medidor de desempenho** opt-in (`perf.js`, chave `perfil-ativo`, desligada por padrão) e o documento [docs/DESEMPENHO.md](docs/DESEMPENHO.md): quanto o ATLAS consome, como foi medido e o que não foi coberto.
+- `desenho.js` (desenho com Cairo separado do Shell) e `tests/previa-desenho.js`, que gera um PNG para conferir os desenhos sem abrir o Shell.
+
 ### Alterado
-- **Widgets redesenhados.** Em vez de blocos de texto, os tiles desenham o estado: anéis de progresso animados (pomodoro, timer, bateria, cronômetro), relógio de ponteiros, quatro anéis concêntricos para o progresso do tempo, anéis de CPU e memória, gráfico de rede. O tile pisca quando o timer ou o pomodoro acaba e quando a bateria está baixa.
-- **Painéis ricos ao clicar**, no lugar das listas de menu: calendário do mês (com navegação) no relógio; capa, progresso e controles na música; gráficos de CPU e rede; anéis grandes no pomodoro, timer, bateria e cronômetro; barras no progresso do tempo.
-- **Tiles largos** (opcionais, na aba Widgets, só com a doca embaixo) para Relógio (digital), Atividade e Rede (com gráfico). A **Música** larga virou uma pílula de vidro: capa arredondada, título, artista, barra de progresso fina e os controles (anterior, play/pausa, próxima) no próprio tile.
-- **Tiles pequenos mais legíveis**: fontes maiores, rótulo vazio some em vez de ocupar espaço, e cada widget mostra só o essencial dentro do anel (a Atividade deixa o RAM para o anel de dentro e o tooltip; a Área de transferência virou ícone com a contagem).
-- **Pele de vidro** nos tiles dos widgets: gradiente leve, borda de 1px e brilho especular na aresta de cima, a partir das referências de design do vault.
-
-### Adicionado (widgets)
-- Widget **Slack**: o ícone do Slack com um selo (número, ou só o ponto) quando há mensagens não lidas; fica esmaecido com o Slack fechado e o clique abre ou foca o app. Lê o mesmo sinal do ícone da barra superior (o tooltip do item de bandeja StatusNotifierItem), então não depende de extensão. Como todo widget, liga-se por ambiente.
-
-### Alterado (desempenho)
-- Os widgets **pausam o desenho** com a doca escondida (auto-ocultar), no Overview e em tela cheia; o que não pode parar (fim do timer e do pomodoro, amostras de CPU e rede) continua.
-- Redesenho **só quando algo mudou**, e intervalos que se adaptam: cronômetro, pomodoro e timer parados e a música sem tocar conferem a cada 2 a 10 s em vez de 0,25 a 1 s; a Música larga só pergunta a posição enquanto toca. Medido: com a doca visível o custo caiu de ~0,19% para ~0,14% de um núcleo; escondida, de ~0,17% para ~0,03%.
-
-### Adicionado (desempenho)
-- **Medidor de desempenho** opt-in (`perf.js`, chave `perfil-ativo`, desligada por padrão): cronometra temporizadores e desenhos e escreve o resumo no log a cada 30 s.
-- [docs/DESEMPENHO.md](docs/DESEMPENHO.md): quanto o ATLAS consome, como foi medido e o que não foi coberto.
+- **Widgets redesenhados:** em vez de blocos de texto, os tiles desenham o estado, com anéis de progresso animados (Pomodoro, Timer, Bateria, Cronômetro), relógio de ponteiros, quatro anéis concêntricos no Progresso do tempo, anéis de CPU e memória e gráfico de rede. O tile pisca quando o timer ou o pomodoro acaba e quando a bateria está baixa.
+- **Pele de vidro** nos tiles (gradiente leve, borda de 1px e brilho na aresta de cima) e **tiles pequenos mais legíveis**: fontes maiores, rótulo vazio some, e cada widget mostra só o essencial dentro do anel.
+- **Menos consumo:** os widgets pausam o desenho com a doca escondida (auto-ocultar), no Overview e em tela cheia, e só redesenham quando algo mudou; cronômetro, pomodoro e timer parados e a música sem tocar conferem a cada 2 a 10 s em vez de 0,25 a 1 s. Medido: doca visível de ~0,19% para ~0,14% de um núcleo; escondida, de ~0,17% para ~0,03%.
 
 ### Corrigido
 - O tooltip podia seguir um ícone já destruído depois que a doca era reconstruída (aviso `St.Button ... already disposed` no log).
-
-### Adicionado
-- `desenho.js`: desenho com Cairo separado do Shell; `tests/previa-desenho.js` gera um PNG para conferir os desenhos sem abrir o Shell.
-- Widget **Área de transferência**: histórico do que você copiou (só texto, até 20 itens) e textos fixados, com um clique para copiar de volta. O histórico fica só na memória e some ao desligar a extensão; só os fixados ficam salvos. Conteúdo marcado por gerenciadores de senha não entra, e o monitor para sozinho quando nenhum widget o usa.
-- Dica do **Não perturbe** na aba Ambientes e um aviso único, na primeira vez que o Não perturbe liga sem nenhum ambiente marcado, explicando onde marcar.
 
 ## [0.2.0] - 2026-10-19
 
@@ -71,6 +63,7 @@ Primeira versão.
 ### Corrigido
 - A reserva de espaço liga e desliga de verdade junto com o auto-ocultar.
 
-[Não lançado]: https://github.com/Joaovitor12j/atlas/compare/v0.2.0...HEAD
+[Não lançado]: https://github.com/Joaovitor12j/atlas/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Joaovitor12j/atlas/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Joaovitor12j/atlas/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Joaovitor12j/atlas/releases/tag/v0.1.0
