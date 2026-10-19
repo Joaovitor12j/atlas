@@ -125,10 +125,17 @@ class Widget {
         this._animados = [];
         this._timersPainel = new Set();
         this._pulsando = false;
+        this.pausado = false; // o dock pausa os widgets quando está escondido (auto-ocultar)
+        this._ult = {};
         this.actor = new St.Widget({
             style_class: 'atlas-widget', layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true,
         });
         this.actor.set_size(this._larg, tam);
+        // no Overview ou em tela cheia o actor sai da tela: ao voltar, atualiza na hora
+        this.actor.connect('notify::mapped', () => {
+            if (this.actor.mapped && !this._destruido)
+                this.despausar();
+        });
         this.construir();
     }
 
@@ -299,14 +306,87 @@ class Widget {
         return 0;
     }
 
-    iniciar() {
+    // O widget está sendo visto? Escondido pelo auto-ocultar, ou fora da tela (Overview, tela cheia), não é.
+    _visivel() {
+        return !this.pausado && this.actor.mapped;
+    }
+
+    // Para sinais (D-Bus, área de transferência): só gasta desenho se alguém vê o tile.
+    _atualizarSeVisivel() {
+        if (this._visivel())
+            this.atualizar();
+    }
+
+    // O dock chama isto ao esconder ou mostrar a doca.
+    pausar(sim) {
+        if (sim === this.pausado)
+            return;
+        this.pausado = sim;
+        if (!sim && !this._destruido)
+            this.despausar();
+    }
+
+    despausar() {
         this.atualizar();
-        if (this.intervalo > 0) {
-            this._timerId = agendar(this.constructor.name, this.intervalo, () => {
-                this.atualizar();
-                return GLib.SOURCE_CONTINUE;
-            });
+    }
+
+    // Verdadeiro se `valor` for diferente do último guardado em `chave`: serve para só redesenhar quando algo mudou.
+    _mudou(chave, valor) {
+        if (this._ult[chave] === valor)
+            return false;
+        this._ult[chave] = valor;
+        return true;
+    }
+
+    // O que não pode parar nem com o tile invisível: fim do timer, amostras de CPU e rede.
+    logica() {}
+
+    // Um ciclo: a lógica sempre; o desenho só se o tile estiver à vista; e confere se o intervalo mudou.
+    _passo() {
+        this.logica();
+        if (this._visivel())
+            this.atualizar();
+    }
+
+    // Os widgets que mudam de ritmo (parado x rodando) devolvem outro `intervalo`; o temporizador acompanha.
+    _agendar() {
+        const ms = this.intervalo;
+        this._msAtual = ms;
+        if (ms <= 0)
+            return;
+        this._timerId = agendar(this.constructor.name, ms, () => {
+            this._passo();
+            if (this._destruido)
+                return GLib.SOURCE_REMOVE;
+            if (this.intervalo !== ms) {
+                this._agendar();
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    // Para quem muda de ritmo fora do temporizador (clique no menu, sinal de D-Bus).
+    reagendar() {
+        if (this._destruido || this.intervalo === this._msAtual)
+            return;
+        if (this._timerId) {
+            GLib.source_remove(this._timerId);
+            this._timerId = 0;
         }
+        this._agendar();
+    }
+
+    // Ação do usuário num painel: roda um ciclo e ajusta o ritmo.
+    _acao() {
+        this._passo();
+        this.reagendar();
+    }
+
+    iniciar() {
+        this.logica();
+        this.atualizar();
+        this._agendar();
     }
 
     destruir() {
@@ -466,8 +546,13 @@ const mmss = ms => formatarCrono(Math.ceil(ms / 1000) * 1000);
 class Pomodoro extends Widget {
     static FONTES = [0.13, 0.27, 0.18];
 
+    // parado, só confere de vez em quando; rodando, a cada segundo
     get intervalo() {
-        return 1000;
+        return POMO.fim ? 1000 : 4000;
+    }
+
+    logica() {
+        pomoTick();
     }
 
     get etiqueta() {
@@ -509,18 +594,18 @@ class Pomodoro extends Widget {
                 POMO.intacto = false;
                 POMO.pulsoAte = 0;
             }
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('Pular fase', () => {
             pomoAvancar();
             POMO.pulsoAte = 0;
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('Reiniciar', () => {
             POMO.ciclos = 0;
             pomoTrocarFase('foco');
             POMO.pulsoAte = 0;
-            this.atualizar();
+            this._acao();
         });
     }
 }
@@ -549,7 +634,7 @@ class Bateria extends Widget {
                     this._proxy = null;
                     return;
                 }
-                this._sig = this._proxy.connect('g-properties-changed', () => this.atualizar());
+                this._sig = this._proxy.connect('g-properties-changed', () => this._atualizarSeVisivel());
                 this.atualizar();
             });
         this.atualizar();
@@ -639,8 +724,19 @@ class Musica extends Widget {
         this._pos = 0;
     }
 
+    _tocando() {
+        const p = this._ativo();
+        return !!p && this._estado(p) === 'Playing';
+    }
+
+    // Só a versão larga tocando precisa perguntar a posição a cada segundo; o resto vem por sinal.
     get intervalo() {
-        return 1000;
+        return this._largo && this._tocando() ? 1000 : 10000;
+    }
+
+    _atualizarSeVisivel() {
+        super._atualizarSeVisivel();
+        this.reagendar();
     }
 
     construir() {
@@ -756,7 +852,7 @@ class Musica extends Widget {
                     if (!this._players.has(nome))
                         this._conectar(nome);
                 }
-                this.atualizar();
+                this._atualizarSeVisivel();
             });
     }
 
@@ -773,8 +869,8 @@ class Musica extends Widget {
                 }
                 if (this._destruido || !this._players.has(nome))
                     return;
-                this._players.set(nome, {proxy, sig: proxy.connect('g-properties-changed', () => this.atualizar())});
-                this.atualizar();
+                this._players.set(nome, {proxy, sig: proxy.connect('g-properties-changed', () => this._atualizarSeVisivel())});
+                this._atualizarSeVisivel();
             });
     }
 
@@ -872,7 +968,6 @@ class Musica extends Widget {
         this._txt(this._topo, tocando ? '▶' : '❚❚');
         this._txt(this._meio, m.titulo);
         this._txt(this._base, m.artista);
-        this._redesenhar();
     }
 
     _atualizarLargo() {
@@ -887,7 +982,9 @@ class Musica extends Widget {
             this._pedirPosicao(p);
         else if (!p)
             this._pos = 0;
-        this._redesenhar();
+        // tocando, a resposta da posição já redesenha a barra
+        if (!tocando && this._mudou('l', `${m.titulo}|${m.artista}|${m.arte}|${p ? 1 : 0}`))
+            this._redesenhar();
     }
 
     _chamar(p, metodo) {
@@ -1041,7 +1138,7 @@ class Cronometro extends Widget {
     static FONTES = [0.13, 0.27, 0.17];
 
     get intervalo() {
-        return 250;
+        return CRONO.inicio ? 250 : 2000; // parado não há o que animar
     }
 
     get etiqueta() {
@@ -1060,7 +1157,9 @@ class Cronometro extends Widget {
         this._txt(this._topo, 'CRONÔMETRO');
         this._txt(this._meio, formatarCrono(cronoMs()));
         this._txt(this._base, CRONO.voltas.length ? `${CRONO.voltas.length} volta(s)` : (CRONO.inicio ? '' : '❚❚'));
-        this._redesenhar();
+        // rodando o anel anda a cada passo; parado só redesenha se algo mudou
+        if (CRONO.inicio || this._mudou('crono', `${cronoMs()}|${CRONO.voltas.length}`))
+            this._redesenhar();
     }
 
     fillMenu(menu) {
@@ -1076,17 +1175,17 @@ class Cronometro extends Widget {
             } else {
                 CRONO.inicio = agoraMs();
             }
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('Volta', () => {
             CRONO.voltas.push(cronoMs());
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('Zerar', () => {
             CRONO.inicio = 0;
             CRONO.acumulado = 0;
             CRONO.voltas = [];
-            this.atualizar();
+            this._acao();
         });
         CRONO.voltas.slice(-5).forEach((ms, i, ult) => {
             const n = CRONO.voltas.length - ult.length + i + 1;
@@ -1122,7 +1221,11 @@ class Timer extends Widget {
     static FONTES = [0.13, 0.28, 0.18];
 
     get intervalo() {
-        return 1000;
+        return TIMER.fim ? 1000 : 4000;
+    }
+
+    logica() {
+        timerTick();
     }
 
     get etiqueta() {
@@ -1162,7 +1265,7 @@ class Timer extends Widget {
                 TIMER.intacto = false;
                 TIMER.pulsoAte = 0;
             }
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('+1 minuto', () => {
             if (TIMER.fim)
@@ -1171,7 +1274,7 @@ class Timer extends Widget {
                 TIMER.restante += MIN;
             TIMER.extra += MIN;
             TIMER.intacto = false;
-            this.atualizar();
+            this._acao();
         });
         menu.addAction('Reiniciar', () => {
             TIMER.fim = 0;
@@ -1179,7 +1282,7 @@ class Timer extends Widget {
             TIMER.restante = duracaoTimer();
             TIMER.intacto = true;
             TIMER.pulsoAte = 0;
-            this.atualizar();
+            this._acao();
         });
     }
 }
@@ -1232,6 +1335,10 @@ class Atividade extends Widget {
         return 2000;
     }
 
+    logica() {
+        ativAmostrar();
+    }
+
     get etiqueta() {
         return `CPU ${ultimo(ATIV.cpu)}%, memória ${ultimo(ATIV.mem)}%`;
     }
@@ -1260,10 +1367,11 @@ class Atividade extends Widget {
     }
 
     atualizar() {
-        ativAmostrar();
         this._txt(this._meio, `${ultimo(ATIV.cpu)}%`);
         this._txt(this._base, `RAM ${ultimo(ATIV.mem)}%`);
-        this._redesenhar();
+        // no quadrado só os anéis mudam com os valores; no largo o gráfico anda a cada amostra
+        if (this._largo || this._mudou('v', `${ultimo(ATIV.cpu)}|${ultimo(ATIV.mem)}`))
+            this._redesenhar();
     }
 
     fillMenu(menu) {
@@ -1331,6 +1439,10 @@ class Rede extends Widget {
         return 1000;
     }
 
+    logica() {
+        redeAmostrar();
+    }
+
     get etiqueta() {
         return `Rede: ↓ ${formatarBps(ultimo(REDE.down))}, ↑ ${formatarBps(ultimo(REDE.up))}`;
     }
@@ -1355,10 +1467,11 @@ class Rede extends Widget {
     }
 
     atualizar() {
-        redeAmostrar();
         this._txt(this._topo, `↓${formatarTaxa(ultimo(REDE.down))}`);
         this._txt(this._meio, `↑${formatarTaxa(ultimo(REDE.up))}`);
-        this._redesenhar();
+        // com o histórico cheio e a taxa igual, o gráfico não muda
+        if (this._mudou('r', `${ultimo(REDE.down)}|${ultimo(REDE.up)}`) || REDE.down.length < 60)
+            this._redesenhar();
     }
 
     fillMenu(menu) {
@@ -1570,7 +1683,7 @@ class AreaTransferencia extends Widget {
     }
 
     iniciar() {
-        this._ouvinte = () => this.atualizar();
+        this._ouvinte = () => this._atualizarSeVisivel();
         CLIP.ouvintes.add(this._ouvinte);
         clipIniciar();
         super.iniciar();
@@ -1652,8 +1765,19 @@ class AreaTransferencia extends Widget {
 const SNI = 'org.freedesktop.StatusNotifierItem-';
 
 class Slack extends Widget {
+    // Os sinais do D-Bus avisam das mudanças; isto é só uma rede de segurança.
     get intervalo() {
-        return 5000; // os sinais avisam das mudanças; isto é só uma rede de segurança
+        return 30000;
+    }
+
+    logica() {
+        this._ler();
+    }
+
+    // De volta à tela: o estado pode ter mudado enquanto o tile estava escondido.
+    despausar() {
+        this._ler();
+        this.atualizar();
     }
 
     construir() {
@@ -1686,8 +1810,7 @@ class Slack extends Widget {
             ...['NewToolTip', 'NewIcon', 'NewStatus', 'NewOverlayIcon'].map(sinal =>
                 bus.signal_subscribe(null, 'org.kde.StatusNotifierItem', sinal, null, null, Gio.DBusSignalFlags.NONE, quando)),
         ];
-        super.iniciar();
-        this._ler();
+        super.iniciar(); // o primeiro ciclo já lê o estado (logica)
     }
 
     parar() {
@@ -1749,7 +1872,7 @@ class Slack extends Widget {
         if (novo.tem !== this._estado.tem || novo.n !== this._estado.n || novo.rodando !== this._estado.rodando)
             console.log(`[atlas] slack: ${novo.rodando ? (novo.tem ? `não lidas (${novo.n ?? '?'})` : 'sem novidades') : 'fechado'}`);
         this._estado = novo;
-        this.atualizar();
+        this._atualizarSeVisivel();
     }
 
     get etiqueta() {

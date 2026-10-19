@@ -395,6 +395,7 @@ class DockView {
         }
         if (!widget)
             return;
+        widget.pausar(this._hidden && this._c.autoHide);
         const key = `w:${id}`;
         this._makeItem({
             key,
@@ -983,6 +984,8 @@ class DockView {
         if (!this._container)
             return;
         const hide = this._hidden && this._c.autoHide;
+        for (const it of this._items)
+            it.widget?.pausar(hide); // escondida, os widgets não gastam desenho
         const [tx, ty] = hide ? this._hideShift() : [0, 0];
         this._hot.visible = hide;
         if (animate) {

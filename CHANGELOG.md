@@ -15,6 +15,14 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Adicionado (widgets)
 - Widget **Slack**: o ícone do Slack com um selo (número, ou só o ponto) quando há mensagens não lidas; fica esmaecido com o Slack fechado e o clique abre ou foca o app. Lê o mesmo sinal do ícone da barra superior (o tooltip do item de bandeja StatusNotifierItem), então não depende de extensão. Como todo widget, liga-se por ambiente.
 
+### Alterado (desempenho)
+- Os widgets **pausam o desenho** com a doca escondida (auto-ocultar), no Overview e em tela cheia; o que não pode parar (fim do timer e do pomodoro, amostras de CPU e rede) continua.
+- Redesenho **só quando algo mudou**, e intervalos que se adaptam: cronômetro, pomodoro e timer parados e a música sem tocar conferem a cada 2 a 10 s em vez de 0,25 a 1 s; a Música larga só pergunta a posição enquanto toca. Medido: com a doca visível o custo caiu de ~0,19% para ~0,14% de um núcleo; escondida, de ~0,17% para ~0,03%.
+
+### Adicionado (desempenho)
+- **Medidor de desempenho** opt-in (`perf.js`, chave `perfil-ativo`, desligada por padrão): cronometra temporizadores e desenhos e escreve o resumo no log a cada 30 s.
+- [docs/DESEMPENHO.md](docs/DESEMPENHO.md): quanto o ATLAS consome, como foi medido e o que não foi coberto.
+
 ### Corrigido
 - O tooltip podia seguir um ícone já destruído depois que a doca era reconstruída (aviso `St.Button ... already disposed` no log).
 
