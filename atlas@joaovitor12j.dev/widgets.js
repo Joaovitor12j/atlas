@@ -155,9 +155,20 @@ class Widget {
         return l;
     }
 
+    // Atualiza um rótulo; rótulo vazio some (não ocupa espaço) e um rótulo `_ocultar`ado nunca volta.
     _txt(label, texto) {
+        if (label._oculto)
+            return;
         if (label.text !== texto)
             label.text = texto;
+        label.visible = texto !== '';
+    }
+
+    _ocultar(...rotulos) {
+        for (const l of rotulos) {
+            l._oculto = true;
+            l.hide();
+        }
     }
 
     // Camada de desenho por baixo do texto.
@@ -449,6 +460,8 @@ const pomoFrac = () => (POMO.intacto && !POMO.fim ? 0 : 1 - pomoRestante() / dur
 const mmss = ms => formatarCrono(Math.ceil(ms / 1000) * 1000);
 
 class Pomodoro extends Widget {
+    static FONTES = [0.13, 0.27, 0.18];
+
     get intervalo() {
         return 1000;
     }
@@ -459,6 +472,7 @@ class Pomodoro extends Widget {
 
     construir() {
         this._criarTexto();
+        this._ocultar(this._topo); // a fase aparece na cor do anel e no tooltip
         this._anim = this._animado();
         this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(FASES[POMO.fase].cor)));
     }
@@ -509,6 +523,8 @@ class Pomodoro extends Widget {
 
 // ----- Bateria (UPower) -----
 class Bateria extends Widget {
+    static FONTES = [0.2, 0.27, 0.17];
+
     construir() {
         this._criarTexto();
         this._anim = this._animado();
@@ -576,7 +592,7 @@ class Bateria extends Widget {
             return;
         }
         this._corAnel = this._cor(d);
-        this._txt(this._topo, d.estado === 1 ? '⚡ CARREGANDO' : d.estado === 4 ? 'CHEIA' : 'BATERIA');
+        this._txt(this._topo, d.estado === 1 ? '⚡' : '');
         this._txt(this._meio, `${d.pct}%`);
         this._txt(this._base, d.seg > 0 ? duracao(d.seg) : '');
         this._anim.definir(d.pct / 100);
@@ -636,8 +652,7 @@ class Musica extends Widget {
         });
         this.actor.insert_child_below(this._arte, this._texto);
         this._texto.y_align = AL.START;
-        this._meio.hide();
-        this._base.hide();
+        this._ocultar(this._meio, this._base);
     }
 
     // Pílula de vidro: capa à esquerda; título, artista e barra no meio; anterior, play e próxima à direita.
@@ -958,7 +973,7 @@ function progresso() {
 }
 
 class Progresso extends Widget {
-    static FONTES = [0.13, 0.22, 0.13];
+    static FONTES = [0.13, 0.19, 0.13];
 
     get intervalo() {
         return 30000;
@@ -974,11 +989,10 @@ class Progresso extends Widget {
         this._p = progresso();
         this._camada((cr, w, h) => {
             const r0 = Math.min(w, h) / 2 - 5;
-            PROGRESSO.forEach(([, chave, c], i) => anel(cr, w / 2, h / 2, r0 - i * 6.5, 3.6, this._p[chave], cor(c)));
+            PROGRESSO.forEach(([, chave, c], i) => anel(cr, w / 2, h / 2, r0 - i * 6, 3.2, this._p[chave], cor(c)));
         });
         this._texto.y_align = AL.CENTER;
-        this._topo.hide();
-        this._base.hide();
+        this._ocultar(this._topo, this._base);
     }
 
     atualizar() {
@@ -1020,7 +1034,7 @@ const CRONO = {inicio: 0, acumulado: 0, voltas: []};
 const cronoMs = () => CRONO.acumulado + (CRONO.inicio ? agoraMs() - CRONO.inicio : 0);
 
 class Cronometro extends Widget {
-    static FONTES = [0.13, 0.24, 0.13];
+    static FONTES = [0.13, 0.27, 0.17];
 
     get intervalo() {
         return 250;
@@ -1032,6 +1046,7 @@ class Cronometro extends Widget {
 
     construir() {
         this._criarTexto();
+        this._ocultar(this._topo);
         // o anel dá uma volta por minuto
         this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, (cronoMs() % 60000) / 60000,
             cor(CRONO.inicio ? COR.ok : COR.ambar)));
@@ -1100,7 +1115,7 @@ function timerTick() {
 }
 
 class Timer extends Widget {
-    static FONTES = [0.13, 0.26, 0.13];
+    static FONTES = [0.13, 0.28, 0.18];
 
     get intervalo() {
         return 1000;
@@ -1112,6 +1127,7 @@ class Timer extends Widget {
 
     construir() {
         this._criarTexto();
+        this._ocultar(this._topo);
         this._anim = this._animado();
         this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(COR.ambar)));
     }
@@ -1205,7 +1221,7 @@ function ativAmostrar() {
 const ultimo = (lista, padrao = 0) => (lista.length ? lista[lista.length - 1] : padrao);
 
 class Atividade extends Widget {
-    static FONTES = [0.13, 0.22, 0.13];
+    static FONTES = [0.13, 0.27, 0.17];
     static LARGURA = 2.2;
 
     get intervalo() {
@@ -1234,7 +1250,9 @@ class Atividade extends Widget {
         });
         if (this._largo)
             this._textoNoQuadrado();
-        this._topo.hide();
+        else
+            this._ocultar(this._base); // no quadrado, o RAM já está no anel de dentro e no tooltip
+        this._ocultar(this._topo);
     }
 
     atualizar() {
@@ -1302,7 +1320,7 @@ function redeAmostrar() {
 }
 
 class Rede extends Widget {
-    static FONTES = [0.19, 0.19, 0.12];
+    static FONTES = [0.22, 0.22, 0.12];
     static LARGURA = 2.2;
 
     get intervalo() {
@@ -1327,7 +1345,7 @@ class Rede extends Widget {
         this._texto.y_align = AL.START;
         this._topo.style += ` color: ${COR.ok};`;
         this._meio.style += ` color: ${COR.ambar};`;
-        this._base.hide();
+        this._ocultar(this._base);
         if (this._largo)
             this._textoNoQuadrado();
     }
@@ -1368,6 +1386,8 @@ class Rede extends Widget {
 
 // ----- Contagem regressiva -----
 class Contagem extends Widget {
+    static FONTES = [0.17, 0.3, 0.17];
+
     get intervalo() {
         return 60000;
     }
@@ -1414,10 +1434,11 @@ class Contagem extends Widget {
 
 // ----- Nota -----
 class Nota extends Widget {
-    static FONTES = [0.15, 0.15, 0.1];
+    static FONTES = [0.17, 0.2, 0.1];
 
     constructor(tam) {
         super(tam);
+        this._ocultar(this._topo, this._base);
         this._meio.clutter_text.line_wrap = true;
         this._meio.clutter_text.ellipsize = Pango.EllipsizeMode.END;
     }
@@ -1530,7 +1551,19 @@ export function pararClipboard() {
 }
 
 class AreaTransferencia extends Widget {
-    static FONTES = [0.15, 0.15, 0.14];
+    static FONTES = [0.15, 0.15, 0.26];
+
+    // Ícone de colar com a quantidade de itens embaixo; o conteúdo fica no painel e no tooltip.
+    construir() {
+        this._criarTexto();
+        this._ocultar(this._topo, this._meio);
+        this._icone = new St.Icon({
+            icon_name: 'edit-paste-symbolic', icon_size: Math.round(this._tam * 0.4), style_class: 'atlas-widget-txt',
+            x_align: AL.CENTER, y_align: AL.START, style: `margin-top: ${Math.round(this._tam * 0.1)}px;`,
+        });
+        this.actor.insert_child_below(this._icone, this._texto);
+        this._texto.y_align = AL.END;
+    }
 
     iniciar() {
         this._ouvinte = () => this.atualizar();
@@ -1549,15 +1582,12 @@ class AreaTransferencia extends Widget {
     }
 
     get etiqueta() {
-        return 'Área de transferência';
+        const ultimo = CLIP.historico[0] ?? this._fixados()[0];
+        return ultimo ? `Área de transferência: ${resumirTexto(ultimo, 40)}` : 'Área de transferência';
     }
 
     atualizar() {
-        const ultimo = CLIP.historico[0] ?? this._fixados()[0] ?? '';
-        this._txt(this._topo, 'COPIADO');
-        this._txt(this._meio, resumirTexto(ultimo, 14) || '—');
-        const n = CLIP.historico.length;
-        this._txt(this._base, `${n} item(ns)`);
+        this._txt(this._base, String(CLIP.historico.length + this._fixados().length));
     }
 
     _copiar(texto) {

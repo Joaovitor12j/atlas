@@ -9,6 +9,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Widgets redesenhados.** Em vez de blocos de texto, os tiles desenham o estado: anéis de progresso animados (pomodoro, timer, bateria, cronômetro), relógio de ponteiros, quatro anéis concêntricos para o progresso do tempo, anéis de CPU e memória, gráfico de rede. O tile pisca quando o timer ou o pomodoro acaba e quando a bateria está baixa.
 - **Painéis ricos ao clicar**, no lugar das listas de menu: calendário do mês (com navegação) no relógio; capa, progresso e controles na música; gráficos de CPU e rede; anéis grandes no pomodoro, timer, bateria e cronômetro; barras no progresso do tempo.
 - **Tiles largos** (opcionais, na aba Widgets, só com a doca embaixo) para Relógio (digital), Atividade e Rede (com gráfico). A **Música** larga virou uma pílula de vidro: capa arredondada, título, artista, barra de progresso fina e os controles (anterior, play/pausa, próxima) no próprio tile.
+- **Tiles pequenos mais legíveis**: fontes maiores, rótulo vazio some em vez de ocupar espaço, e cada widget mostra só o essencial dentro do anel (a Atividade deixa o RAM para o anel de dentro e o tooltip; a Área de transferência virou ícone com a contagem).
 - **Pele de vidro** nos tiles dos widgets: gradiente leve, borda de 1px e brilho especular na aresta de cima, a partir das referências de design do vault.
 
 ### Corrigido
