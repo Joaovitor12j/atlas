@@ -5,7 +5,16 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Alterado
+- **Widgets redesenhados.** Em vez de blocos de texto, os tiles desenham o estado: anéis de progresso animados (pomodoro, timer, bateria, cronômetro), relógio de ponteiros, quatro anéis concêntricos para o progresso do tempo, anéis de CPU e memória, gráfico de rede. O tile pisca quando o timer ou o pomodoro acaba e quando a bateria está baixa.
+- **Painéis ricos ao clicar**, no lugar das listas de menu: calendário do mês (com navegação) no relógio; capa, progresso e controles na música; gráficos de CPU e rede; anéis grandes no pomodoro, timer, bateria e cronômetro; barras no progresso do tempo.
+- **Tiles largos** (opcionais, na aba Widgets, só com a doca embaixo) para Relógio (digital), Música (capa, título e progresso), Atividade e Rede (com gráfico).
+
+### Corrigido
+- O tooltip podia seguir um ícone já destruído depois que a doca era reconstruída (aviso `St.Button ... already disposed` no log).
+
 ### Adicionado
+- `desenho.js`: desenho com Cairo separado do Shell; `tests/previa-desenho.js` gera um PNG para conferir os desenhos sem abrir o Shell.
 - Widget **Área de transferência**: histórico do que você copiou (só texto, até 20 itens) e textos fixados, com um clique para copiar de volta. O histórico fica só na memória e some ao desligar a extensão; só os fixados ficam salvos. Conteúdo marcado por gerenciadores de senha não entra, e o monitor para sozinho quando nenhum widget o usa.
 - Dica do **Não perturbe** na aba Ambientes e um aviso único, na primeira vez que o Não perturbe liga sem nenhum ambiente marcado, explicando onde marcar.
 

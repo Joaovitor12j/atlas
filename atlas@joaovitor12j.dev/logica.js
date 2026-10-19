@@ -131,3 +131,36 @@ export function resumirTexto(texto, max = 50) {
     const linha = (texto ?? '').trim().split(/\r?\n/)[0].replace(/\s+/g, ' ').trim();
     return linha.length > max ? `${linha.slice(0, max - 1)}…` : linha;
 }
+
+export const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+export const DIAS_SEMANA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+// Semanas do mês (domingo primeiro): listas de 7 posições com o dia, ou null fora do mês. `mes` vai de 1 a 12.
+export function semanasDoMes(ano, mes) {
+    const inicio = new Date(Date.UTC(ano, mes - 1, 1)).getUTCDay(); // 0 = domingo
+    const dias = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+    const celulas = [...Array(inicio).fill(null), ...Array.from({length: dias}, (_, i) => i + 1)];
+    while (celulas.length % 7)
+        celulas.push(null);
+    const semanas = [];
+    for (let i = 0; i < celulas.length; i += 7)
+        semanas.push(celulas.slice(i, i + 7));
+    return semanas;
+}
+
+// Mês anterior ou seguinte (delta = -1 ou 1), virando o ano quando preciso.
+export function mudarMes({ano, mes}, delta) {
+    const n = ano * 12 + (mes - 1) + delta;
+    return {ano: Math.floor(n / 12), mes: (n % 12) + 1};
+}
+
+// Maior valor das séries, com um piso, para escalar um gráfico sem ficar colado no teto.
+export function escalaGrafico(series, piso = 1) {
+    return Math.max(piso, ...series.flat().filter(Number.isFinite));
+}
+
+// Microssegundos -> "m:ss" (posição de uma faixa de música).
+export function formatarFaixa(us) {
+    const t = Math.max(0, Math.floor((Number(us) || 0) / 1e6));
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}

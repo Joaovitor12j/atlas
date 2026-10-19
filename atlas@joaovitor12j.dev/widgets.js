@@ -1,7 +1,9 @@
-// Widgets do ATLAS: tiles que desenham um estado vivo dentro da doca e abrem um painel (menu) ao clicar.
-// Cada widget tem três linhas de texto (topo, meio, base) e herda o ciclo de vida da classe base:
-// iniciar() -> atualizar() a cada `intervalo` ms -> destruir().
-// O estado que precisa sobreviver à reconstrução da doca (ex.: pomodoro) fica fora da classe.
+// Widgets do ATLAS: tiles vivos desenhados dentro da doca, que abrem um painel ao clicar.
+//
+// Um tile é um St.Widget em camadas: uma Camada de desenho (Cairo, ver desenho.js) por baixo e três linhas de
+// texto (topo, meio, base) por cima. Os que têm mais a mostrar ganham uma versão larga (static LARGURA).
+// Ciclo de vida: construir() -> iniciar() -> atualizar() a cada `intervalo` ms -> destruir().
+// O estado que precisa sobreviver à reconstrução da doca (pomodoro, histórico de CPU...) fica fora da classe.
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -10,13 +12,18 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {anel, barra, cor, grafico, relogioAnalogico} from './desenho.js';
 import {
-    calcularProgresso, diasAte, duracao, formatarCrono, formatarTaxa, pct, percentualCpu, proximaFase,
-    registrarCopia, resumirTexto,
+    DIAS_SEMANA, MESES, calcularProgresso, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa,
+    formatarTaxa, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes,
 } from './logica.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
 let CFG = null;
+
+const COR = {foco: '#e0654f', ok: '#3fb8a8', azul: '#4a90d9', ambar: '#e8a93a', erro: '#e24b4a'};
+const agoraMs = () => GLib.get_monotonic_time() / 1000;
+const AL = Clutter.ActorAlign;
 
 function linha(menu, texto) {
     const mi = new PopupMenu.PopupMenuItem(texto, {reactive: false, can_focus: false});
@@ -24,29 +31,124 @@ function linha(menu, texto) {
     return mi;
 }
 
+// Área de desenho com Cairo. `desenhar(cr, largura, altura, [r, g, b])` recebe a cor do texto do tema.
+// Sem classe de estilo (nos painéis do menu) herda a cor do próprio menu.
+// Texto dos menus do Shell, que são sempre escuros. Nos painéis a cor é fixa: buscar o nó de tema de um actor
+// dentro do menu, no meio da destruição dele, enche o log de avisos do GJS.
+const FG_MENU = [0.95, 0.95, 0.97];
+
+class Camada {
+    constructor(desenhar, classe = 'atlas-widget-txt') {
+        this.actor = new St.DrawingArea({style_class: classe || null, x_expand: true, y_expand: true});
+        this.actor.connect('repaint', a => {
+            const cr = a.get_context();
+            try {
+                const [w, h] = a.get_surface_size();
+                let fg = FG_MENU;
+                if (classe) {
+                    const c = a.get_theme_node().get_foreground_color();
+                    fg = [c.red / 255, c.green / 255, c.blue / 255];
+                }
+                desenhar(cr, w, h, fg);
+            } catch (e) {
+                console.error(`[atlas] erro ao desenhar o widget: ${e}`);
+            } finally {
+                cr.$dispose();
+            }
+        });
+    }
+
+    redesenhar() {
+        this.actor.queue_repaint();
+    }
+}
+
+// Valor que anda suave até o alvo (para os anéis). O primeiro valor entra direto, sem varrer do zero a cada
+// reconstrução da doca.
+class Animado {
+    constructor(aoMudar) {
+        this.atual = 0;
+        this.alvo = 0;
+        this._id = 0;
+        this._inicial = true;
+        this._aoMudar = aoMudar;
+    }
+
+    definir(alvo) {
+        this.alvo = alvo;
+        if (this._inicial) {
+            this._inicial = false;
+            this.atual = alvo;
+            this._aoMudar();
+            return;
+        }
+        if (this._id || Math.abs(alvo - this.atual) < 0.001)
+            return;
+        this._id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 33, () => {
+            this.atual += (this.alvo - this.atual) * 0.3;
+            const fim = Math.abs(this.alvo - this.atual) < 0.002;
+            if (fim)
+                this.atual = this.alvo;
+            this._aoMudar();
+            if (fim)
+                this._id = 0;
+            return fim ? GLib.SOURCE_REMOVE : GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    parar() {
+        if (this._id) {
+            GLib.source_remove(this._id);
+            this._id = 0;
+        }
+    }
+}
+
 class Widget {
     // Fração do tamanho do tile usada na fonte de cada linha: [topo, meio, base].
     static FONTES = [0.15, 0.28, 0.15];
+    // Largura da versão larga, em múltiplos do lado; 1 = o widget não tem versão larga.
+    static LARGURA = 1;
 
-    constructor(tam) {
+    constructor(tam, largo = false) {
         this._tam = tam;
+        this._largo = largo && this.constructor.LARGURA > 1;
+        this.larg = this._largo ? this.constructor.LARGURA : 1; // lido pelo dock
+        this._larg = Math.round(tam * this.larg);
         this._timerId = 0;
         this._destruido = false;
-        this.actor = new St.BoxLayout({style_class: 'atlas-widget', vertical: true, x_expand: true, y_expand: true});
-        this.actor.set_size(tam, tam);
+        this._camadas = [];
+        this._animados = [];
+        this._timersPainel = new Set();
+        this._pulsando = false;
+        this.actor = new St.Widget({
+            style_class: 'atlas-widget', layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true,
+        });
+        this.actor.set_size(this._larg, tam);
+        this.construir();
+    }
+
+    // Monta as camadas do tile; o padrão é só as três linhas de texto.
+    construir() {
+        this._criarTexto();
+    }
+
+    _criarTexto() {
         const [ft, fm, fb] = this.constructor.FONTES;
+        this._texto = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true});
         this._topo = this._label(ft, 'atlas-widget-sub');
         this._meio = this._label(fm, 'atlas-widget-txt');
         this._base = this._label(fb, 'atlas-widget-sub');
         for (const l of [this._topo, this._meio, this._base])
-            this.actor.add_child(l);
+            this._texto.add_child(l);
+        this.actor.add_child(this._texto);
     }
 
     _label(fator, classe) {
         const l = new St.Label({
             style_class: classe,
             style: `font-size: ${Math.max(7, Math.round(this._tam * fator))}px; text-align: center;`,
-            y_align: Clutter.ActorAlign.CENTER,
+            y_align: AL.CENTER,
             y_expand: true,
         });
         l.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -58,7 +160,121 @@ class Widget {
             label.text = texto;
     }
 
-    // Texto do tooltip e do primeiro item do painel.
+    // Camada de desenho por baixo do texto.
+    _camada(desenhar) {
+        const c = new Camada(desenhar);
+        this.actor.insert_child_below(c.actor, this._texto ?? null);
+        this._camadas.push(c);
+        return c;
+    }
+
+    _animado() {
+        const a = new Animado(() => this._camadas.forEach(c => c.redesenhar()));
+        this._animados.push(a);
+        return a;
+    }
+
+    _redesenhar() {
+        this._camadas.forEach(c => c.redesenhar());
+    }
+
+    // Texto à esquerda, ocupando só um quadrado, para o desenho largo usar o resto (versão larga).
+    _textoNoQuadrado(lado = this._tam) {
+        this._texto.set_width(lado);
+        this._texto.x_align = AL.START;
+    }
+
+    // Pisca o tile enquanto `ligar` for verdadeiro (fim do timer, bateria baixa).
+    _pulsar(ligar) {
+        if (ligar === this._pulsando)
+            return;
+        this._pulsando = ligar;
+        this.actor.remove_all_transitions();
+        if (!ligar) {
+            this.actor.opacity = 255;
+            return;
+        }
+        const ciclo = baixo => {
+            if (!this._pulsando || this._destruido)
+                return;
+            this.actor.ease({
+                opacity: baixo ? 110 : 255, duration: 650, mode: Clutter.AnimationMode.EASE_IN_OUT_QUAD,
+                onComplete: () => ciclo(!baixo),
+            });
+        };
+        ciclo(true);
+    }
+
+    // ----- painel (conteúdo do menu ao clicar) -----
+
+    // Põe um actor qualquer no menu, como uma linha que não reage ao clique.
+    _item(menu, actor) {
+        const it = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        it.add_child(actor);
+        menu.addMenuItem(it);
+        return it;
+    }
+
+    // Executa `fn` a cada `ms` enquanto o menu estiver aberto. Para ao fechar, ao destruir o menu (o dock
+    // destrói o menu antigo ao abrir outro, sem fechá-lo) e ao destruir o widget.
+    _vivo(menu, ms, fn, conteudo) {
+        const t = {id: 0};
+        let vivo = true; // o menu ainda vai abrir; só o fechamento ou a destruição encerram o laço
+        const parar = () => {
+            vivo = false;
+            if (t.id) {
+                GLib.source_remove(t.id);
+                t.id = 0;
+            }
+        };
+        t.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+            if (this._destruido || !vivo) {
+                t.id = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            fn();
+            return GLib.SOURCE_CONTINUE;
+        });
+        t.parar = parar;
+        this._timersPainel.add(t);
+        menu.connect('open-state-changed', (_m, aberto) => {
+            if (!aberto)
+                parar();
+        });
+        menu.connect('destroy', parar);
+        conteudo?.connect('destroy', parar); // o menu pode ser destruído ainda aberto, sem emitir nada
+    }
+
+    _textoPainel(texto, px = 13, extra = '') {
+        return new St.Label({text: texto, style: `font-size: ${px}px; ${extra}`, y_align: AL.CENTER});
+    }
+
+    // Anel grande com texto no centro, atualizado a cada segundo enquanto o menu está aberto.
+    _anelGrande(menu, {frac, cor: corFn, texto, sub = () => ''}) {
+        const lado = 112;
+        const caixa = new St.Widget({layout_manager: new Clutter.BinLayout(), width: lado, height: lado, x_align: AL.CENTER});
+        const camada = new Camada((cr, w, h) => anel(cr, w / 2, h / 2, w / 2 - 9, 8, frac(), cor(corFn())), '');
+        camada.actor.set_size(lado, lado);
+        caixa.add_child(camada.actor);
+        const centro = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true, y_align: AL.CENTER});
+        const t1 = this._textoPainel('', 24, 'font-weight: bold; text-align: center;');
+        const t2 = this._textoPainel('', 11, 'text-align: center;');
+        t1.x_align = t2.x_align = AL.CENTER;
+        centro.add_child(t1);
+        centro.add_child(t2);
+        caixa.add_child(centro);
+        const atualizar = () => {
+            t1.text = texto();
+            t2.text = sub();
+            camada.redesenhar();
+        };
+        atualizar();
+        this._item(menu, caixa);
+        this._vivo(menu, 1000, atualizar, caixa);
+        return atualizar;
+    }
+
+    // Texto do tooltip.
     get etiqueta() {
         return '';
     }
@@ -80,6 +296,12 @@ class Widget {
 
     destruir() {
         this._destruido = true;
+        this._pulsando = false;
+        this.actor.remove_all_transitions();
+        for (const a of this._animados)
+            a.parar();
+        for (const t of this._timersPainel)
+            t.parar();
         if (this._timerId) {
             GLib.source_remove(this._timerId);
             this._timerId = 0;
@@ -92,8 +314,11 @@ class Widget {
     fillMenu(_menu) {}
 }
 
-// ----- Relógio -----
+// ----- Relógio: de ponteiros no tile quadrado, digital no largo; calendário do mês no painel -----
 class Relogio extends Widget {
+    static FONTES = [0.14, 0.32, 0.14];
+    static LARGURA = 2.2;
+
     get intervalo() {
         return 1000;
     }
@@ -102,18 +327,75 @@ class Relogio extends Widget {
         return GLib.DateTime.new_now_local().format('%A, %d de %B');
     }
 
+    construir() {
+        this._criarTexto();
+        this._hms = [0, 0, 0];
+        if (this._largo) {
+            this._camada((cr, w, h) => barra(cr, 18, h - 11, w - 36, 3, this._hms[2] / 60, cor(COR.ambar)));
+        } else {
+            this._camada((cr, w, h, fg) => relogioAnalogico(cr, w / 2, h / 2, Math.min(w, h) / 2 - 9,
+                ...this._hms, fg, cor(COR.foco)));
+            this._texto.hide();
+        }
+    }
+
     atualizar() {
         const d = GLib.DateTime.new_now_local();
-        this._txt(this._topo, d.format('%a').toUpperCase());
-        this._txt(this._meio, d.format(CFG?.get_boolean('relogio-24h') ?? true ? '%H:%M' : '%I:%M'));
-        this._txt(this._base, d.format('%d/%m'));
+        this._hms = [d.get_hour(), d.get_minute(), d.get_second()];
+        if (this._largo) {
+            this._txt(this._topo, d.format('%a, %d %b').toUpperCase());
+            this._txt(this._meio, d.format(CFG?.get_boolean('relogio-24h') ?? true ? '%H:%M' : '%I:%M'));
+            this._txt(this._base, '');
+        }
+        this._redesenhar();
     }
 
     fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Calendário'));
         const d = GLib.DateTime.new_now_local();
-        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Relógio'));
+        let vis = {ano: d.get_year(), mes: d.get_month()};
+
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 6px; min-width: 238px;'});
+        const cab = new St.BoxLayout({style: 'spacing: 4px;'});
+        const botao = (texto, delta) => {
+            const b = new St.Button({label: texto, style_class: 'button', can_focus: true, style: 'padding: 2px 10px;'});
+            b.connect('clicked', () => {
+                vis = mudarMes(vis, delta);
+                desenhar();
+            });
+            return b;
+        };
+        const titulo = this._textoPainel('', 14, 'font-weight: bold; text-align: center;');
+        titulo.x_expand = true;
+        cab.add_child(botao('‹', -1));
+        cab.add_child(titulo);
+        cab.add_child(botao('›', 1));
+        const grade = new St.Widget({layout_manager: new Clutter.GridLayout(), style: 'padding-top: 2px;'});
+        caixa.add_child(cab);
+        caixa.add_child(grade);
+
+        const celula = (texto, estilo = '') => new St.Label({
+            text: texto, x_align: AL.CENTER, y_align: AL.CENTER,
+            style: `width: 32px; height: 26px; text-align: center; ${estilo}`,
+        });
+        const desenhar = () => {
+            const hoje = GLib.DateTime.new_now_local();
+            titulo.text = `${MESES[vis.mes - 1]} de ${vis.ano}`;
+            grade.destroy_all_children();
+            const lm = grade.layout_manager;
+            DIAS_SEMANA.forEach((n, c) => lm.attach(celula(n, 'opacity: 150; font-size: 11px;'), c, 0, 1, 1));
+            semanasDoMes(vis.ano, vis.mes).forEach((sem, r) => sem.forEach((dia, c) => {
+                if (dia === null)
+                    return;
+                const ehHoje = dia === hoje.get_day_of_month() && vis.mes === hoje.get_month() && vis.ano === hoje.get_year();
+                lm.attach(celula(String(dia), ehHoje
+                    ? `background-color: ${COR.foco}; color: white; border-radius: 13px; font-weight: bold;`
+                    : (c === 0 ? 'opacity: 190;' : '')), c, r + 1, 1, 1);
+            }));
+        };
+        desenhar();
+        this._item(menu, caixa);
         linha(menu, d.format(CFG?.get_boolean('relogio-24h') ?? true ? '%H:%M:%S' : '%I:%M:%S %p'));
-        linha(menu, d.format('%A, %d de %B de %Y'));
     }
 }
 
@@ -121,15 +403,13 @@ class Relogio extends Widget {
 // Fica fora da classe: a doca é reconstruída com frequência e o contador não pode zerar.
 const MIN = 60 * 1000;
 const FASES = {
-    foco: {nome: 'Foco', chave: 'pomodoro-foco', padrao: 25, cor: '#e0654f'},
-    pausa: {nome: 'Pausa', chave: 'pomodoro-pausa', padrao: 5, cor: '#3fb8a8'},
-    longa: {nome: 'Pausa longa', chave: 'pomodoro-pausa-longa', padrao: 15, cor: '#4a90d9'},
+    foco: {nome: 'Foco', chave: 'pomodoro-foco', padrao: 25, cor: COR.foco},
+    pausa: {nome: 'Pausa', chave: 'pomodoro-pausa', padrao: 5, cor: COR.ok},
+    longa: {nome: 'Pausa longa', chave: 'pomodoro-pausa-longa', padrao: 15, cor: COR.azul},
 };
 const duracaoFase = fase => (CFG?.get_int(FASES[fase].chave) ?? FASES[fase].padrao) * MIN;
 // `intacto`: a fase ainda não rodou, então uma mudança de duração nas preferências vale na hora.
-const POMO = {fase: 'foco', fim: 0, restante: 25 * MIN, intacto: true, ciclos: 0, dia: ''};
-
-const agoraMs = () => GLib.get_monotonic_time() / 1000;
+const POMO = {fase: 'foco', fim: 0, restante: 25 * MIN, intacto: true, ciclos: 0, dia: '', pulsoAte: 0};
 
 function pomoRestante() {
     return POMO.fim ? Math.max(0, POMO.fim - agoraMs()) : POMO.restante;
@@ -159,10 +439,14 @@ function pomoTick() {
     if (POMO.fim && agoraMs() >= POMO.fim) {
         const terminou = POMO.fase;
         pomoAvancar();
+        POMO.pulsoAte = agoraMs() + 10000; // o tile pisca por 10 s
         Main.notify('ATLAS',
             terminou === 'foco' ? `Foco concluído. Hora da ${FASES[POMO.fase].nome.toLowerCase()}.` : 'Pausa acabou. Hora de focar.');
     }
 }
+
+const pomoFrac = () => (POMO.intacto && !POMO.fim ? 0 : 1 - pomoRestante() / duracaoFase(POMO.fase));
+const mmss = ms => formatarCrono(Math.ceil(ms / 1000) * 1000);
 
 class Pomodoro extends Widget {
     get intervalo() {
@@ -173,21 +457,31 @@ class Pomodoro extends Widget {
         return `Pomodoro: ${FASES[POMO.fase].nome}`;
     }
 
+    construir() {
+        this._criarTexto();
+        this._anim = this._animado();
+        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(FASES[POMO.fase].cor)));
+    }
+
     atualizar() {
         pomoTick();
         if (POMO.intacto && !POMO.fim)
             POMO.restante = duracaoFase(POMO.fase);
-        const seg = Math.ceil(pomoRestante() / 1000);
         const f = FASES[POMO.fase];
+        const c = POMO.ciclos % 4;
         this._txt(this._topo, f.nome.toUpperCase());
-        this._txt(this._meio, `${String(Math.floor(seg / 60)).padStart(2, '0')}:${String(seg % 60).padStart(2, '0')}`);
-        this._txt(this._base, `${POMO.ciclos % 4}/4${POMO.fim ? '' : '  ❚❚'}`);
-        this.actor.style = `border-color: ${f.cor};`;
+        this._txt(this._meio, mmss(pomoRestante()));
+        this._txt(this._base, '●'.repeat(c) + '○'.repeat(4 - c));
+        this._anim.definir(pomoFrac());
+        this._pulsar(agoraMs() < POMO.pulsoAte);
     }
 
     fillMenu(menu) {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Pomodoro'));
-        linha(menu, `${FASES[POMO.fase].nome}, ${POMO.ciclos} ciclo(s) hoje`);
+        this._anelGrande(menu, {
+            frac: pomoFrac, cor: () => FASES[POMO.fase].cor, texto: () => mmss(pomoRestante()),
+            sub: () => `${FASES[POMO.fase].nome} · ${POMO.ciclos} ciclo(s) hoje`,
+        });
         menu.addAction(POMO.fim ? 'Pausar' : 'Iniciar', () => {
             if (POMO.fim) {
                 POMO.restante = pomoRestante();
@@ -195,16 +489,19 @@ class Pomodoro extends Widget {
             } else {
                 POMO.fim = agoraMs() + POMO.restante;
                 POMO.intacto = false;
+                POMO.pulsoAte = 0;
             }
             this.atualizar();
         });
         menu.addAction('Pular fase', () => {
             pomoAvancar();
+            POMO.pulsoAte = 0;
             this.atualizar();
         });
         menu.addAction('Reiniciar', () => {
             POMO.ciclos = 0;
             pomoTrocarFase('foco');
+            POMO.pulsoAte = 0;
             this.atualizar();
         });
     }
@@ -212,6 +509,12 @@ class Pomodoro extends Widget {
 
 // ----- Bateria (UPower) -----
 class Bateria extends Widget {
+    construir() {
+        this._criarTexto();
+        this._anim = this._animado();
+        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(this._corAnel ?? COR.ok)));
+    }
+
     iniciar() {
         Gio.DBusProxy.new_for_bus(Gio.BusType.SYSTEM, Gio.DBusProxyFlags.NONE, null,
             'org.freedesktop.UPower', '/org/freedesktop/UPower/devices/DisplayDevice',
@@ -251,6 +554,12 @@ class Bateria extends Widget {
         return {pct: Math.round(this._prop('Percentage') ?? 0), estado, seg};
     }
 
+    _cor(d) {
+        if (d.estado === 1)
+            return COR.azul;
+        return d.pct <= 15 ? COR.erro : d.pct <= 40 ? COR.ambar : COR.ok;
+    }
+
     get etiqueta() {
         const d = this._dados();
         return d ? `Bateria: ${d.pct}%` : 'Bateria';
@@ -262,37 +571,80 @@ class Bateria extends Widget {
             this._txt(this._topo, 'ENERGIA');
             this._txt(this._meio, 'AC');
             this._txt(this._base, this._proxy ? 'sem bateria' : '...');
-            this.actor.style = '';
+            this._anim.definir(0);
+            this._pulsar(false);
             return;
         }
-        this._txt(this._topo, d.estado === 1 ? 'CARREGANDO' : d.estado === 4 ? 'CHEIA' : 'BATERIA');
+        this._corAnel = this._cor(d);
+        this._txt(this._topo, d.estado === 1 ? '⚡ CARREGANDO' : d.estado === 4 ? 'CHEIA' : 'BATERIA');
         this._txt(this._meio, `${d.pct}%`);
         this._txt(this._base, d.seg > 0 ? duracao(d.seg) : '');
-        const baixa = d.estado === 2 && d.pct <= 15;
-        this.actor.style = `border-color: ${baixa ? '#e24b4a' : d.estado === 1 ? '#3fb8a8' : 'transparent'};`;
+        this._anim.definir(d.pct / 100);
+        this._pulsar(d.estado === 2 && d.pct <= 15);
     }
 
     fillMenu(menu) {
-        const d = this._dados();
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Bateria'));
-        if (!d) {
+        const d0 = this._dados();
+        if (!d0) {
             linha(menu, 'Sem bateria detectada');
             return;
         }
-        const quando = d.estado === 1 ? 'para carregar' : 'restante';
-        linha(menu, `${d.pct}%${d.seg > 0 ? `, ${duracao(d.seg)} ${quando}` : ''}`);
+        this._anelGrande(menu, {
+            frac: () => (this._dados()?.pct ?? 0) / 100,
+            cor: () => (this._dados() ? this._cor(this._dados()) : COR.ok),
+            texto: () => `${this._dados()?.pct ?? 0}%`,
+            sub: () => {
+                const d = this._dados();
+                if (!d)
+                    return '';
+                const estado = d.estado === 1 ? 'carregando' : d.estado === 4 ? 'cheia' : 'na bateria';
+                return d.seg > 0 ? `${estado} · ${duracao(d.seg)}` : estado;
+            },
+        });
     }
 }
 
 // ----- Música (MPRIS) -----
 const MPRIS = 'org.mpris.MediaPlayer2.';
+const ICONE_MUSICA = 'audio-x-generic-symbolic';
 
 class Musica extends Widget {
-    static FONTES = [0.15, 0.17, 0.14];
+    static FONTES = [0.13, 0.17, 0.14];
+    static LARGURA = 2.2;
 
-    constructor(tam) {
-        super(tam);
+    constructor(tam, largo) {
+        super(tam, largo);
         this._players = new Map(); // nome do bus -> {proxy, sig}, ou null enquanto o proxy é criado
+        this._pos = 0;
+    }
+
+    get intervalo() {
+        return 1000;
+    }
+
+    construir() {
+        this._criarTexto();
+        const lado = this._largo ? this._tam - 14 : this._tam - 10;
+        this._arte = new St.Icon({
+            icon_name: ICONE_MUSICA, icon_size: lado, style: 'border-radius: 10px;',
+            x_align: this._largo ? AL.START : AL.CENTER, y_align: AL.CENTER,
+        });
+        if (this._largo)
+            this._arte.style += ' margin-left: 7px;';
+        this.actor.insert_child_below(this._arte, this._texto);
+        if (this._largo) {
+            this._camada((cr, w, h) => barra(cr, this._tam + 4, h - 15, w - this._tam - 18, 4, this._frac(), cor(COR.ok)));
+            this._texto.set_width(this._larg - this._tam);
+            this._texto.x_align = AL.END;
+            for (const l of [this._topo, this._meio, this._base])
+                l.style += ' text-align: left; padding-right: 8px;';
+            this._base.y_expand = false;
+        } else {
+            this._texto.y_align = AL.START;
+            this._meio.hide();
+            this._base.hide();
+        }
     }
 
     iniciar() {
@@ -300,6 +652,7 @@ class Musica extends Widget {
             'NameOwnerChanged', '/org/freedesktop/DBus', null, Gio.DBusSignalFlags.NONE, () => this._listar());
         this.atualizar();
         this._listar();
+        super.iniciar();
     }
 
     parar() {
@@ -376,9 +729,50 @@ class Musica extends Widget {
     _meta(p) {
         try {
             const m = p.proxy.get_cached_property('Metadata')?.recursiveUnpack() ?? {};
-            return {titulo: m['xesam:title'] || 'Sem título', artista: [].concat(m['xesam:artist'] ?? []).join(', ')};
+            return {
+                titulo: m['xesam:title'] || 'Sem título',
+                artista: [].concat(m['xesam:artist'] ?? []).join(', '),
+                arte: m['mpris:artUrl'] || '',
+                duracao: Number(m['mpris:length']) || 0,
+            };
         } catch (_e) {
-            return {titulo: 'Sem título', artista: ''};
+            return {titulo: 'Sem título', artista: '', arte: '', duracao: 0};
+        }
+    }
+
+    // A posição não é emitida como sinal; precisa ser perguntada.
+    _pedirPosicao(p) {
+        Gio.DBus.session.call(p.proxy.get_name(), '/org/mpris/MediaPlayer2', 'org.freedesktop.DBus.Properties', 'Get',
+            new GLib.Variant('(ss)', ['org.mpris.MediaPlayer2.Player', 'Position']), new GLib.VariantType('(v)'),
+            Gio.DBusCallFlags.NONE, 500, null, (conn, res) => {
+                if (this._destruido)
+                    return;
+                try {
+                    [this._pos] = conn.call_finish(res).recursiveUnpack();
+                    this._pos = Number(this._pos) || 0;
+                    this._redesenhar();
+                } catch (_e) { /* player sem Position */ }
+            });
+    }
+
+    _frac() {
+        const p = this._ativo();
+        const dur = p ? this._meta(p).duracao : 0;
+        return dur > 0 ? this._pos / dur : 0;
+    }
+
+    // Aplica a capa (ou o ícone padrão) a um St.Icon, só quando a URL muda.
+    _aplicarArte(icone, url) {
+        if (icone._url === url)
+            return;
+        icone._url = url;
+        try {
+            if (url)
+                icone.gicon = new Gio.FileIcon({file: Gio.File.new_for_uri(url)});
+            else
+                icone.icon_name = ICONE_MUSICA;
+        } catch (_e) {
+            icone.icon_name = ICONE_MUSICA;
         }
     }
 
@@ -393,15 +787,21 @@ class Musica extends Widget {
     atualizar() {
         const p = this._ativo();
         if (!p) {
+            this._aplicarArte(this._arte, '');
             this._txt(this._topo, 'MÚSICA');
-            this._txt(this._meio, '♪');
-            this._txt(this._base, 'sem player');
+            this._txt(this._meio, 'sem player');
+            this._txt(this._base, '');
             return;
         }
         const m = this._meta(p);
-        this._txt(this._topo, this._estado(p) === 'Playing' ? '▶ TOCANDO' : '❚❚ PAUSADO');
+        const tocando = this._estado(p) === 'Playing';
+        this._aplicarArte(this._arte, m.arte);
+        this._txt(this._topo, tocando ? '▶' : '❚❚');
         this._txt(this._meio, m.titulo);
         this._txt(this._base, m.artista);
+        if (this._largo && tocando)
+            this._pedirPosicao(p);
+        this._redesenhar();
     }
 
     _chamar(p, metodo) {
@@ -419,18 +819,67 @@ class Musica extends Widget {
             linha(menu, 'Nenhum player aberto');
             return;
         }
-        const m = this._meta(p);
-        linha(menu, m.titulo);
-        if (m.artista)
-            linha(menu, m.artista);
-        menu.addAction('Anterior', () => this._chamar(p, 'Previous'));
-        menu.addAction(this._estado(p) === 'Playing' ? 'Pausar' : 'Tocar', () => this._chamar(p, 'PlayPause'));
-        menu.addAction('Próxima', () => this._chamar(p, 'Next'));
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 8px; min-width: 232px;'});
+        const arte = new St.Icon({icon_name: ICONE_MUSICA, icon_size: 168, x_align: AL.CENTER, style: 'border-radius: 12px;'});
+        const titulo = this._textoPainel('', 15, 'font-weight: bold; text-align: center;');
+        const artista = this._textoPainel('', 12, 'opacity: 170; text-align: center;');
+        const tempos = new St.BoxLayout({style: 'spacing: 6px;'});
+        const tAtual = this._textoPainel('0:00', 11);
+        const tTotal = this._textoPainel('0:00', 11);
+        let frac = 0;
+        const progresso = new Camada((cr, w, h) => barra(cr, 0, h / 2 - 2, w, 4, frac, cor(COR.ok)), '');
+        progresso.actor.set_height(14);
+        progresso.actor.x_expand = true;
+        tempos.add_child(tAtual);
+        tempos.add_child(progresso.actor);
+        tempos.add_child(tTotal);
+
+        const controles = new St.BoxLayout({style: 'spacing: 14px;', x_align: AL.CENTER});
+        const botao = (icone, aoClicar) => {
+            const b = new St.Button({
+                style_class: 'button', can_focus: true, style: 'padding: 6px 14px; border-radius: 99px;',
+                child: new St.Icon({icon_name: icone, icon_size: 18}),
+            });
+            b.connect('clicked', aoClicar);
+            controles.add_child(b);
+            return b;
+        };
+        botao('media-skip-backward-symbolic', () => this._chamar(p, 'Previous'));
+        const play = botao('media-playback-start-symbolic', () => {
+            this._chamar(p, 'PlayPause');
+        });
+        botao('media-skip-forward-symbolic', () => this._chamar(p, 'Next'));
+
+        const atualizar = () => {
+            const m = this._meta(p);
+            this._aplicarArte(arte, m.arte);
+            titulo.text = m.titulo;
+            artista.text = m.artista;
+            tTotal.text = formatarFaixa(m.duracao);
+            tAtual.text = formatarFaixa(this._pos);
+            frac = m.duracao > 0 ? this._pos / m.duracao : 0;
+            play.child.icon_name = this._estado(p) === 'Playing' ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
+            progresso.redesenhar();
+            this._pedirPosicao(p);
+        };
+        for (const a of [arte, titulo, artista])
+            caixa.add_child(a);
+        caixa.add_child(tempos);
+        caixa.add_child(controles);
+        this._item(menu, caixa);
+        atualizar();
+        this._vivo(menu, 1000, atualizar, caixa);
     }
 }
 
+// ----- Progresso do tempo: quatro anéis concêntricos (dia, semana, mês, ano) -----
+const PROGRESSO = [
+    ['Dia', 'dia', COR.foco],
+    ['Semana', 'semana', COR.ambar],
+    ['Mês', 'mes', COR.ok],
+    ['Ano', 'ano', COR.azul],
+];
 
-// ----- Progresso do tempo -----
 function progresso() {
     const d = GLib.DateTime.new_now_local();
     return calcularProgresso({
@@ -442,6 +891,8 @@ function progresso() {
 }
 
 class Progresso extends Widget {
+    static FONTES = [0.13, 0.22, 0.13];
+
     get intervalo() {
         return 30000;
     }
@@ -451,18 +902,48 @@ class Progresso extends Widget {
         return `Hoje ${pct(p.dia)}, semana ${pct(p.semana)}, mês ${pct(p.mes)}, ano ${pct(p.ano)}`;
     }
 
+    construir() {
+        this._criarTexto();
+        this._p = progresso();
+        this._camada((cr, w, h) => {
+            const r0 = Math.min(w, h) / 2 - 5;
+            PROGRESSO.forEach(([, chave, c], i) => anel(cr, w / 2, h / 2, r0 - i * 6.5, 3.6, this._p[chave], cor(c)));
+        });
+        this._texto.y_align = AL.CENTER;
+        this._topo.hide();
+        this._base.hide();
+    }
+
     atualizar() {
-        const p = progresso();
-        this._txt(this._topo, 'HOJE');
-        this._txt(this._meio, pct(p.dia));
-        this._txt(this._base, `S ${pct(p.semana)} · A ${pct(p.ano)}`);
+        this._p = progresso();
+        this._txt(this._meio, pct(this._p.dia));
+        this._redesenhar();
     }
 
     fillMenu(menu) {
-        const p = progresso();
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Progresso do tempo'));
-        for (const [nome, v] of [['Dia', p.dia], ['Semana', p.semana], ['Mês', p.mes], ['Ano', p.ano]])
-            linha(menu, `${nome}: ${pct(v)}`);
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 8px; min-width: 240px;'});
+        const linhas = PROGRESSO.map(([nome, chave, c]) => {
+            const l = new St.BoxLayout({style: 'spacing: 8px;'});
+            const rotulo = this._textoPainel('', 12, 'min-width: 92px;');
+            let f = 0;
+            const barraCamada = new Camada((cr, w, h) => barra(cr, 0, h / 2 - 4, w, 8, f, cor(c)), '');
+            barraCamada.actor.set_height(18);
+            barraCamada.actor.x_expand = true;
+            l.add_child(rotulo);
+            l.add_child(barraCamada.actor);
+            caixa.add_child(l);
+            return () => {
+                const p = progresso();
+                f = p[chave];
+                rotulo.text = `${nome} ${pct(f)}`;
+                barraCamada.redesenhar();
+            };
+        });
+        const atualizar = () => linhas.forEach(fn => fn());
+        atualizar();
+        this._item(menu, caixa);
+        this._vivo(menu, 5000, atualizar, caixa);
     }
 }
 
@@ -472,6 +953,8 @@ const CRONO = {inicio: 0, acumulado: 0, voltas: []};
 const cronoMs = () => CRONO.acumulado + (CRONO.inicio ? agoraMs() - CRONO.inicio : 0);
 
 class Cronometro extends Widget {
+    static FONTES = [0.13, 0.24, 0.13];
+
     get intervalo() {
         return 250;
     }
@@ -480,15 +963,26 @@ class Cronometro extends Widget {
         return `Cronômetro: ${formatarCrono(cronoMs())}`;
     }
 
+    construir() {
+        this._criarTexto();
+        // o anel dá uma volta por minuto
+        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, (cronoMs() % 60000) / 60000,
+            cor(CRONO.inicio ? COR.ok : COR.ambar)));
+    }
+
     atualizar() {
         this._txt(this._topo, 'CRONÔMETRO');
         this._txt(this._meio, formatarCrono(cronoMs()));
         this._txt(this._base, CRONO.voltas.length ? `${CRONO.voltas.length} volta(s)` : (CRONO.inicio ? '' : '❚❚'));
-        this.actor.style = CRONO.inicio ? 'border-color: #3fb8a8;' : '';
+        this._redesenhar();
     }
 
     fillMenu(menu) {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Cronômetro'));
+        this._anelGrande(menu, {
+            frac: () => (cronoMs() % 60000) / 60000, cor: () => (CRONO.inicio ? COR.ok : COR.ambar),
+            texto: () => formatarCrono(cronoMs()), sub: () => (CRONO.inicio ? 'rodando' : 'parado'),
+        });
         menu.addAction(CRONO.inicio ? 'Pausar' : 'Iniciar', () => {
             if (CRONO.inicio) {
                 CRONO.acumulado = cronoMs();
@@ -518,22 +1012,29 @@ class Cronometro extends Widget {
 
 // ----- Timer (contagem regressiva) -----
 const duracaoTimer = () => (CFG?.get_int('timer-minutos') ?? 10) * MIN;
-const TIMER = {fim: 0, restante: 10 * MIN, intacto: true};
+// `extra`: minutos somados com "+1 minuto", para o anel continuar proporcional.
+const TIMER = {fim: 0, restante: 10 * MIN, intacto: true, extra: 0, pulsoAte: 0};
 
 function timerRestante() {
     return TIMER.fim ? Math.max(0, TIMER.fim - agoraMs()) : TIMER.restante;
 }
 
+const timerFrac = () => (TIMER.intacto && !TIMER.fim ? 0 : 1 - timerRestante() / (duracaoTimer() + TIMER.extra));
+
 function timerTick() {
     if (TIMER.fim && agoraMs() >= TIMER.fim) {
         TIMER.fim = 0;
+        TIMER.extra = 0;
         TIMER.restante = duracaoTimer();
         TIMER.intacto = true;
+        TIMER.pulsoAte = agoraMs() + 10000;
         Main.notify('ATLAS', 'O timer acabou.');
     }
 }
 
 class Timer extends Widget {
+    static FONTES = [0.13, 0.26, 0.13];
+
     get intervalo() {
         return 1000;
     }
@@ -542,19 +1043,29 @@ class Timer extends Widget {
         return 'Timer';
     }
 
+    construir() {
+        this._criarTexto();
+        this._anim = this._animado();
+        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(COR.ambar)));
+    }
+
     atualizar() {
         timerTick();
         if (TIMER.intacto && !TIMER.fim)
             TIMER.restante = duracaoTimer();
-        const seg = Math.ceil(timerRestante() / 1000);
         this._txt(this._topo, 'TIMER');
-        this._txt(this._meio, formatarCrono(seg * 1000));
+        this._txt(this._meio, mmss(timerRestante()));
         this._txt(this._base, TIMER.fim ? '' : '❚❚');
-        this.actor.style = TIMER.fim ? 'border-color: #e8a93a;' : '';
+        this._anim.definir(timerFrac());
+        this._pulsar(agoraMs() < TIMER.pulsoAte);
     }
 
     fillMenu(menu) {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Timer'));
+        this._anelGrande(menu, {
+            frac: timerFrac, cor: () => COR.ambar, texto: () => mmss(timerRestante()),
+            sub: () => (TIMER.fim ? 'contando' : 'parado'),
+        });
         menu.addAction(TIMER.fim ? 'Pausar' : 'Iniciar', () => {
             if (TIMER.fim) {
                 TIMER.restante = timerRestante();
@@ -562,6 +1073,7 @@ class Timer extends Widget {
             } else {
                 TIMER.fim = agoraMs() + TIMER.restante;
                 TIMER.intacto = false;
+                TIMER.pulsoAte = 0;
             }
             this.atualizar();
         });
@@ -570,13 +1082,16 @@ class Timer extends Widget {
                 TIMER.fim += MIN;
             else
                 TIMER.restante += MIN;
+            TIMER.extra += MIN;
             TIMER.intacto = false;
             this.atualizar();
         });
         menu.addAction('Reiniciar', () => {
             TIMER.fim = 0;
+            TIMER.extra = 0;
             TIMER.restante = duracaoTimer();
             TIMER.intacto = true;
+            TIMER.pulsoAte = 0;
             this.atualizar();
         });
     }
@@ -592,90 +1107,195 @@ function lerProc(caminho) {
     }
 }
 
+const empilhar = (lista, v, max = 60) => {
+    lista.push(v);
+    if (lista.length > max)
+        lista.shift();
+};
+
+// Amostras compartilhadas: o gráfico não zera quando a doca é reconstruída nem quando há uma doca por tela.
+const ATIV = {cpu: [], mem: [], ant: null, ultimo: 0};
+
+function ativAmostrar() {
+    const agora = agoraMs();
+    if (ATIV.ultimo && agora - ATIV.ultimo < 1500)
+        return;
+    ATIV.ultimo = agora;
+    const n = lerProc('/proc/stat').split('\n')[0].trim().split(/\s+/).slice(1, 9).map(Number);
+    const atual = n.length >= 4 ? {total: n.reduce((a, b) => a + b, 0), ocioso: n[3] + (n[4] || 0)} : null;
+    const cpu = percentualCpu(ATIV.ant, atual);
+    if (atual)
+        ATIV.ant = atual;
+    const txt = lerProc('/proc/meminfo');
+    const total = Number(/MemTotal:\s+(\d+)/.exec(txt)?.[1]);
+    const livre = Number(/MemAvailable:\s+(\d+)/.exec(txt)?.[1]);
+    if (cpu !== null)
+        empilhar(ATIV.cpu, cpu);
+    if (total)
+        empilhar(ATIV.mem, Math.round((1 - livre / total) * 100));
+}
+
+const ultimo = (lista, padrao = 0) => (lista.length ? lista[lista.length - 1] : padrao);
+
 class Atividade extends Widget {
+    static FONTES = [0.13, 0.22, 0.13];
+    static LARGURA = 2.2;
+
     get intervalo() {
         return 2000;
     }
 
     get etiqueta() {
-        return `CPU ${this._cpu ?? 0}%, memória ${this._mem ?? 0}%`;
+        return `CPU ${ultimo(ATIV.cpu)}%, memória ${ultimo(ATIV.mem)}%`;
     }
 
-    _lerCpu() {
-        const n = lerProc('/proc/stat').split('\n')[0].trim().split(/\s+/).slice(1, 9).map(Number);
-        if (n.length < 4)
-            return null;
-        return {total: n.reduce((a, b) => a + b, 0), ocioso: n[3] + (n[4] || 0)};
-    }
-
-    _lerMem() {
-        const txt = lerProc('/proc/meminfo');
-        const total = Number(/MemTotal:\s+(\d+)/.exec(txt)?.[1]);
-        const livre = Number(/MemAvailable:\s+(\d+)/.exec(txt)?.[1]);
-        return total ? Math.round((1 - livre / total) * 100) : 0;
+    construir() {
+        this._criarTexto();
+        this._camada((cr, w, h) => {
+            const lado = Math.min(h, this._tam);
+            const cx = lado / 2;
+            const cy = h / 2;
+            const r = lado / 2 - 6;
+            anel(cr, cx, cy, r, 5, ultimo(ATIV.cpu) / 100, cor(COR.ambar));
+            anel(cr, cx, cy, r - 8, 4, ultimo(ATIV.mem) / 100, cor(COR.azul));
+            if (this._largo) {
+                grafico(cr, lado + 6, 12, w - lado - 18, h - 24, [
+                    {valores: ATIV.mem, cor: cor(COR.azul, 0.9)},
+                    {valores: ATIV.cpu, cor: cor(COR.ambar), preencher: true},
+                ]);
+            }
+        });
+        if (this._largo)
+            this._textoNoQuadrado();
+        this._topo.hide();
     }
 
     atualizar() {
-        const agora = this._lerCpu();
-        this._cpu = percentualCpu(this._ant, agora) ?? this._cpu;
-        this._ant = agora ?? this._ant;
-        this._mem = this._lerMem();
-        this._txt(this._topo, 'CPU');
-        this._txt(this._meio, `${this._cpu ?? 0}%`);
-        this._txt(this._base, `RAM ${this._mem}%`);
-        this.actor.style = (this._cpu ?? 0) >= 90 ? 'border-color: #e24b4a;' : '';
+        ativAmostrar();
+        this._txt(this._meio, `${ultimo(ATIV.cpu)}%`);
+        this._txt(this._base, `RAM ${ultimo(ATIV.mem)}%`);
+        this._redesenhar();
     }
 
     fillMenu(menu) {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Atividade'));
-        linha(menu, `Processador: ${this._cpu ?? 0}%`);
-        linha(menu, `Memória: ${this._mem ?? 0}%`);
+        const l = this._textoPainel('', 13);
+        const grade = new Camada((cr, w, h) => {
+            cr.setSourceRGBA(0.5, 0.5, 0.5, 0.12);
+            cr.rectangle(0, 0, w, h);
+            cr.fill();
+            grafico(cr, 4, 6, w - 8, h - 12, [
+                {valores: ATIV.mem, cor: cor(COR.azul, 0.9)},
+                {valores: ATIV.cpu, cor: cor(COR.ambar), preencher: true},
+            ]);
+        }, '');
+        grade.actor.set_size(244, 92);
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 6px;'});
+        caixa.add_child(grade.actor);
+        caixa.add_child(l);
+        const atualizar = () => {
+            ativAmostrar();
+            l.text = `CPU ${ultimo(ATIV.cpu)}%  ·  Memória ${ultimo(ATIV.mem)}%`;
+            grade.redesenhar();
+        };
+        atualizar();
+        this._item(menu, caixa);
+        this._vivo(menu, 2000, atualizar, caixa);
     }
 }
 
 // ----- Rede (bytes por segundo, via /proc/net/dev) -----
+function formatarBps(bps) {
+    return `${formatarTaxa(bps)}/s`;
+}
+
+const REDE = {down: [], up: [], ant: null, ultimo: 0};
+
+function redeAmostrar() {
+    const t = agoraMs();
+    if (REDE.ultimo && t - REDE.ultimo < 800)
+        return;
+    REDE.ultimo = t;
+    let rx = 0;
+    let tx = 0;
+    for (const l of lerProc('/proc/net/dev').split('\n').slice(2)) {
+        const [nome, resto] = l.split(':');
+        if (!resto || nome.trim() === 'lo')
+            continue;
+        const c = resto.trim().split(/\s+/).map(Number);
+        rx += c[0] || 0;
+        tx += c[8] || 0;
+    }
+    if (REDE.ant) {
+        const dt = Math.max(0.001, (t - REDE.ant.t) / 1000);
+        empilhar(REDE.down, Math.max(0, (rx - REDE.ant.rx) / dt));
+        empilhar(REDE.up, Math.max(0, (tx - REDE.ant.tx) / dt));
+    }
+    REDE.ant = {rx, tx, t};
+}
+
 class Rede extends Widget {
-    static FONTES = [0.15, 0.2, 0.2];
+    static FONTES = [0.19, 0.19, 0.12];
+    static LARGURA = 2.2;
 
     get intervalo() {
         return 1000;
     }
 
     get etiqueta() {
-        return `Rede: ↓ ${formatarTaxa(this._down ?? 0)}/s, ↑ ${formatarTaxa(this._up ?? 0)}/s`;
+        return `Rede: ↓ ${formatarBps(ultimo(REDE.down))}, ↑ ${formatarBps(ultimo(REDE.up))}`;
     }
 
-    _ler() {
-        let rx = 0;
-        let tx = 0;
-        for (const l of lerProc('/proc/net/dev').split('\n').slice(2)) {
-            const [nome, resto] = l.split(':');
-            if (!resto || nome.trim() === 'lo')
-                continue;
-            const c = resto.trim().split(/\s+/).map(Number);
-            rx += c[0] || 0;
-            tx += c[8] || 0;
-        }
-        return {rx, tx, t: agoraMs()};
+    construir() {
+        this._criarTexto();
+        this._camada((cr, w, h) => {
+            const x0 = this._largo ? this._tam + 2 : 6;
+            const topo = this._largo ? 10 : h * 0.5;
+            const max = escalaGrafico([REDE.down, REDE.up], 10240);
+            grafico(cr, x0, topo, w - x0 - 8, h - topo - 8, [
+                {valores: REDE.down, cor: cor(COR.ok), preencher: true},
+                {valores: REDE.up, cor: cor(COR.ambar)},
+            ], {max});
+        });
+        this._texto.y_align = AL.START;
+        this._topo.style += ` color: ${COR.ok};`;
+        this._meio.style += ` color: ${COR.ambar};`;
+        this._base.hide();
+        if (this._largo)
+            this._textoNoQuadrado();
     }
 
     atualizar() {
-        const agora = this._ler();
-        if (this._ant) {
-            const dt = Math.max(0.001, (agora.t - this._ant.t) / 1000);
-            this._down = Math.max(0, (agora.rx - this._ant.rx) / dt);
-            this._up = Math.max(0, (agora.tx - this._ant.tx) / dt);
-        }
-        this._ant = agora;
-        this._txt(this._topo, 'REDE');
-        this._txt(this._meio, `↓${formatarTaxa(this._down ?? 0)}`);
-        this._txt(this._base, `↑${formatarTaxa(this._up ?? 0)}`);
+        redeAmostrar();
+        this._txt(this._topo, `↓${formatarTaxa(ultimo(REDE.down))}`);
+        this._txt(this._meio, `↑${formatarTaxa(ultimo(REDE.up))}`);
+        this._redesenhar();
     }
 
     fillMenu(menu) {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Rede'));
-        linha(menu, `Download: ${formatarTaxa(this._down ?? 0)}/s`);
-        linha(menu, `Upload: ${formatarTaxa(this._up ?? 0)}/s`);
+        const l = this._textoPainel('', 13);
+        const grade = new Camada((cr, w, h) => {
+            cr.setSourceRGBA(0.5, 0.5, 0.5, 0.12);
+            cr.rectangle(0, 0, w, h);
+            cr.fill();
+            grafico(cr, 4, 6, w - 8, h - 12, [
+                {valores: REDE.down, cor: cor(COR.ok), preencher: true},
+                {valores: REDE.up, cor: cor(COR.ambar)},
+            ], {max: escalaGrafico([REDE.down, REDE.up], 10240)});
+        }, '');
+        grade.actor.set_size(244, 92);
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 6px;'});
+        caixa.add_child(grade.actor);
+        caixa.add_child(l);
+        const atualizar = () => {
+            redeAmostrar();
+            l.text = `↓ ${formatarBps(ultimo(REDE.down))}  ·  ↑ ${formatarBps(ultimo(REDE.up))}`;
+            grade.redesenhar();
+        };
+        atualizar();
+        this._item(menu, caixa);
+        this._vivo(menu, 1000, atualizar, caixa);
     }
 }
 
@@ -930,13 +1550,13 @@ const CLASSES = {
     contagem: Contagem, nota: Nota, clipboard: AreaTransferencia,
 };
 
-// Cria e inicia o widget `id` num tile de `tam` px; devolve null se o id não existe.
-export function criarWidget(id, tam, settings) {
+// Cria e inicia o widget `id` num tile de `tam` px (`largo`: versão larga, se o widget tiver); null se não existe.
+export function criarWidget(id, tam, settings, largo = false) {
     CFG = settings;
     const Classe = CLASSES[id];
     if (!Classe)
         return null;
-    const w = new Classe(tam);
+    const w = new Classe(tam, largo);
     w.iniciar();
     return w;
 }
