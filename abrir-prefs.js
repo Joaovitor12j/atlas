@@ -14,7 +14,7 @@ metadata.dir = Gio.File.new_for_path(path);
 
 const {default: Prefs} = await import(`file://${path}/prefs.js`);
 
-const app = new Adw.Application({application_id: 'dev.ixcsoft.AtlasPrefs'});
+const app = new Adw.Application({application_id: 'dev.joaovitor12j.AtlasPrefs'});
 app.connect('activate', () => {
     const win = new Adw.PreferencesWindow({application: app});
     new Prefs(metadata).fillPreferencesWindow(win);
