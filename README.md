@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="atlas@joaovitor12j.dev/icons/atlas-128.png" width="96" alt="ATLAS">
+
 # A·T·L·A·S
 
 **A**mbientes, **T**arefas, **L**ançadores, **A**plicativos e **S**istema
@@ -12,11 +14,13 @@ Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 - Favoritos do GNOME + apps abertos (separados por uma linha) e botão de grade de apps
 - Lente de ampliação suave, indicador de app aberto, tooltip com o nome
 - Clique: ativa/abre; botão do meio ou Ctrl+clique: nova janela
-- Temas: **Noite** (padrão), **Papel** e **Cristal** (blur do fundo)
+- Temas: **Noite** (padrão), **Papel**, **Cristal** (blur do fundo), **Neon**, **Halloween** e **Natal**; cada ambiente pode ter o seu
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
 - Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
 - Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz, X ou clique do meio fecha)
 - Ambientes: conjuntos de apps com nome e cor, criados na janela de preferências. Seletor redondo na doca, roda do mouse sobre a doca e atalhos de teclado (Super+Alt+←/→) trocam de ambiente; cada forma pode ser desligada
+- Widgets por ambiente (tiles vivos que abrem um painel ao clicar): **Relógio**, **Pomodoro**, **Bateria** (UPower) e **Música** (qualquer player MPRIS)
+- Coleções: um ícone com mosaico que guarda um grupo de apps e abre a lista ao clicar
 - Ícone do ATLAS no painel superior (menu com ambientes, temas, auto-ocultar e Configurações; pode ser ocultado)
 - Menu de clique direito nos ícones: ações do app, nova janela, fixar/desafixar, fechar janelas; no vidro ou no seletor: menu geral com Configurações
 - Esconde no Overview e em tela cheia
@@ -41,9 +45,9 @@ gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   
 ```bash
 gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas@joaovitor12j.dev
 ```
-Mudanças em `extension.js` e `metadata.json` só valem após novo login.
+Mudanças em `extension.js`, `metadata.json`, `widgets.js` e `catalogo.js` só valem após novo login (o GJS guarda esses módulos em cache).
 
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Widgets (relógio, pomodoro, progresso do dia).
+Mais widgets (progresso do dia, cronômetro, timer, atividade, clima), janelas que saem da frente ao trocar de ambiente, prateleira de arquivos.

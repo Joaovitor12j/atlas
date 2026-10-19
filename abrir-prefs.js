@@ -2,6 +2,7 @@
 // (de onde prefs.js importa ExtensionPreferences) e monta a janela sem passar pelo Shell.
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import Gtk from 'gi://Gtk';
 import GLib from 'gi://GLib';
 
 Gio.Resource.load('/usr/share/gnome-shell/org.gnome.Shell.Extensions.src.gresource')._register();
@@ -16,6 +17,7 @@ const {default: Prefs} = await import(`file://${path}/prefs.js`);
 
 const app = new Adw.Application({application_id: 'dev.joaovitor12j.AtlasPrefs'});
 app.connect('activate', () => {
+    Gtk.Window.set_default_icon_name('dev.joaovitor12j.AtlasPrefs');
     const win = new Adw.PreferencesWindow({application: app});
     new Prefs(metadata).fillPreferencesWindow(win);
     win.present();
