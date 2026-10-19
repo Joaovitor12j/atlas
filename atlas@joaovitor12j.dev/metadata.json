@@ -5,6 +5,7 @@
   "shell-version": [
     "46"
   ],
-  "version": 1,
+  "version": 2,
+  "version-name": "0.2.0",
   "settings-schema": "org.gnome.shell.extensions.atlas"
 }
