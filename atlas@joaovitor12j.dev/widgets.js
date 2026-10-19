@@ -433,7 +433,282 @@ class Musica extends Widget {
     }
 }
 
-const CLASSES = {relogio: Relogio, pomodoro: Pomodoro, bateria: Bateria, musica: Musica};
+
+// ----- Progresso do tempo -----
+const bissexto = a => (a % 4 === 0 && a % 100 !== 0) || a % 400 === 0;
+
+function progresso() {
+    const d = GLib.DateTime.new_now_local();
+    const dia = (d.get_hour() * 3600 + d.get_minute() * 60 + d.get_second()) / 86400;
+    const semana = (d.get_day_of_week() - 1 + dia) / 7; // semana começa na segunda
+    const mes = (d.get_day_of_month() - 1 + dia) / GLib.Date.get_days_in_month(d.get_month(), d.get_year());
+    const ano = (d.get_day_of_year() - 1 + dia) / (bissexto(d.get_year()) ? 366 : 365);
+    return {dia, semana, mes, ano};
+}
+
+const pct = f => `${Math.floor(f * 100)}%`;
+
+class Progresso extends Widget {
+    get intervalo() {
+        return 30000;
+    }
+
+    get etiqueta() {
+        const p = progresso();
+        return `Hoje ${pct(p.dia)}, semana ${pct(p.semana)}, mês ${pct(p.mes)}, ano ${pct(p.ano)}`;
+    }
+
+    atualizar() {
+        const p = progresso();
+        this._txt(this._topo, 'HOJE');
+        this._txt(this._meio, pct(p.dia));
+        this._txt(this._base, `S ${pct(p.semana)} · A ${pct(p.ano)}`);
+    }
+
+    fillMenu(menu) {
+        const p = progresso();
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Progresso do tempo'));
+        for (const [nome, v] of [['Dia', p.dia], ['Semana', p.semana], ['Mês', p.mes], ['Ano', p.ano]])
+            linha(menu, `${nome}: ${pct(v)}`);
+    }
+}
+
+// ----- Cronômetro (estado fora da classe, como o pomodoro) -----
+const CRONO = {inicio: 0, acumulado: 0, voltas: []};
+
+const cronoMs = () => CRONO.acumulado + (CRONO.inicio ? agoraMs() - CRONO.inicio : 0);
+
+function formatarCrono(ms) {
+    const t = Math.floor(ms / 1000);
+    const h = Math.floor(t / 3600);
+    const m = String(Math.floor((t % 3600) / 60)).padStart(2, '0');
+    const s = String(t % 60).padStart(2, '0');
+    return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+}
+
+class Cronometro extends Widget {
+    get intervalo() {
+        return 250;
+    }
+
+    get etiqueta() {
+        return `Cronômetro: ${formatarCrono(cronoMs())}`;
+    }
+
+    atualizar() {
+        this._txt(this._topo, 'CRONÔMETRO');
+        this._txt(this._meio, formatarCrono(cronoMs()));
+        this._txt(this._base, CRONO.voltas.length ? `${CRONO.voltas.length} volta(s)` : (CRONO.inicio ? '' : '❚❚'));
+        this.actor.style = CRONO.inicio ? 'border-color: #3fb8a8;' : '';
+    }
+
+    fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Cronômetro'));
+        menu.addAction(CRONO.inicio ? 'Pausar' : 'Iniciar', () => {
+            if (CRONO.inicio) {
+                CRONO.acumulado = cronoMs();
+                CRONO.inicio = 0;
+            } else {
+                CRONO.inicio = agoraMs();
+            }
+            this.atualizar();
+        });
+        menu.addAction('Volta', () => {
+            CRONO.voltas.push(cronoMs());
+            this.atualizar();
+        });
+        menu.addAction('Zerar', () => {
+            CRONO.inicio = 0;
+            CRONO.acumulado = 0;
+            CRONO.voltas = [];
+            this.atualizar();
+        });
+        CRONO.voltas.slice(-5).forEach((ms, i, ult) => {
+            const n = CRONO.voltas.length - ult.length + i + 1;
+            const anterior = n > 1 ? CRONO.voltas[n - 2] : 0;
+            linha(menu, `Volta ${n}: ${formatarCrono(ms)} (+${formatarCrono(ms - anterior)})`);
+        });
+    }
+}
+
+// ----- Timer (contagem regressiva) -----
+const duracaoTimer = () => (CFG?.get_int('timer-minutos') ?? 10) * MIN;
+const TIMER = {fim: 0, restante: 10 * MIN, intacto: true};
+
+function timerRestante() {
+    return TIMER.fim ? Math.max(0, TIMER.fim - agoraMs()) : TIMER.restante;
+}
+
+function timerTick() {
+    if (TIMER.fim && agoraMs() >= TIMER.fim) {
+        TIMER.fim = 0;
+        TIMER.restante = duracaoTimer();
+        TIMER.intacto = true;
+        Main.notify('ATLAS', 'O timer acabou.');
+    }
+}
+
+class Timer extends Widget {
+    get intervalo() {
+        return 1000;
+    }
+
+    get etiqueta() {
+        return 'Timer';
+    }
+
+    atualizar() {
+        timerTick();
+        if (TIMER.intacto && !TIMER.fim)
+            TIMER.restante = duracaoTimer();
+        const seg = Math.ceil(timerRestante() / 1000);
+        this._txt(this._topo, 'TIMER');
+        this._txt(this._meio, formatarCrono(seg * 1000));
+        this._txt(this._base, TIMER.fim ? '' : '❚❚');
+        this.actor.style = TIMER.fim ? 'border-color: #e8a93a;' : '';
+    }
+
+    fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Timer'));
+        menu.addAction(TIMER.fim ? 'Pausar' : 'Iniciar', () => {
+            if (TIMER.fim) {
+                TIMER.restante = timerRestante();
+                TIMER.fim = 0;
+            } else {
+                TIMER.fim = agoraMs() + TIMER.restante;
+                TIMER.intacto = false;
+            }
+            this.atualizar();
+        });
+        menu.addAction('+1 minuto', () => {
+            if (TIMER.fim)
+                TIMER.fim += MIN;
+            else
+                TIMER.restante += MIN;
+            TIMER.intacto = false;
+            this.atualizar();
+        });
+        menu.addAction('Reiniciar', () => {
+            TIMER.fim = 0;
+            TIMER.restante = duracaoTimer();
+            TIMER.intacto = true;
+            this.atualizar();
+        });
+    }
+}
+
+// ----- Atividade (CPU e memória, via /proc) -----
+function lerProc(caminho) {
+    try {
+        const [ok, bytes] = GLib.file_get_contents(caminho);
+        return ok ? new TextDecoder().decode(bytes) : '';
+    } catch (_e) {
+        return '';
+    }
+}
+
+class Atividade extends Widget {
+    get intervalo() {
+        return 2000;
+    }
+
+    get etiqueta() {
+        return `CPU ${this._cpu ?? 0}%, memória ${this._mem ?? 0}%`;
+    }
+
+    _lerCpu() {
+        const n = lerProc('/proc/stat').split('\n')[0].trim().split(/\s+/).slice(1, 9).map(Number);
+        if (n.length < 4)
+            return null;
+        return {total: n.reduce((a, b) => a + b, 0), ocioso: n[3] + (n[4] || 0)};
+    }
+
+    _lerMem() {
+        const txt = lerProc('/proc/meminfo');
+        const total = Number(/MemTotal:\s+(\d+)/.exec(txt)?.[1]);
+        const livre = Number(/MemAvailable:\s+(\d+)/.exec(txt)?.[1]);
+        return total ? Math.round((1 - livre / total) * 100) : 0;
+    }
+
+    atualizar() {
+        const agora = this._lerCpu();
+        if (agora && this._ant && agora.total > this._ant.total) {
+            const dt = agora.total - this._ant.total;
+            this._cpu = Math.round((1 - (agora.ocioso - this._ant.ocioso) / dt) * 100);
+        }
+        this._ant = agora ?? this._ant;
+        this._mem = this._lerMem();
+        this._txt(this._topo, 'CPU');
+        this._txt(this._meio, `${this._cpu ?? 0}%`);
+        this._txt(this._base, `RAM ${this._mem}%`);
+        this.actor.style = (this._cpu ?? 0) >= 90 ? 'border-color: #e24b4a;' : '';
+    }
+
+    fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Atividade'));
+        linha(menu, `Processador: ${this._cpu ?? 0}%`);
+        linha(menu, `Memória: ${this._mem ?? 0}%`);
+    }
+}
+
+// ----- Rede (bytes por segundo, via /proc/net/dev) -----
+function formatarTaxa(bps) {
+    if (bps >= 1048576)
+        return `${(bps / 1048576).toFixed(1)}M`;
+    if (bps >= 1024)
+        return `${Math.round(bps / 1024)}K`;
+    return `${Math.round(bps)}B`;
+}
+
+class Rede extends Widget {
+    static FONTES = [0.15, 0.2, 0.2];
+
+    get intervalo() {
+        return 1000;
+    }
+
+    get etiqueta() {
+        return `Rede: ↓ ${formatarTaxa(this._down ?? 0)}/s, ↑ ${formatarTaxa(this._up ?? 0)}/s`;
+    }
+
+    _ler() {
+        let rx = 0;
+        let tx = 0;
+        for (const l of lerProc('/proc/net/dev').split('\n').slice(2)) {
+            const [nome, resto] = l.split(':');
+            if (!resto || nome.trim() === 'lo')
+                continue;
+            const c = resto.trim().split(/\s+/).map(Number);
+            rx += c[0] || 0;
+            tx += c[8] || 0;
+        }
+        return {rx, tx, t: agoraMs()};
+    }
+
+    atualizar() {
+        const agora = this._ler();
+        if (this._ant) {
+            const dt = Math.max(0.001, (agora.t - this._ant.t) / 1000);
+            this._down = Math.max(0, (agora.rx - this._ant.rx) / dt);
+            this._up = Math.max(0, (agora.tx - this._ant.tx) / dt);
+        }
+        this._ant = agora;
+        this._txt(this._topo, 'REDE');
+        this._txt(this._meio, `↓${formatarTaxa(this._down ?? 0)}`);
+        this._txt(this._base, `↑${formatarTaxa(this._up ?? 0)}`);
+    }
+
+    fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Rede'));
+        linha(menu, `Download: ${formatarTaxa(this._down ?? 0)}/s`);
+        linha(menu, `Upload: ${formatarTaxa(this._up ?? 0)}/s`);
+    }
+}
+
+const CLASSES = {
+    relogio: Relogio, pomodoro: Pomodoro, bateria: Bateria, musica: Musica,
+    progresso: Progresso, cronometro: Cronometro, timer: Timer, atividade: Atividade, rede: Rede,
+};
 
 // Cria e inicia o widget `id` num tile de `tam` px; devolve null se o id não existe.
 export function criarWidget(id, tam, settings) {

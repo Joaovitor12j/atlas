@@ -126,6 +126,20 @@
       <default>15</default>
       <summary>Pomodoro: pausa longa (min)</summary>
     </key>
+    <key name="timer-minutos" type="i">
+      <range min="1" max="600"/>
+      <default>10</default>
+      <summary>Timer: duração (min)</summary>
+    </key>
+    <key name="widgets-posicao" type="s">
+      <choices>
+        <choice value="depois"/>
+        <choice value="antes"/>
+      </choices>
+      <default>"depois"</default>
+      <summary>Posição dos widgets</summary>
+      <description>"depois": no fim da doca, depois dos apps. "antes": logo depois do seletor de ambiente, antes dos apps.</description>
+    </key>
     <key name="relogio-24h" type="b">
       <default>true</default>
       <summary>Relógio: formato de 24 horas</summary>
