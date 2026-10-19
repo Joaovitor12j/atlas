@@ -87,6 +87,7 @@ class DockView {
                     this._applyTheme();
                 } else if (key !== 'monitores') {
                     this._readConfig();
+                    this._cancelHide();
                     this._hidden = this._c.autoHide;
                     this._queueRebuild();
                 }
@@ -367,16 +368,24 @@ class DockView {
             this._scheduleHide();
     }
 
+    // Enquanto a doca está visível no modo auto-ocultar, confere o ponteiro a cada 150 ms (sair pela
+    // zona da lente não gera mais eventos) e esconde depois de 450 ms fora dela.
     _scheduleHide() {
         if (!this._c.autoHide || this._hideId)
             return;
-        this._hideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 450, () => {
-            this._hideId = 0;
-            if (!this._container)
+        let fora = 0;
+        this._hideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            if (!this._container || !this._c.autoHide || this._hidden) {
+                this._hideId = 0;
                 return GLib.SOURCE_REMOVE;
-            if (!this._pointerZone().inside)
+            }
+            fora = this._pointerZone().inside ? 0 : fora + 150;
+            if (fora >= 450) {
+                this._hideId = 0;
                 this._setHidden(true);
-            return GLib.SOURCE_REMOVE;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
         });
     }
 
