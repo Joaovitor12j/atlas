@@ -19,7 +19,7 @@ gnome-extensions enable doca@ixcsoft.dev   # após relogin (Wayland)
 gnome-extensions disable dash-to-dock@micxgx.gmail.com  # evita dois docks
 ```
 
-Desenvolvimento sem relogin: `extension.js` só carrega `dock.js` com um carimbo na URL. Edite `dock.js` e rode
+Desenvolvimento sem relogin: `extension.js` copia `dock.js` para um nome único a cada enable (o GJS ignora `?query` no import). Edite `dock.js` e rode
 `gnome-extensions disable doca@ixcsoft.dev && gnome-extensions enable doca@ixcsoft.dev`.
 
 Desative também `ubuntu-dock` e `dash-to-dock` para não ter dois docks.

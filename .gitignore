@@ -1,3 +1,4 @@
 *.zip
 node_modules/
 doca@ixcsoft.dev/schemas/gschemas.compiled
+doca@ixcsoft.dev/.dock-*.js

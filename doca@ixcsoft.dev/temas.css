@@ -1,0 +1,42 @@
+/* Tema Noite: grafite-azulado, âmbar e verde-água */
+.atlas-noite .doca-bg {
+    background-color: rgba(28, 34, 48, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.atlas-noite .doca-dot { background-color: #3fb8a8; }
+.atlas-noite .doca-sep { background-color: rgba(255, 255, 255, 0.18); }
+.doca-tooltip.atlas-noite {
+    background-color: rgba(20, 24, 34, 0.95);
+    color: #f2f2f7;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Tema Papel: creme, linhas finas e âmbar queimado */
+.atlas-papel .doca-bg {
+    background-color: #f6f1e5;
+    border: 1px solid #bdb298;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(60, 50, 30, 0.28);
+}
+.atlas-papel .doca-dot { background-color: #b8741a; }
+.atlas-papel .doca-sep { background-color: #bdb298; }
+.doca-tooltip.atlas-papel {
+    background-color: #f6f1e5;
+    color: #2f2f2a;
+    border: 1px solid #bdb298;
+}
+
+/* Tema Cristal: vidro translúcido com borda de brilho (blur via Shell.BlurEffect) */
+.atlas-cristal .doca-bg {
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+.atlas-cristal .doca-dot { background-color: #ffffff; }
+.atlas-cristal .doca-sep { background-color: rgba(255, 255, 255, 0.45); }
+.doca-tooltip.atlas-cristal {
+    background-color: rgba(20, 28, 50, 0.8);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}

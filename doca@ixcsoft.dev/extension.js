@@ -1,17 +1,30 @@
-// Carregador do Doca: importa dock.js com um carimbo na URL, o que força o GJS a reler o arquivo.
-// Assim, editar dock.js e fazer disable/enable da extensão aplica a mudança sem novo login (Wayland).
+// Carregador do ATLAS. O GJS ignora query string no import, então cada enable() copia dock.js
+// para um nome único e importa a cópia. Assim, editar dock.js e fazer disable/enable aplica a mudança
+// sem novo login (Wayland).
+import Gio from 'gi://Gio';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-export default class DocaLoader extends Extension {
+export default class AtlasLoader extends Extension {
     enable() {
         const token = this._token = {};
-        const url = `${this.dir.get_uri()}/dock.js?t=${Date.now()}`;
-        import(url).then(mod => {
+        const copy = this.dir.get_child(`.dock-${Date.now()}.js`);
+        try {
+            this.dir.get_child('dock.js').copy(copy, Gio.FileCopyFlags.OVERWRITE, null, null);
+        } catch (e) {
+            console.error(`[atlas] não consegui copiar dock.js: ${e}`);
+            return;
+        }
+        import(copy.get_uri()).then(mod => {
             if (this._token !== token)
                 return; // desativada enquanto importava
             this._dock = new mod.Dock();
             this._dock.enable();
-        }).catch(e => console.error(`[doca] falha ao carregar dock.js: ${e}\n${e.stack}`));
+        }).catch(e => console.error(`[atlas] falha ao carregar dock.js: ${e}\n${e.stack}`))
+        .finally(() => {
+            try {
+                copy.delete(null);
+            } catch (_e) { /* já removida */ }
+        });
     }
 
     disable() {

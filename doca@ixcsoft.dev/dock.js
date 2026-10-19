@@ -31,6 +31,7 @@ export class Dock {
         this._rebuildId = 0;
 
         this._settings = this._loadSettings();
+        this._loadThemeCss();
         this._tooltip = new St.Label({style_class: 'doca-tooltip', visible: false});
         Main.layoutManager.addTopChrome(this._tooltip);
 
@@ -80,6 +81,7 @@ export class Dock {
             obj.disconnect(id);
         this._signals = [];
         this._bg?.remove_effect_by_name('atlas-blur');
+        this._unloadThemeCss();
         this._settings = null;
         this._container?.destroy();
         this._tooltip?.destroy();
@@ -100,8 +102,23 @@ export class Dock {
         }
     }
 
+    // O Shell só lê stylesheet.css no login; temas.css é carregado aqui para valer ao recarregar.
+    _loadThemeCss() {
+        const dir = Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+        this._themeCss = dir.get_child('temas.css');
+        this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        this._theme.load_stylesheet(this._themeCss);
+    }
+
+    _unloadThemeCss() {
+        if (this._theme && this._themeCss)
+            this._theme.unload_stylesheet(this._themeCss);
+        this._theme = this._themeCss = null;
+    }
+
     _applyTheme() {
         const tema = this._settings?.get_string('tema') ?? 'noite';
+        console.log(`[atlas] tema=${tema} settings=${!!this._settings} css=${!!this._theme}`);
         this._container.style_class = `atlas-${tema}`;
         this._tooltip.style_class = `doca-tooltip atlas-${tema}`;
         this._bg.remove_effect_by_name('atlas-blur');
