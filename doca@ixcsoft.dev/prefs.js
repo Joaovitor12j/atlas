@@ -40,6 +40,11 @@ export default class AtlasPrefs extends ExtensionPreferences {
         page.add(posicao);
         posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
         posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
+        posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
+        posicao.add(this._combo(settings, 'monitores', 'Telas', [
+            ['principal', 'Só na tela principal'],
+            ['todas', 'Em todas as telas'],
+        ]));
 
         const rodape = new Adw.PreferencesGroup();
         page.add(rodape);
@@ -63,6 +68,13 @@ export default class AtlasPrefs extends ExtensionPreferences {
         sync();
         row.connect('notify::selected', () => settings.set_string(key, valores[row.selected]));
         settings.connect(`changed::${key}`, sync);
+        return row;
+    }
+
+    // Linha com interruptor ligada a uma chave booleana.
+    _switch(settings, key, title, subtitle) {
+        const row = new Adw.SwitchRow({title, subtitle});
+        settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT);
         return row;
     }
 

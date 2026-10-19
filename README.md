@@ -9,7 +9,8 @@
 - Lente de ampliação suave, indicador de app aberto, tooltip com o nome
 - Clique: ativa/abre; botão do meio ou Ctrl+clique: nova janela
 - Temas: **Noite** (padrão), **Papel** e **Cristal** (blur do fundo)
-- Posição: embaixo, esquerda ou direita, com margem
+- Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
+- Uma doca por tela (opção "Em todas as telas")
 - Esconde no Overview e em tela cheia
 
 ## Configurar
@@ -37,4 +38,4 @@ Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Ambientes, widgets (relógio, pomodoro), prévia de janelas, menu de clique direito, auto-ocultar, multi-monitor.
+Menu de clique direito, prévia de janelas, ambientes, widgets (relógio, pomodoro).

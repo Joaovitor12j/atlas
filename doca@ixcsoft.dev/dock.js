@@ -24,16 +24,22 @@ const FIXED = {
 // Ponto de ancoragem (pivô) da ampliação: o ícone cresce a partir da borda da tela.
 const PIVOT = {baixo: [0, 1], esquerda: [0, 0], direita: [1, 0]};
 
-export class Dock {
+// Uma doca em um monitor. O gerenciador `Dock` (no fim do arquivo) cria uma por tela.
+class DockView {
+    constructor(settings, monIdx) {
+        this._settings = settings;
+        this._monIdx = monIdx;
+    }
+
     enable() {
         this._items = [];
         this._signals = [];
         this._tickId = 0;
         this._rebuildId = 0;
 
-        this._settings = this._loadSettings();
+        this._hidden = false;
+        this._hideId = 0;
         this._readConfig();
-        this._loadThemeCss();
         this._tooltip = new St.Label({style_class: 'atlas-tooltip', visible: false});
         Main.layoutManager.addTopChrome(this._tooltip);
 
@@ -45,10 +51,24 @@ export class Dock {
             trackFullscreen: true,
         });
 
+        // Zona fina na borda da tela que traz a doca de volta no modo auto-ocultar.
+        this._hot = new St.Widget({reactive: true, visible: false});
+        Main.layoutManager.addChrome(this._hot, {affectsStruts: false, trackFullscreen: true});
+        this._hot.connect('enter-event', () => {
+            this._setHidden(false);
+            return Clutter.EVENT_PROPAGATE;
+        });
+
         this._container.connect('captured-event', (_actor, event) => {
             const t = event.type();
-            if (t === Clutter.EventType.MOTION || t === Clutter.EventType.ENTER)
+            if (t === Clutter.EventType.MOTION || t === Clutter.EventType.ENTER) {
+                this._cancelHide();
+                if (this._hidden)
+                    this._setHidden(false);
                 this._startTick();
+            } else if (t === Clutter.EventType.LEAVE) {
+                this._scheduleHide();
+            }
             return Clutter.EVENT_PROPAGATE;
         });
 
@@ -57,7 +77,6 @@ export class Dock {
         this._connect(apps, 'app-state-changed', () => this._queueRebuild());
         this._connect(apps, 'installed-changed', () => this._queueRebuild());
         this._connect(favs, 'changed', () => this._queueRebuild());
-        this._connect(Main.layoutManager, 'monitors-changed', () => this._queueRebuild());
         this._connect(Main.overview, 'showing', () => { this._container.hide(); this._tooltip.hide(); });
         this._connect(Main.overview, 'hiding', () => this._container.show());
         this._connect(global.display, 'window-created', () => this._queueRebuild());
@@ -66,16 +85,18 @@ export class Dock {
             this._connect(this._settings, 'changed', (_s, key) => {
                 if (key === 'tema') {
                     this._applyTheme();
-                } else {
+                } else if (key !== 'monitores') {
                     this._readConfig();
+                    this._hidden = this._c.autoHide;
                     this._queueRebuild();
                 }
             });
         }
         this._applyTheme();
 
+        this._hidden = this._c.autoHide;
         this._rebuild();
-        console.log(`[atlas] ativo: ${this._items.length} itens, posição ${this._c.pos}`);
+        console.log(`[atlas] tela ${this._monIdx}: ${this._items.length} itens, posição ${this._c.pos}`);
     }
 
     disable() {
@@ -87,32 +108,16 @@ export class Dock {
             GLib.source_remove(this._rebuildId);
             this._rebuildId = 0;
         }
+        this._cancelHide();
         for (const [obj, id] of this._signals)
             obj.disconnect(id);
         this._signals = [];
         this._bg?.remove_effect_by_name('atlas-blur');
-        this._unloadThemeCss();
-        this._settings = null;
         this._container?.destroy();
+        this._hot?.destroy();
         this._tooltip?.destroy();
-        this._container = this._bg = this._tooltip = null;
+        this._container = this._bg = this._hot = this._tooltip = null;
         this._items = [];
-    }
-
-    _dir() {
-        return Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
-    }
-
-    // Lê o schema da pasta da própria extensão (sem precisar instalá-lo no sistema).
-    _loadSettings() {
-        try {
-            const src = Gio.SettingsSchemaSource.new_from_directory(
-                this._dir().get_child('schemas').get_path(), Gio.SettingsSchemaSource.get_default(), false);
-            return new Gio.Settings({settings_schema: src.lookup(SCHEMA_ID, true)});
-        } catch (e) {
-            console.error(`[atlas] sem GSettings, usando valores padrão: ${e}`);
-            return null;
-        }
     }
 
     // Junta as opções da janela de preferências com os valores fixos.
@@ -125,23 +130,11 @@ export class Dock {
             lensWidth: st?.get_int('lente-largura') ?? 70,
             pos: st?.get_string('posicao') ?? 'baixo',
             margin: st?.get_int('margem') ?? 8,
+            autoHide: st?.get_boolean('auto-ocultar') ?? false,
         };
         c.maxPx = Math.ceil(c.iconSize * c.maxScale);
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
-    }
-
-    // O Shell só lê stylesheet.css no login; temas.css é carregado aqui para valer ao recarregar.
-    _loadThemeCss() {
-        this._themeCss = this._dir().get_child('temas.css');
-        this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
-        this._theme.load_stylesheet(this._themeCss);
-    }
-
-    _unloadThemeCss() {
-        if (this._theme && this._themeCss)
-            this._theme.unload_stylesheet(this._themeCss);
-        this._theme = this._themeCss = null;
     }
 
     _applyTheme() {
@@ -289,8 +282,8 @@ export class Dock {
     // Tamanho do container (cabe a lente toda) e posição na tela, conforme a borda escolhida.
     _layoutGeometry() {
         const c = this._c;
-        const mon = Main.layoutManager.primaryMonitor;
-        const wa = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
+        const mon = Main.layoutManager.monitors[this._monIdx];
+        const wa = Main.layoutManager.getWorkAreaForMonitor(this._monIdx);
         const n = this._items.length;
         const baseLen = this._items.reduce((w, i) => w + i.base, 0) + c.gap * Math.max(0, n - 1);
         const growth = c.iconSize * (c.maxScale - 1) * 3.2; // sobra máxima da lente ao longo da doca
@@ -314,7 +307,84 @@ export class Dock {
         }
         this._container.set_size(this._cw, this._ch);
         this._container.set_position(Math.round(x), Math.round(y));
+        this._placeHotZone(mon, wa);
+        this._applyHidden(false);
         Main.layoutManager.uiGroup.set_child_above_sibling(this._tooltip, null);
+    }
+
+    // Faixa de 2px na borda da tela, do tamanho da doca, que a faz reaparecer.
+    _placeHotZone(mon, wa) {
+        const c = this._c;
+        const along = this._len;
+        if (c.pos === 'baixo') {
+            this._hot.set_size(along, 2);
+            this._hot.set_position(Math.round(mon.x + (mon.width - along) / 2), mon.y + mon.height - 2);
+        } else if (c.pos === 'esquerda') {
+            this._hot.set_size(2, along);
+            this._hot.set_position(mon.x, Math.round(wa.y + (wa.height - along) / 2));
+        } else {
+            this._hot.set_size(2, along);
+            this._hot.set_position(mon.x + mon.width - 2, Math.round(wa.y + (wa.height - along) / 2));
+        }
+    }
+
+    // Deslocamento que leva a doca toda para fora da tela.
+    _hideShift() {
+        const away = this._thick + this._c.margin + 2;
+        if (this._c.pos === 'baixo')
+            return [0, away];
+        return [this._c.pos === 'esquerda' ? -away : away, 0];
+    }
+
+    _applyHidden(animate) {
+        if (!this._container)
+            return;
+        const hide = this._hidden && this._c.autoHide;
+        const [tx, ty] = hide ? this._hideShift() : [0, 0];
+        this._hot.visible = hide;
+        if (animate) {
+            this._container.ease({
+                translation_x: tx,
+                translation_y: ty,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            this._container.remove_all_transitions();
+            this._container.translation_x = tx;
+            this._container.translation_y = ty;
+        }
+    }
+
+    _setHidden(hidden) {
+        if (this._hidden === hidden || (hidden && !this._c.autoHide))
+            return;
+        this._hidden = hidden;
+        if (hidden)
+            this._tooltip.hide();
+        this._applyHidden(true);
+        if (!hidden)
+            this._scheduleHide();
+    }
+
+    _scheduleHide() {
+        if (!this._c.autoHide || this._hideId)
+            return;
+        this._hideId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 450, () => {
+            this._hideId = 0;
+            if (!this._container)
+                return GLib.SOURCE_REMOVE;
+            if (!this._pointerZone().inside)
+                this._setHidden(true);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _cancelHide() {
+        if (this._hideId) {
+            GLib.source_remove(this._hideId);
+            this._hideId = 0;
+        }
     }
 
     // Posiciona cada ícone conforme sua escala; o vidro acompanha o tamanho total.
@@ -460,5 +530,81 @@ export class Dock {
             ty = y + h / 2 - th / 2;
         }
         this._tooltip.set_position(Math.round(tx), Math.round(ty));
+    }
+}
+
+// Gerenciador: carrega configuração e CSS uma vez e cria uma doca por tela conforme a opção "monitores".
+export class Dock {
+    enable() {
+        this._signals = [];
+        this._views = [];
+        this._settings = this._loadSettings();
+        this._loadThemeCss();
+
+        this._connect(Main.layoutManager, 'monitors-changed', () => this._buildViews());
+        if (this._settings)
+            this._connect(this._settings, 'changed::monitores', () => this._buildViews());
+        this._buildViews();
+    }
+
+    disable() {
+        for (const [obj, id] of this._signals)
+            obj.disconnect(id);
+        this._signals = [];
+        this._destroyViews();
+        this._unloadThemeCss();
+        this._settings = null;
+    }
+
+    _connect(obj, name, cb) {
+        this._signals.push([obj, obj.connect(name, cb)]);
+    }
+
+    _buildViews() {
+        this._destroyViews();
+        const todas = this._settings?.get_string('monitores') === 'todas';
+        const idxs = todas
+            ? Main.layoutManager.monitors.map((_m, i) => i)
+            : [Main.layoutManager.primaryIndex];
+        for (const i of idxs) {
+            const view = new DockView(this._settings, i);
+            view.enable();
+            this._views.push(view);
+        }
+    }
+
+    _destroyViews() {
+        for (const v of this._views ?? [])
+            v.disable();
+        this._views = [];
+    }
+
+    _dir() {
+        return Gio.File.new_for_uri(import.meta.url.split('?')[0]).get_parent();
+    }
+
+    // Lê o schema da pasta da própria extensão (sem precisar instalá-lo no sistema).
+    _loadSettings() {
+        try {
+            const src = Gio.SettingsSchemaSource.new_from_directory(
+                this._dir().get_child('schemas').get_path(), Gio.SettingsSchemaSource.get_default(), false);
+            return new Gio.Settings({settings_schema: src.lookup(SCHEMA_ID, true)});
+        } catch (e) {
+            console.error(`[atlas] sem GSettings, usando valores padrão: ${e}`);
+            return null;
+        }
+    }
+
+    // O Shell só lê stylesheet.css no login; temas.css é carregado aqui para valer ao recarregar.
+    _loadThemeCss() {
+        this._themeCss = this._dir().get_child('temas.css');
+        this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        this._theme.load_stylesheet(this._themeCss);
+    }
+
+    _unloadThemeCss() {
+        if (this._theme && this._themeCss)
+            this._theme.unload_stylesheet(this._themeCss);
+        this._theme = this._themeCss = null;
     }
 }
