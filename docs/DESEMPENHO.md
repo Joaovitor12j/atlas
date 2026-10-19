@@ -19,7 +19,7 @@ Para escala: 1% de um núcleo é 0,083% dessa máquina. O pior caso acima (todos
 
 ## Antes e depois das otimizações
 
-Na versão anterior os widgets atualizavam e redesenhavam em ritmo fixo, mesmo escondidos ou sem nada para mudar. Duas mudanças (esta é a primeira medição comparativa; as duas foram medidas no mesmo ambiente, com a mesma ferramenta):
+Antes, os widgets atualizavam e redesenhavam em ritmo fixo, mesmo escondidos ou sem nada para mudar. Duas mudanças corrigiram isso; o antes e o depois foram medidos no mesmo ambiente, com a mesma ferramenta:
 
 1. **Pausar o que ninguém vê.** Com a doca escondida (auto-ocultar), no Overview ou em tela cheia, os widgets não redesenham. O que não pode parar (fim do timer e do pomodoro, amostras de CPU e rede para o gráfico) continua.
 2. **Redesenhar só quando algo mudou, e acordar menos.** O cronômetro parado, o pomodoro e o timer sem contagem, e a música sem tocar passam a conferir a cada 2 a 10 s em vez de a cada 0,25 a 1 s; a Música larga só pergunta a posição por D-Bus enquanto toca.
