@@ -49,6 +49,12 @@ gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas
 ```
 Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 
+Testes (lógica pura em `logica.js` e consistência do catálogo, schema e temas):
+```bash
+npm test
+```
+O CI (GitHub Actions) roda a checagem de sintaxe, o schema em modo estrito e os testes a cada PR.
+
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos

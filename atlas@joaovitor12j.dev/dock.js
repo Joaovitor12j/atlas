@@ -12,6 +12,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
+import {appsDoAmbiente, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget} from './widgets.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
@@ -22,23 +23,11 @@ const THUMB_H = 125;
 // ----- Ambientes: apps, tema, widgets e coleções, guardados como JSON no GSettings -----
 // [{id, nome, cor, apps: [ids .desktop], tema?: id, widgets?: [ids], colecoes?: [{id, nome, apps}]}]
 function lerAmbientes(st) {
-    try {
-        const v = JSON.parse(st?.get_string('ambientes') ?? '[]');
-        return Array.isArray(v)
-            ? v.filter(a => a && a.id && Array.isArray(a.apps)).map(a => ({
-                ...a,
-                widgets: Array.isArray(a.widgets) ? a.widgets : [],
-                colecoes: Array.isArray(a.colecoes) ? a.colecoes.filter(c => c && c.id && Array.isArray(c.apps)) : [],
-            }))
-            : [];
-    } catch (_e) {
-        return [];
-    }
+    return normalizarAmbientes(st?.get_string('ambientes'));
 }
 
 function ambienteAtual(st, lista) {
-    const id = st?.get_string('ambiente-atual');
-    return lista.find(a => a.id === id) ?? lista[0] ?? null;
+    return escolherAmbiente(lista, st?.get_string('ambiente-atual'));
 }
 
 function trocarAmbiente(st, delta) {
@@ -62,11 +51,6 @@ function irParaAmbiente(st, n) {
     const amb = lista[n - 1];
     if (amb && amb.id !== ambienteAtual(st, lista)?.id)
         selecionarAmbiente(st, amb);
-}
-
-// Apps que pertencem a um ambiente: os fixados e os das coleções.
-function appsDoAmbiente(amb) {
-    return new Set([...amb.apps, ...amb.colecoes.flatMap(c => c.apps)]);
 }
 
 // Conteúdo do menu do ATLAS, usado no ícone do painel e no clique direito na doca.
