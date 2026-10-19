@@ -29,7 +29,9 @@ test('ids de temas e widgets são únicos', () => {
 
 test('as chaves que o código lê existem no schema', () => {
     const chaves = new Set([...schema.matchAll(/<key name="([^"]+)"/g)].map(m => m[1]));
-    chaves.add('favorite-apps'); // do schema org.gnome.shell, lido pelas preferências
+    // de schemas do GNOME, não do ATLAS: favoritos (prefs) e Não perturbe (dock)
+    for (const externa of ['favorite-apps', 'show-banners'])
+        chaves.add(externa);
     for (const arq of ['dock.js', 'widgets.js', 'prefs.js']) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
