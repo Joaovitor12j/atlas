@@ -261,6 +261,7 @@ class DockView {
         c.amb = ambienteAtual(st, c.ambientes);
         c.widgets = c.amb?.widgets ?? [];
         c.colecoes = c.amb?.colecoes ?? [];
+        c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
     }
@@ -322,6 +323,12 @@ class DockView {
             this._addEnvChip(old);
             this._addSeparator();
         }
+        const widgets = this._c.widgets.filter(id => WIDGETS.some(w => w[0] === id));
+        if (this._c.widgetsAntes && widgets.length) {
+            for (const id of widgets)
+                this._addWidget(id, old);
+            this._addSeparator();
+        }
         for (const app of favs)
             this._addApp(app, old);
         for (const col of this._c.colecoes)
@@ -330,11 +337,12 @@ class DockView {
             this._addSeparator();
         for (const app of running)
             this._addApp(app, old);
-        const widgets = this._c.widgets.filter(id => WIDGETS.some(w => w[0] === id));
-        if (widgets.length && this._items.length)
-            this._addSeparator();
-        for (const id of widgets)
-            this._addWidget(id, old);
+        if (!this._c.widgetsAntes && widgets.length) {
+            if (this._items.length)
+                this._addSeparator();
+            for (const id of widgets)
+                this._addWidget(id, old);
+        }
         if (this._items.length)
             this._addSeparator();
         this._addAppsButton(old);
@@ -366,7 +374,12 @@ class DockView {
 
     // Widget: tile vivo; o clique abre o painel do próprio widget.
     _addWidget(id, old) {
-        const widget = criarWidget(id, this._c.maxPx, this._settings);
+        let widget = null;
+        try {
+            widget = criarWidget(id, this._c.maxPx, this._settings);
+        } catch (e) {
+            console.error(`[atlas] widget ${id} falhou: ${e}\n${e.stack}`); // um widget com defeito não derruba a doca
+        }
         if (!widget)
             return;
         const key = `w:${id}`;

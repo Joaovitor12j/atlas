@@ -1,6 +1,7 @@
 // Janela de preferências do ATLAS. As mudanças valem ao vivo: o dock escuta o GSettings.
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
+import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -314,6 +315,11 @@ export default class AtlasPrefs extends ExtensionPreferences {
         geral.add(this._spin(settings, 'pomodoro-foco', 'Pomodoro: foco', 'Minutos de foco', 1, 180, 1, 0));
         geral.add(this._spin(settings, 'pomodoro-pausa', 'Pomodoro: pausa curta', 'Minutos', 1, 60, 1, 0));
         geral.add(this._spin(settings, 'pomodoro-pausa-longa', 'Pomodoro: pausa longa', 'Minutos, a cada 4 focos', 1, 120, 1, 0));
+        geral.add(this._spin(settings, 'timer-minutos', 'Timer: duração', 'Minutos', 1, 600, 1, 0));
+        geral.add(this._combo(settings, 'widgets-posicao', 'Posição na doca', [
+            ['depois', 'Depois dos apps (no fim)'],
+            ['antes', 'Antes dos apps (logo após o seletor)'],
+        ]));
         geral.add(this._switch(settings, 'relogio-24h', 'Relógio em 24 horas', 'Desligado mostra 12 horas'));
 
         const ler = () => {
@@ -356,15 +362,43 @@ export default class AtlasPrefs extends ExtensionPreferences {
             for (const amb of lista) {
                 const grupo = new Adw.PreferencesGroup({
                     title: amb.nome,
-                    description: grupos.length ? '' : 'Tiles vivos no fim da doca; o clique abre um painel. Cada ambiente tem os seus.',
+                    description: grupos.length ? '' : 'Tiles vivos na doca; o clique abre um painel. Cada ambiente tem os seus, na ordem desta lista.',
                 });
-                for (const [wid, nome, desc] of WIDGETS) {
-                    const sw = new Adw.SwitchRow({title: nome, subtitle: desc, active: (amb.widgets ?? []).includes(wid)});
-                    sw.connect('notify::active', () => alterar(amb.id, a => {
-                        a.widgets = (a.widgets ?? []).filter(x => x !== wid);
-                        if (sw.active)
-                            a.widgets.push(wid);
-                    }));
+                // ligados primeiro, na ordem da doca; depois os desligados
+                const ativos = (amb.widgets ?? []).filter(id => WIDGETS.some(w => w[0] === id));
+                const ordem = [...ativos, ...WIDGETS.map(w => w[0]).filter(id => !ativos.includes(id))];
+                for (const wid of ordem) {
+                    const [, nome, desc] = WIDGETS.find(w => w[0] === wid);
+                    const idx = ativos.indexOf(wid);
+                    const sw = new Adw.SwitchRow({title: nome, subtitle: desc, active: idx >= 0});
+                    const mover = d => {
+                        alterar(amb.id, a => {
+                            const arr = a.widgets;
+                            const [x] = arr.splice(idx, 1);
+                            arr.splice(idx + d, 0, x);
+                        });
+                        render();
+                    };
+                    for (const [icone, dica, d, ok] of [
+                        ['go-up-symbolic', 'Subir', -1, idx > 0],
+                        ['go-down-symbolic', 'Descer', 1, idx >= 0 && idx < ativos.length - 1],
+                    ]) {
+                        const b = new Gtk.Button({icon_name: icone, tooltip_text: dica, valign: Gtk.Align.CENTER, css_classes: ['flat'], sensitive: ok});
+                        b.connect('clicked', () => mover(d));
+                        sw.add_prefix(b);
+                    }
+                    sw.connect('notify::active', () => {
+                        alterar(amb.id, a => {
+                            a.widgets = (a.widgets ?? []).filter(x => x !== wid);
+                            if (sw.active)
+                                a.widgets.push(wid);
+                        });
+                        // redesenha depois do sinal, para a linha subir/descer na lista
+                        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                            render();
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    });
                     grupo.add(sw);
                 }
                 page.add(grupo);

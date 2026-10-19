@@ -14,7 +14,12 @@ export const TEMAS = [
 // [id, nome, descrição]
 export const WIDGETS = [
     ['relogio', 'Relógio', 'Hora e data'],
-    ['pomodoro', 'Pomodoro', 'Foco de 25 min, pausas de 5 e 15; clique para iniciar'],
+    ['pomodoro', 'Pomodoro', 'Foco e pausas; as durações ficam nas opções gerais'],
     ['bateria', 'Bateria', 'Carga e tempo restante'],
     ['musica', 'Música', 'O que está tocando (qualquer player MPRIS) e os controles'],
+    ['progresso', 'Progresso do tempo', 'Quanto do dia, da semana, do mês e do ano já passou'],
+    ['cronometro', 'Cronômetro', 'Conta para cima, com voltas'],
+    ['timer', 'Timer', 'Contagem regressiva; a duração fica nas opções gerais'],
+    ['atividade', 'Atividade', 'Processador e memória em uso'],
+    ['rede', 'Rede', 'Velocidade de download e upload'],
 ];
