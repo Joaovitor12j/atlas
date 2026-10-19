@@ -1,6 +1,6 @@
 # ATLAS
 
-**A**mbientes, **T**arefas, **L**ançadores, **A**plicativos e **S**istema. Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11), inspirado no [Doca](https://doca.racoelho.com.br/) do Windows.
+**A**mbientes, **T**arefas, **L**ançadores, **A**plicativos e **S**istema. Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 
 ## Recursos
 - Favoritos do GNOME + apps abertos (separados por uma linha) e botão de grade de apps
