@@ -60,5 +60,43 @@
       <summary>Telas</summary>
       <description>Onde a doca aparece: "principal", "todas" ou "tela-N" (N = posição da tela, da esquerda para a direita).</description>
     </key>
+    <key name="ambientes" type="s">
+      <default>"[]"</default>
+      <summary>Ambientes</summary>
+      <description>Lista (JSON) de ambientes: [{id, nome, cor, apps: [ids .desktop]}]. Vazia usa os favoritos do GNOME.</description>
+    </key>
+    <key name="ambiente-atual" type="s">
+      <default>""</default>
+      <summary>Ambiente atual</summary>
+      <description>Id do ambiente em uso.</description>
+    </key>
+    <key name="mostrar-icone-painel" type="b">
+      <default>true</default>
+      <summary>Mostrar o ícone do ATLAS no painel superior</summary>
+    </key>
+    <key name="troca-roda" type="b">
+      <default>true</default>
+      <summary>Trocar ambiente com a roda do mouse</summary>
+    </key>
+    <key name="roda-inverter" type="b">
+      <default>false</default>
+      <summary>Inverter a direção da roda</summary>
+    </key>
+    <key name="mostrar-seletor" type="b">
+      <default>true</default>
+      <summary>Mostrar o seletor de ambiente na doca</summary>
+    </key>
+    <key name="atalhos-ativos" type="b">
+      <default>true</default>
+      <summary>Trocar ambiente com atalhos de teclado</summary>
+    </key>
+    <key name="atalho-proximo" type="as">
+      <default>["&lt;Super&gt;&lt;Alt&gt;Right"]</default>
+      <summary>Atalho: próximo ambiente</summary>
+    </key>
+    <key name="atalho-anterior" type="as">
+      <default>["&lt;Super&gt;&lt;Alt&gt;Left"]</default>
+      <summary>Atalho: ambiente anterior</summary>
+    </key>
   </schema>
 </schemalist>

@@ -12,7 +12,9 @@
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
 - Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
 - Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz, X ou clique do meio fecha)
-- Menu de clique direito: ações do app, nova janela, fixar/desafixar, fechar janelas
+- Ambientes: conjuntos de apps com nome e cor, criados na janela de preferências. Seletor redondo na doca, roda do mouse sobre a doca e atalhos de teclado (Super+Alt+←/→) trocam de ambiente; cada forma pode ser desligada
+- Ícone do ATLAS no painel superior (menu com ambientes, temas, auto-ocultar e Configurações; pode ser ocultado)
+- Menu de clique direito nos ícones: ações do app, nova janela, fixar/desafixar, fechar janelas; no vidro ou no seletor: menu geral com Configurações
 - Esconde no Overview e em tela cheia
 
 ## Configurar
@@ -21,7 +23,7 @@
 ./tema.sh noite|papel|cristal   # troca de tema pelo terminal
 ```
 As opções são GSettings (`org.gnome.shell.extensions.atlas`); o dock reage ao vivo.
-Depois de um novo login, `gnome-extensions prefs doca@ixcsoft.dev` também abre a janela.
+Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs doca@ixcsoft.dev` também abrem a janela.
 
 ## Instalar
 ```bash
@@ -40,4 +42,4 @@ Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Ambientes, widgets (relógio, pomodoro).
+Widgets (relógio, pomodoro, progresso do dia).

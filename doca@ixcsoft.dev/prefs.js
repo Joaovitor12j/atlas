@@ -21,7 +21,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         const settings = this.getSettings();
         window.set_default_size(560, 700);
 
-        const page = new Adw.PreferencesPage({title: 'ATLAS', icon_name: 'preferences-desktop-appearance-symbolic'});
+        const page = new Adw.PreferencesPage({title: 'Geral', icon_name: 'preferences-desktop-appearance-symbolic'});
         window.add(page);
 
         const aparencia = new Adw.PreferencesGroup({title: 'Aparência'});
@@ -41,9 +41,12 @@ export default class AtlasPrefs extends ExtensionPreferences {
         page.add(posicao);
         posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
         posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
+        aparencia.add(this._switch(settings, 'mostrar-icone-painel', 'Ícone no painel superior', 'Menu do ATLAS na barra de cima; também dá para ocultar pelo próprio menu'));
         aparencia.add(this._switch(settings, 'previa-janelas', 'Prévia de janelas', 'Miniaturas das janelas ao parar o mouse num app aberto'));
         posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
         posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
+
+        window.add(this._paginaAmbientes(settings, window));
 
         const rodape = new Adw.PreferencesGroup();
         page.add(rodape);
@@ -68,6 +71,218 @@ export default class AtlasPrefs extends ExtensionPreferences {
         row.connect('notify::selected', () => settings.set_string(key, valores[row.selected]));
         settings.connect(`changed::${key}`, sync);
         return row;
+    }
+
+    // ----- Ambientes -----
+
+    _paginaAmbientes(settings, window) {
+        const page = new Adw.PreferencesPage({title: 'Ambientes', icon_name: 'view-grid-symbolic'});
+
+        const atalhos = new Adw.PreferencesGroup({
+            title: 'Troca de ambiente',
+            description: 'Formato do atalho: &lt;Super&gt;&lt;Alt&gt;Right',
+        });
+        page.add(atalhos);
+        atalhos.add(this._switch(settings, 'mostrar-seletor', 'Seletor na doca', 'Círculo colorido com a inicial do ambiente'));
+        atalhos.add(this._switch(settings, 'troca-roda', 'Roda do mouse', 'Troca de ambiente ao rolar sobre a doca'));
+        atalhos.add(this._switch(settings, 'roda-inverter', 'Inverter a roda', 'Troca a direção ao rolar'));
+        atalhos.add(this._switch(settings, 'atalhos-ativos', 'Atalhos de teclado', 'Liga ou desliga os dois atalhos abaixo'));
+        atalhos.add(this._atalho(settings, 'atalho-proximo', 'Atalho: próximo ambiente'));
+        atalhos.add(this._atalho(settings, 'atalho-anterior', 'Atalho: ambiente anterior'));
+
+        const grupo = new Adw.PreferencesGroup({
+            title: 'Ambientes',
+            description: 'Cada ambiente é um conjunto de apps com uma cor. Sem ambientes, a doca usa os favoritos do GNOME.',
+        });
+        page.add(grupo);
+
+        const ler = () => {
+            try {
+                const v = JSON.parse(settings.get_string('ambientes'));
+                return Array.isArray(v) ? v : [];
+            } catch (_e) {
+                return [];
+            }
+        };
+        let interno = false; // evita redesenhar a lista (e perder o foco do campo) por causa das próprias gravações
+        const salvar = lista => {
+            interno = true;
+            settings.set_string('ambientes', JSON.stringify(lista));
+            interno = false;
+        };
+        const hex = c => '#' + [c.red, c.green, c.blue].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+        const alterar = (id, fn) => {
+            const lista = ler();
+            const amb = lista.find(a => a.id === id);
+            if (amb) {
+                fn(amb, lista);
+                salvar(lista);
+            }
+        };
+
+        let linhas = [];
+        let aberto = null;
+        const render = () => {
+            for (const r of linhas)
+                grupo.remove(r);
+            linhas = [];
+            const lista = ler();
+
+            for (const amb of lista) {
+                const exp = new Adw.ExpanderRow({
+                    title: amb.nome,
+                    use_markup: false,
+                    subtitle: `${amb.apps.length} apps`,
+                    expanded: amb.id === aberto,
+                });
+                const cor = new Gtk.ColorDialogButton({dialog: new Gtk.ColorDialog(), valign: Gtk.Align.CENTER});
+                const rgba = new Gdk.RGBA();
+                rgba.parse(amb.cor || '#E8A93A');
+                cor.rgba = rgba;
+                cor.connect('notify::rgba', () => alterar(amb.id, a => { a.cor = hex(cor.rgba); }));
+                exp.add_prefix(cor);
+
+                const nome = new Adw.EntryRow({title: 'Nome', text: amb.nome});
+                nome.connect('changed', () => {
+                    alterar(amb.id, a => { a.nome = nome.text; });
+                    exp.title = nome.text;
+                });
+                exp.add_row(nome);
+
+                amb.apps.forEach((id, i) => {
+                    const info = Gio.DesktopAppInfo.new(id);
+                    const row = new Adw.ActionRow({title: info?.get_name() ?? id, use_markup: false, subtitle: info ? '' : 'não encontrado'});
+                    if (info?.get_icon())
+                        row.add_prefix(new Gtk.Image({gicon: info.get_icon(), pixel_size: 32}));
+                    const botao = (icone, dica, fn, ativo = true) => {
+                        const b = new Gtk.Button({icon_name: icone, tooltip_text: dica, valign: Gtk.Align.CENTER, css_classes: ['flat'], sensitive: ativo});
+                        b.connect('clicked', () => { aberto = amb.id; fn(); render(); });
+                        row.add_suffix(b);
+                    };
+                    const mover = d => alterar(amb.id, a => {
+                        const [x] = a.apps.splice(i, 1);
+                        a.apps.splice(i + d, 0, x);
+                    });
+                    botao('go-up-symbolic', 'Subir', () => mover(-1), i > 0);
+                    botao('go-down-symbolic', 'Descer', () => mover(1), i < amb.apps.length - 1);
+                    botao('user-trash-symbolic', 'Remover do ambiente', () => alterar(amb.id, a => a.apps.splice(i, 1)));
+                    exp.add_row(row);
+                });
+
+                const add = new Adw.ActionRow({title: 'Adicionar aplicativo', activatable: true});
+                add.add_prefix(new Gtk.Image({icon_name: 'list-add-symbolic'}));
+                add.connect('activated', () => this._escolherApp(window, id => {
+                    aberto = amb.id;
+                    alterar(amb.id, a => { if (!a.apps.includes(id)) a.apps.push(id); });
+                    render();
+                }));
+                exp.add_row(add);
+
+                const apagar = new Adw.ActionRow({title: 'Excluir ambiente'});
+                const bApagar = new Gtk.Button({label: 'Excluir', valign: Gtk.Align.CENTER, css_classes: ['destructive-action']});
+                bApagar.connect('clicked', () => {
+                    const nova = ler().filter(a => a.id !== amb.id);
+                    salvar(nova);
+                    if (settings.get_string('ambiente-atual') === amb.id)
+                        settings.set_string('ambiente-atual', nova[0]?.id ?? '');
+                    aberto = null;
+                    render();
+                });
+                apagar.add_suffix(bApagar);
+                exp.add_row(apagar);
+
+                grupo.add(exp);
+                linhas.push(exp);
+            }
+
+            const novo = new Adw.ActionRow({title: 'Novo ambiente', activatable: true});
+            novo.add_prefix(new Gtk.Image({icon_name: 'list-add-symbolic'}));
+            novo.connect('activated', () => {
+                const nova = ler();
+                const amb = {id: `a${Date.now()}`, nome: `Ambiente ${nova.length + 1}`, cor: '#E8A93A', apps: []};
+                nova.push(amb);
+                salvar(nova);
+                if (nova.length === 1)
+                    settings.set_string('ambiente-atual', amb.id);
+                aberto = amb.id;
+                render();
+            });
+            grupo.add(novo);
+            linhas.push(novo);
+
+            if (!lista.length) {
+                const seed = new Adw.ActionRow({
+                    title: 'Começar com meus favoritos atuais',
+                    subtitle: 'Cria um ambiente com os apps fixados hoje no GNOME',
+                    activatable: true,
+                });
+                seed.add_prefix(new Gtk.Image({icon_name: 'starred-symbolic'}));
+                seed.connect('activated', () => {
+                    const favs = new Gio.Settings({schema_id: 'org.gnome.shell'}).get_strv('favorite-apps');
+                    const amb = {id: `a${Date.now()}`, nome: 'Principal', cor: '#E8A93A', apps: favs};
+                    salvar([amb]);
+                    settings.set_string('ambiente-atual', amb.id);
+                    aberto = amb.id;
+                    render();
+                });
+                grupo.add(seed);
+                linhas.push(seed);
+            }
+        };
+        render();
+        settings.connect('changed::ambientes', () => {
+            // mudanças vindas de fora (ex.: fixar app pelo menu da doca): redesenha a lista
+            if (!interno)
+                render();
+        });
+        return page;
+    }
+
+    // Campo de atalho de teclado; só grava se o texto for um atalho válido.
+    _atalho(settings, key, title) {
+        const row = new Adw.EntryRow({title, text: settings.get_strv(key)[0] ?? '', show_apply_button: true});
+        row.connect('apply', () => {
+            const texto = row.text.trim();
+            const [ok] = Gtk.accelerator_parse(texto);
+            if (texto && !ok) {
+                row.add_css_class('error');
+                return;
+            }
+            row.remove_css_class('error');
+            settings.set_strv(key, texto ? [texto] : []);
+        });
+        return row;
+    }
+
+    // Janela com busca para escolher um aplicativo instalado.
+    _escolherApp(pai, aoEscolher) {
+        const win = new Gtk.Window({title: 'Escolher aplicativo', modal: true, transient_for: pai, default_width: 420, default_height: 540});
+        const caixa = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 8, margin_top: 12, margin_bottom: 12, margin_start: 12, margin_end: 12});
+        const busca = new Gtk.SearchEntry({placeholder_text: 'Buscar aplicativo'});
+        const lista = new Gtk.ListBox({selection_mode: Gtk.SelectionMode.NONE, css_classes: ['boxed-list']});
+        const rolagem = new Gtk.ScrolledWindow({vexpand: true, child: lista});
+        caixa.append(busca);
+        caixa.append(rolagem);
+        win.set_child(caixa);
+
+        const apps = Gio.AppInfo.get_all().filter(a => a.should_show() && a.get_id())
+            .sort((a, b) => a.get_name().localeCompare(b.get_name()));
+        for (const app of apps) {
+            const row = new Adw.ActionRow({title: app.get_name(), use_markup: false, activatable: true});
+            row.appId = app.get_id();
+            row.nome = app.get_name().toLowerCase();
+            if (app.get_icon())
+                row.add_prefix(new Gtk.Image({gicon: app.get_icon(), pixel_size: 32}));
+            row.connect('activated', () => {
+                aoEscolher(row.appId);
+                win.close();
+            });
+            lista.append(row);
+        }
+        lista.set_filter_func(row => row.nome.includes(busca.text.toLowerCase()));
+        busca.connect('search-changed', () => lista.invalidate_filter());
+        win.present();
+        busca.grab_focus();
     }
 
     // Opções de tela: principal, todas e cada monitor, na mesma ordem usada pelo dock (esquerda para a direita).

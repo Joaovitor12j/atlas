@@ -2,6 +2,7 @@
 // Mutter não aceita layer-shell, então o dock é um actor "chrome" desenhado pelo próprio Shell.
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
@@ -9,11 +10,75 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
 const THUMB_W = 200;   // miniatura da prévia de janela
 const THUMB_H = 125;
+
+// ----- Ambientes: conjuntos de apps, guardados como JSON no GSettings -----
+function lerAmbientes(st) {
+    try {
+        const v = JSON.parse(st?.get_string('ambientes') ?? '[]');
+        return Array.isArray(v) ? v.filter(a => a && a.id && Array.isArray(a.apps)) : [];
+    } catch (_e) {
+        return [];
+    }
+}
+
+function ambienteAtual(st, lista) {
+    const id = st?.get_string('ambiente-atual');
+    return lista.find(a => a.id === id) ?? lista[0] ?? null;
+}
+
+function trocarAmbiente(st, delta) {
+    const lista = lerAmbientes(st);
+    if (lista.length < 2)
+        return;
+    const i = lista.indexOf(ambienteAtual(st, lista));
+    const novo = lista[(i + delta + lista.length) % lista.length];
+    st.set_string('ambiente-atual', novo.id);
+    try {
+        Main.osdWindowManager.show(-1, new Gio.ThemedIcon({name: 'view-grid-symbolic'}), novo.nome, null);
+    } catch (_e) { /* OSD é só um aviso */ }
+}
+
+const TEMAS = [['noite', 'Noite'], ['papel', 'Papel'], ['cristal', 'Cristal']];
+
+// Conteúdo do menu do ATLAS, usado no ícone do painel e no clique direito na doca.
+function preencherMenu(menu, st, abrirPrefs, ocultarIcone) {
+    menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('ATLAS'));
+
+    const lista = lerAmbientes(st);
+    if (lista.length) {
+        const atual = ambienteAtual(st, lista);
+        for (const amb of lista) {
+            const mi = new PopupMenu.PopupMenuItem(`Ambiente: ${amb.nome}`);
+            mi.setOrnament(amb.id === atual?.id ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+            mi.connect('activate', () => st.set_string('ambiente-atual', amb.id));
+            menu.addMenuItem(mi);
+        }
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+    }
+
+    const tema = st.get_string('tema');
+    for (const [id, nome] of TEMAS) {
+        const mi = new PopupMenu.PopupMenuItem(`Tema ${nome}`);
+        mi.setOrnament(id === tema ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+        mi.connect('activate', () => st.set_string('tema', id));
+        menu.addMenuItem(mi);
+    }
+
+    const auto = new PopupMenu.PopupSwitchMenuItem('Auto-ocultar', st.get_boolean('auto-ocultar'));
+    auto.connect('toggled', (_i, estado) => st.set_boolean('auto-ocultar', estado));
+    menu.addMenuItem(auto);
+
+    menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+    menu.addAction('Configurações', abrirPrefs);
+    if (ocultarIcone)
+        menu.addAction('Ocultar este ícone', () => st.set_boolean('mostrar-icone-painel', false));
+}
 
 // Valores que não têm opção na janela de preferências (ainda).
 const FIXED = {
@@ -31,8 +96,9 @@ const PIVOT = {baixo: [0, 1], esquerda: [0, 0], direita: [1, 0]};
 
 // Uma doca em um monitor. O gerenciador `Dock` (no fim do arquivo) cria uma por tela.
 class DockView {
-    constructor(settings, monIdx) {
+    constructor(settings, monIdx, abrirPrefs) {
         this._settings = settings;
+        this._abrirPrefs = abrirPrefs;
         this._monIdx = monIdx;
     }
 
@@ -62,6 +128,13 @@ class DockView {
         this._container = new St.Widget({reactive: false});
         this._bg = new St.Widget({style_class: 'atlas-bg', reactive: true, track_hover: true});
         this._container.add_child(this._bg);
+        this._hookScroll(this._bg);
+        this._bg.connect('button-press-event', (_a, event) => {
+            if (event.get_button() !== Clutter.BUTTON_SECONDARY)
+                return Clutter.EVENT_PROPAGATE;
+            this._openDockMenu(this._bg);
+            return Clutter.EVENT_STOP;
+        });
         Main.layoutManager.addChrome(this._container, {
             affectsStruts: false,
             trackFullscreen: true,
@@ -103,8 +176,10 @@ class DockView {
                     this._applyTheme();
                 } else if (key !== 'monitores') {
                     this._readConfig();
-                    this._cancelHide();
-                    this._hidden = this._c.autoHide;
+                    if (key === 'auto-ocultar') {
+                        this._cancelHide();
+                        this._hidden = this._c.autoHide;
+                    }
                     this._queueRebuild();
                 }
             });
@@ -154,6 +229,11 @@ class DockView {
             preview: st?.get_boolean('previa-janelas') ?? true,
         };
         c.maxPx = Math.ceil(c.iconSize * c.maxScale);
+        c.trocaRoda = st?.get_boolean('troca-roda') ?? true;
+        c.rodaInverter = st?.get_boolean('roda-inverter') ?? false;
+        c.seletor = st?.get_boolean('mostrar-seletor') ?? true;
+        c.ambientes = lerAmbientes(st);
+        c.amb = ambienteAtual(st, c.ambientes);
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
     }
@@ -191,7 +271,10 @@ class DockView {
 
     // Favoritos (na ordem salva), depois separador, depois apps abertos que não são favoritos.
     _appList() {
-        const favs = AppFavorites.getAppFavorites().getFavorites();
+        const sistema = Shell.AppSystem.get_default();
+        const favs = this._c.amb
+            ? this._c.amb.apps.map(id => sistema.lookup_app(id)).filter(Boolean)
+            : AppFavorites.getAppFavorites().getFavorites();
         const favIds = new Set(favs.map(a => a.get_id()));
         const running = Shell.AppSystem.get_default().get_running()
             .filter(a => !favIds.has(a.get_id()));
@@ -210,6 +293,10 @@ class DockView {
         this._items = [];
 
         const {favs, running} = this._appList();
+        if (this._c.ambientes.length && this._c.seletor) {
+            this._addEnvChip(old);
+            this._addSeparator();
+        }
         for (const app of favs)
             this._addApp(app, old);
         if (favs.length && running.length)
@@ -219,6 +306,8 @@ class DockView {
         if (this._items.length)
             this._addSeparator();
         this._addAppsButton(old);
+
+        this._bg.style = this._c.amb ? `border-color: ${this._c.amb.cor};` : '';
 
         this._layoutGeometry();
         this._applyScales();
@@ -231,6 +320,28 @@ class DockView {
             gicon: app.get_icon(),
             label: app.get_name(),
             onClick: button => this._activate(app, button),
+        }, old);
+    }
+
+    // Seletor de ambiente: círculo na cor do ambiente com a inicial; clique abre a lista.
+    _addEnvChip(old) {
+        const c = this._c;
+        const amb = c.amb;
+        const label = new St.Label({
+            text: (amb.nome || '?').trim().charAt(0).toUpperCase(),
+            style: `font-size: ${Math.round(c.maxPx * 0.42)}px; font-weight: bold; color: white;`,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+            y_expand: true,
+        });
+        this._makeItem({
+            key: '__env__',
+            app: null,
+            child: label,
+            style: `background-color: ${amb.cor}; border-radius: ${Math.round(c.maxPx * 0.28)}px;`,
+            label: `Ambiente: ${amb.nome}`,
+            onClick: () => this._openEnvMenu(),
         }, old);
     }
 
@@ -252,16 +363,18 @@ class DockView {
         }, old);
     }
 
-    _makeItem({key, app, gicon, label, onClick}, old) {
+    _makeItem({key, app, gicon, label, onClick, child, style}, old) {
         const c = this._c;
-        const icon = new St.Icon({gicon, icon_size: c.maxPx});
+        const icon = child ?? new St.Icon({gicon, icon_size: c.maxPx});
         const btn = new St.Button({
             style_class: 'atlas-item',
+            style: style ?? '',
             child: icon,
             reactive: true,
             track_hover: true,
             button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE,
         });
+        this._hookScroll(btn);
         btn.set_size(c.maxPx, c.maxPx);
         btn.set_pivot_point(...PIVOT[c.pos]);
         this._container.add_child(btn);
@@ -272,8 +385,10 @@ class DockView {
 
         const item = {key, app, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
         btn.connect('clicked', (_b, button) => {
-            if (button === Clutter.BUTTON_SECONDARY)
+            if (button === Clutter.BUTTON_SECONDARY && item.app)
                 this._openMenu(item, btn);
+            else if (button === Clutter.BUTTON_SECONDARY)
+                this._openDockMenu(btn);
             else
                 onClick(button);
         });
@@ -301,6 +416,35 @@ class DockView {
         const actor = new St.Widget({style_class: 'atlas-sep'});
         this._container.add_child(actor);
         this._items.push({app: null, actor, dot: null, s: 1, base: this._c.sepWidth, sep: true});
+    }
+
+    // O container não é reativo, então a roda é ligada no vidro e em cada ícone.
+    _hookScroll(actor) {
+        actor.connect('scroll-event', (_a, event) => {
+            if (!this._c.trocaRoda || this._c.ambientes.length < 2)
+                return Clutter.EVENT_PROPAGATE;
+            this._onScroll(event);
+            return Clutter.EVENT_STOP;
+        });
+    }
+
+    // Roda do mouse sobre a doca troca de ambiente (com um intervalo para não disparar várias vezes).
+    _onScroll(event) {
+        const dir = event.get_scroll_direction();
+        let delta = 0;
+        if (dir === Clutter.ScrollDirection.UP || dir === Clutter.ScrollDirection.LEFT)
+            delta = -1;
+        else if (dir === Clutter.ScrollDirection.DOWN || dir === Clutter.ScrollDirection.RIGHT)
+            delta = 1;
+        else if (dir === Clutter.ScrollDirection.SMOOTH)
+            delta = Math.sign(event.get_scroll_delta()[1]);
+        if (this._c.rodaInverter)
+            delta = -delta;
+        const agora = GLib.get_monotonic_time() / 1000;
+        if (delta && agora - (this._lastScroll ?? 0) > 250) {
+            this._lastScroll = agora;
+            trocarAmbiente(this._settings, delta);
+        }
     }
 
     // ----- Prévia de janelas -----
@@ -453,13 +597,11 @@ class DockView {
         this._preview.set_position(Math.round(px), Math.round(py));
     }
 
-    // Menu de clique direito: ações do app, nova janela, fixar/desafixar e fechar janelas.
-    _openMenu(item, btn) {
-        const app = item.app;
-        if (!app)
-            return;
+    // Cria um menu ancorado em `btn`, preenche com `fill(menu)` e abre.
+    _popup(btn, fill) {
         this._closeMenu();
         this._tooltip.hide();
+        this._hidePreview();
 
         const side = {baixo: St.Side.BOTTOM, esquerda: St.Side.LEFT, direita: St.Side.RIGHT}[this._c.pos];
         const menu = new PopupMenu.PopupMenu(btn, 0.5, side);
@@ -467,27 +609,7 @@ class DockView {
         this._menuManager ??= new PopupMenu.PopupMenuManager(this._container);
         this._menuManager.addMenu(menu);
         this._menu = menu;
-
-        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(app.get_name()));
-        const info = app.get_app_info();
-        for (const action of info?.list_actions() ?? [])
-            menu.addAction(info.get_action_name(action), () => app.launch_action(action, global.get_current_time(), -1));
-        menu.addAction('Nova janela', () => app.open_new_window(-1));
-
-        const favs = AppFavorites.getAppFavorites();
-        const id = app.get_id();
-        if (favs.isFavorite(id))
-            menu.addAction('Desafixar da doca', () => favs.removeFavorite(id));
-        else
-            menu.addAction('Fixar na doca', () => favs.addFavorite(id));
-
-        if (app.get_n_windows() > 0) {
-            menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-            menu.addAction('Fechar todas as janelas', () => {
-                const t = global.get_current_time();
-                app.get_windows().forEach(w => w.delete(t));
-            });
-        }
+        fill(menu);
 
         menu.connect('open-state-changed', (_m, open) => {
             if (open)
@@ -501,6 +623,80 @@ class DockView {
             this._scheduleHide();
         });
         menu.open();
+    }
+
+    // Menu geral do ATLAS (clique direito no vidro, no seletor ou no botão de apps).
+    _openDockMenu(origem) {
+        this._popup(origem, menu => preencherMenu(menu, this._settings, this._abrirPrefs, false));
+    }
+
+    // Lista de ambientes para escolher.
+    _openEnvMenu() {
+        const item = this._items.find(i => i.key === '__env__');
+        if (!item)
+            return;
+        this._popup(item.actor, menu => {
+            menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Ambientes'));
+            for (const amb of this._c.ambientes) {
+                const mi = new PopupMenu.PopupMenuItem(amb.nome);
+                mi.setOrnament(amb.id === this._c.amb?.id ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+                mi.connect('activate', () => this._settings.set_string('ambiente-atual', amb.id));
+                menu.addMenuItem(mi);
+            }
+        });
+    }
+
+    _isPinned(id) {
+        return this._c.amb ? this._c.amb.apps.includes(id) : AppFavorites.getAppFavorites().isFavorite(id);
+    }
+
+    // Fixa/desafixa no ambiente atual (ou nos favoritos do GNOME quando não há ambientes).
+    _setPinned(id, fixar) {
+        if (!this._c.amb) {
+            const favs = AppFavorites.getAppFavorites();
+            if (fixar)
+                favs.addFavorite(id);
+            else
+                favs.removeFavorite(id);
+            return;
+        }
+        const lista = lerAmbientes(this._settings);
+        const amb = lista.find(a => a.id === this._c.amb.id);
+        if (!amb)
+            return;
+        amb.apps = amb.apps.filter(a => a !== id);
+        if (fixar)
+            amb.apps.push(id);
+        this._settings.set_string('ambientes', JSON.stringify(lista));
+    }
+
+    // Menu de clique direito: ações do app, nova janela, fixar/desafixar e fechar janelas.
+    _openMenu(item, btn) {
+        const app = item.app;
+        if (!app)
+            return;
+        this._popup(btn, menu => {
+            menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(app.get_name()));
+            const info = app.get_app_info();
+            for (const action of info?.list_actions() ?? [])
+                menu.addAction(info.get_action_name(action), () => app.launch_action(action, global.get_current_time(), -1));
+            menu.addAction('Nova janela', () => app.open_new_window(-1));
+
+            const id = app.get_id();
+            const destino = this._c.amb ? `ambiente ${this._c.amb.nome}` : 'a doca';
+            if (this._isPinned(id))
+                menu.addAction(`Desafixar de ${destino}`, () => this._setPinned(id, false));
+            else
+                menu.addAction(`Fixar em ${destino}`, () => this._setPinned(id, true));
+
+            if (app.get_n_windows() > 0) {
+                menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+                menu.addAction('Fechar todas as janelas', () => {
+                    const t = global.get_current_time();
+                    app.get_windows().forEach(w => w.delete(t));
+                });
+            }
+        });
     }
 
     _closeMenu() {
@@ -795,6 +991,20 @@ export class Dock {
 
         this._connect(Main.layoutManager, 'monitors-changed', () => this._buildViews());
         if (this._settings)
+            this._connect(this._settings, 'changed::mostrar-icone-painel', () => this._syncIndicator());
+        this._syncIndicator();
+        this._atalhos = [];
+        if (this._settings) {
+            for (const [chave, delta] of [['atalho-proximo', 1], ['atalho-anterior', -1]]) {
+                Main.wm.addKeybinding(chave, this._settings, Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
+                    Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW, () => {
+                        if (this._settings.get_boolean('atalhos-ativos'))
+                            trocarAmbiente(this._settings, delta);
+                    });
+                this._atalhos.push(chave);
+            }
+        }
+        if (this._settings)
             this._connect(this._settings, 'changed::monitores', () => this._buildViews());
         this._buildViews();
     }
@@ -803,7 +1013,11 @@ export class Dock {
         for (const [obj, id] of this._signals)
             obj.disconnect(id);
         this._signals = [];
+        for (const chave of this._atalhos ?? [])
+            Main.wm.removeKeybinding(chave);
+        this._atalhos = [];
         this._destroyViews();
+        this._destroyIndicator();
         this._unloadThemeCss();
         this._settings = null;
     }
@@ -815,7 +1029,7 @@ export class Dock {
     _buildViews() {
         this._destroyViews();
         for (const i of this._monitorIndexes()) {
-            const view = new DockView(this._settings, i);
+            const view = new DockView(this._settings, i, () => this._openPrefs());
             view.enable();
             this._views.push(view);
         }
@@ -836,6 +1050,65 @@ export class Dock {
                 return [alvo.i];
         }
         return [Main.layoutManager.primaryIndex];
+    }
+
+    // Ícone no painel superior (some pela opção "Mostrar o ícone do ATLAS no painel").
+    _syncIndicator() {
+        const quer = this._settings?.get_boolean('mostrar-icone-painel') ?? true;
+        if (quer && !this._indicator) {
+            const ind = new PanelMenu.Button(0.5, 'ATLAS', false);
+            const icone = this._dir().get_child('icons').get_child('atlas-symbolic.svg');
+            ind.add_child(new St.Icon({gicon: new Gio.FileIcon({file: icone}), style_class: 'system-status-icon'}));
+            // O menu precisa ter itens antes de abrir: preenche agora e refaz a cada fechamento
+            // (ambiente, tema e auto-ocultar mudam o conteúdo).
+            const encher = () => {
+                ind.menu.removeAll();
+                preencherMenu(ind.menu, this._settings, () => this._openPrefs(), true);
+            };
+            encher();
+            ind.menu.connect('open-state-changed', (_m, aberto) => {
+                if (!aberto)
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                        if (this._indicator === ind)
+                            encher();
+                        return GLib.SOURCE_REMOVE;
+                    });
+            });
+            Main.panel.addToStatusArea('atlas-indicator', ind);
+            this._indicator = ind;
+        } else if (!quer) {
+            this._destroyIndicator();
+        }
+    }
+
+    _destroyIndicator() {
+        this._indicator?.destroy();
+        this._indicator = null;
+    }
+
+    // Abre as preferências: pelo Shell quando ele já conhece o prefs.js; senão, pelo prefs.sh do projeto.
+    _openPrefs() {
+        const uuid = this._dir().get_basename();
+        try {
+            if (Main.extensionManager.lookup(uuid)?.hasPrefs) {
+                Main.extensionManager.openExtensionPrefs(uuid, '', {});
+                return;
+            }
+        } catch (e) {
+            console.error(`[atlas] openExtensionPrefs falhou: ${e}`);
+        }
+        try {
+            const dir = this._dir();
+            const info = dir.query_info('standard::symlink-target', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+            const alvo = info.get_symlink_target() ?? dir.get_path();
+            const sh = Gio.File.new_for_path(alvo).get_parent().get_child('prefs.sh');
+            if (sh.query_exists(null))
+                Gio.Subprocess.new([sh.get_path()], Gio.SubprocessFlags.NONE);
+            else
+                Main.notify('ATLAS', 'Reinicie a sessão para abrir as configurações pelo menu de extensões.');
+        } catch (e) {
+            console.error(`[atlas] não consegui abrir as preferências: ${e}`);
+        }
     }
 
     _destroyViews() {
