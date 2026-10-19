@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
-    decidirDnd, diasAte, normalizarAmbientes, pct, percentualCpu, proximaFase,
+    decidirDnd, deveAvisarDnd, diasAte, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 test('duracao: minutos e horas', () => {
@@ -156,4 +156,37 @@ test('diasAte: datas inválidas viram null', () => {
     const hoje = {ano: 2026, mes: 10, dia: 19};
     for (const ruim of ['', undefined, 'amanhã', '2026-13-01', '2026-02-30', '2026-2-3', '19/10/2026'])
         assert.equal(diasAte(hoje, ruim), null, `esperava null para ${ruim}`);
+});
+
+test('deveAvisarDnd: só quando liga, há ambientes, nenhum marcado e nunca avisou', () => {
+    const sem = [{id: 'a'}];
+    assert.equal(deveAvisarDnd(sem, true, false), true);
+    assert.equal(deveAvisarDnd(sem, false, false), false);
+    assert.equal(deveAvisarDnd(sem, true, true), false);
+    assert.equal(deveAvisarDnd([], true, false), false);
+    assert.equal(deveAvisarDnd([{id: 'a', naoperturbe: true}], true, false), false);
+});
+
+test('registrarCopia: mais recente primeiro, sem repetir, com limite', () => {
+    assert.deepEqual(registrarCopia([], 'a'), ['a']);
+    assert.deepEqual(registrarCopia(['a', 'b'], 'c'), ['c', 'a', 'b']);
+    assert.deepEqual(registrarCopia(['a', 'b', 'c'], 'b'), ['b', 'a', 'c']);
+    assert.deepEqual(registrarCopia(['a', 'b', 'c'], 'd', {max: 3}), ['d', 'a', 'b']);
+});
+
+test('registrarCopia: ignora vazio, só espaços, não-texto e texto grande demais', () => {
+    const h = ['a'];
+    assert.equal(registrarCopia(h, ''), h);
+    assert.equal(registrarCopia(h, '   \n'), h);
+    assert.equal(registrarCopia(h, null), h);
+    assert.equal(registrarCopia(h, 'x'.repeat(11), {maxChars: 10}), h);
+    assert.deepEqual(registrarCopia(h, 'x'.repeat(10), {maxChars: 10}), ['x'.repeat(10), 'a']);
+});
+
+test('resumirTexto: primeira linha, espaços colapsados, corte com reticências', () => {
+    assert.equal(resumirTexto('  olá   mundo  \nsegunda linha'), 'olá mundo');
+    assert.equal(resumirTexto(''), '');
+    assert.equal(resumirTexto(undefined), '');
+    assert.equal(resumirTexto('abcdefghij', 5), 'abcd…');
+    assert.equal(resumirTexto('abcde', 5), 'abcde');
 });

@@ -12,8 +12,8 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
-import {appsDoAmbiente, decidirDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
-import {criarWidget} from './widgets.js';
+import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
+import {criarWidget, pararClipboard} from './widgets.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
@@ -1252,6 +1252,7 @@ export class Dock {
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
         this._restaurarJanelas();
+        pararClipboard();
         this._notif = null;
         this._dndMemoria = null;
         this._destroyViews();
@@ -1274,6 +1275,11 @@ export class Dock {
         const dnd = !this._notif.get_boolean('show-banners');
         const r = decidirDnd(lista, atual?.id, dnd, this._dndMemoria);
         this._dndMemoria = r.memoria;
+        // Uma vez só: explica por que ligar o Não perturbe não mudou nada
+        if (deveAvisarDnd(lista, dnd, this._settings.get_boolean('dica-dnd-vista'))) {
+            this._settings.set_boolean('dica-dnd-vista', true);
+            Main.notify('ATLAS', 'Para trocar de ambiente com o Não perturbe, marque um ambiente em Configurações > Ambientes > (expandir o ambiente) > Entra com Não perturbe.');
+        }
         const alvo = r.ir && lista.find(a => a.id === r.ir);
         if (alvo) {
             console.log(`[atlas] Não perturbe ${dnd ? 'ligado' : 'desligado'}: ambiente ${alvo.nome}`);

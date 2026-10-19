@@ -5,12 +5,14 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {
     calcularProgresso, diasAte, duracao, formatarCrono, formatarTaxa, pct, percentualCpu, proximaFase,
+    registrarCopia, resumirTexto,
 } from './logica.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
@@ -769,10 +771,163 @@ class Nota extends Widget {
     }
 }
 
+// ----- Área de transferência -----
+// O histórico fica só na memória e é perdido ao desligar a extensão; só os fixados vão para o GSettings.
+// O monitor é um serviço do módulo (os widgets são recriados a cada reconstrução da doca) e para sozinho
+// quando nenhum widget o usa, para não registrar o que você copia sem ninguém ver.
+const CLIP = {historico: [], sel: null, selId: 0, usos: 0, paradaId: 0, ouvintes: new Set()};
+
+function clipLer() {
+    const clip = St.Clipboard.get_default();
+    // gerenciadores de senha marcam o conteúdo como sensível; esse não entra
+    let tipos = [];
+    try {
+        tipos = clip.get_mimetypes(St.ClipboardType.CLIPBOARD);
+    } catch (_e) { /* sem tipos: segue */ }
+    if (tipos.includes('x-kde-passwordManagerHint'))
+        return;
+    clip.get_text(St.ClipboardType.CLIPBOARD, (_c, texto) => {
+        const fixados = CFG?.get_strv('clipboard-fixados') ?? [];
+        if (typeof texto !== 'string' || fixados.includes(texto))
+            return;
+        const novo = registrarCopia(CLIP.historico, texto);
+        if (novo === CLIP.historico)
+            return;
+        CLIP.historico = novo;
+        for (const f of CLIP.ouvintes)
+            f();
+    });
+}
+
+function clipIniciar() {
+    if (CLIP.paradaId) {
+        GLib.source_remove(CLIP.paradaId);
+        CLIP.paradaId = 0;
+    }
+    CLIP.usos++;
+    if (CLIP.selId)
+        return;
+    CLIP.sel = global.display.get_selection();
+    CLIP.selId = CLIP.sel.connect('owner-changed', (_s, tipo) => {
+        if (tipo === Meta.SelectionType.SELECTION_CLIPBOARD)
+            clipLer();
+    });
+    clipLer();
+}
+
+function clipSoltar() {
+    CLIP.usos = Math.max(0, CLIP.usos - 1);
+    if (CLIP.usos > 0 || CLIP.paradaId)
+        return;
+    // espera um pouco: a doca destrói e recria os widgets a cada reconstrução
+    CLIP.paradaId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+        CLIP.paradaId = 0;
+        pararClipboard();
+        return GLib.SOURCE_REMOVE;
+    });
+}
+
+// Desliga o monitor e apaga o histórico (chamado ao desativar a extensão).
+export function pararClipboard() {
+    if (CLIP.paradaId) {
+        GLib.source_remove(CLIP.paradaId);
+        CLIP.paradaId = 0;
+    }
+    if (CLIP.sel && CLIP.selId)
+        CLIP.sel.disconnect(CLIP.selId);
+    CLIP.sel = null;
+    CLIP.selId = 0;
+    CLIP.usos = 0;
+    CLIP.historico = [];
+    CLIP.ouvintes.clear();
+}
+
+class AreaTransferencia extends Widget {
+    static FONTES = [0.15, 0.15, 0.14];
+
+    iniciar() {
+        this._ouvinte = () => this.atualizar();
+        CLIP.ouvintes.add(this._ouvinte);
+        clipIniciar();
+        super.iniciar();
+    }
+
+    parar() {
+        CLIP.ouvintes.delete(this._ouvinte);
+        clipSoltar();
+    }
+
+    _fixados() {
+        return CFG?.get_strv('clipboard-fixados') ?? [];
+    }
+
+    get etiqueta() {
+        return 'Área de transferência';
+    }
+
+    atualizar() {
+        const ultimo = CLIP.historico[0] ?? this._fixados()[0] ?? '';
+        this._txt(this._topo, 'COPIADO');
+        this._txt(this._meio, resumirTexto(ultimo, 14) || '—');
+        const n = CLIP.historico.length;
+        this._txt(this._base, `${n} item(ns)`);
+    }
+
+    _copiar(texto) {
+        St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, texto);
+    }
+
+    // Linha do painel: o texto (clique copia de volta) e uma estrela para fixar ou desafixar.
+    _linha(menu, texto, fixado) {
+        const item = new PopupMenu.PopupBaseMenuItem();
+        item.add_child(new St.Label({text: resumirTexto(texto, 44) || '(só espaços)', x_expand: true, y_align: Clutter.ActorAlign.CENTER}));
+        const estrela = new St.Button({
+            style_class: 'button',
+            child: new St.Icon({icon_name: fixado ? 'starred-symbolic' : 'non-starred-symbolic', icon_size: 14}),
+            can_focus: true,
+        });
+        estrela.connect('clicked', () => {
+            const fixados = this._fixados().filter(t => t !== texto);
+            if (!fixado)
+                fixados.unshift(texto);
+            CFG?.set_strv('clipboard-fixados', fixados);
+            if (!fixado)
+                CLIP.historico = CLIP.historico.filter(t => t !== texto);
+            else
+                CLIP.historico = registrarCopia(CLIP.historico, texto);
+            this.atualizar();
+            menu.close();
+        });
+        item.add_child(estrela);
+        item.connect('activate', () => this._copiar(texto));
+        menu.addMenuItem(item);
+    }
+
+    fillMenu(menu) {
+        const fixados = this._fixados();
+        if (fixados.length) {
+            menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Fixados'));
+            for (const t of fixados)
+                this._linha(menu, t, true);
+        }
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Recentes'));
+        if (!CLIP.historico.length)
+            linha(menu, 'Nada copiado ainda');
+        for (const t of CLIP.historico.slice(0, 10))
+            this._linha(menu, t, false);
+        if (CLIP.historico.length) {
+            menu.addAction('Limpar histórico', () => {
+                CLIP.historico = [];
+                this.atualizar();
+            });
+        }
+    }
+}
+
 const CLASSES = {
     relogio: Relogio, pomodoro: Pomodoro, bateria: Bateria, musica: Musica,
     progresso: Progresso, cronometro: Cronometro, timer: Timer, atividade: Atividade, rede: Rede,
-    contagem: Contagem, nota: Nota,
+    contagem: Contagem, nota: Nota, clipboard: AreaTransferencia,
 };
 
 // Cria e inicia o widget `id` num tile de `tam` px; devolve null se o id não existe.
