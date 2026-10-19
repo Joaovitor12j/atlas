@@ -21,19 +21,19 @@
 ./tema.sh noite|papel|cristal   # troca de tema pelo terminal
 ```
 As opções são GSettings (`org.gnome.shell.extensions.atlas`); o dock reage ao vivo.
-Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs atlas@ixcsoft.dev` também abrem a janela.
+Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs atlas@joaovitor12j.dev` também abrem a janela.
 
 ## Instalar
 ```bash
 ./install.sh                         # symlink em ~/.local/share/gnome-shell/extensions
-gnome-extensions enable atlas@ixcsoft.dev   # após relogin (Wayland)
+gnome-extensions enable atlas@joaovitor12j.dev   # após relogin (Wayland)
 gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   # evita dois docks
 ```
 
 ## Desenvolvimento sem relogin
 `extension.js` copia `dock.js` para um nome único a cada enable (o GJS ignora `?query` no import). Edite `dock.js`, `temas.css` ou `prefs.js` e rode:
 ```bash
-gnome-extensions disable atlas@ixcsoft.dev && gnome-extensions enable atlas@ixcsoft.dev
+gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas@joaovitor12j.dev
 ```
 Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 
