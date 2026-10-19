@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
-    decidirDnd, deveAvisarDnd, diasAte, escalaGrafico, formatarFaixa, mudarMes, semanasDoMes, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto,
+    decidirDnd, deveAvisarDnd, diasAte, escalaGrafico, formatarFaixa, lerNaoLidas, mudarMes, semanasDoMes, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, textoDoSelo,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 test('duracao: minutos e horas', () => {
@@ -224,4 +224,26 @@ test('formatarFaixa: microssegundos em m:ss', () => {
     assert.equal(formatarFaixa(3_725_000_000), '62:05');
     assert.equal(formatarFaixa(undefined), '0:00');
     assert.equal(formatarFaixa(-5), '0:00');
+});
+
+test('lerNaoLidas: sem nada novo', () => {
+    for (const t of ['Nenhuma mensagem não lida', 'No unread messages', '', undefined, null, 'Slack', '0 mensagens não lidas', 'Sem notificações'])
+        assert.deepEqual(lerNaoLidas(t), {tem: false, n: null}, `esperava vazio para ${JSON.stringify(t)}`);
+});
+
+test('lerNaoLidas: com mensagens, com e sem número', () => {
+    assert.deepEqual(lerNaoLidas('Você tem mensagens não lidas'), {tem: true, n: null});
+    assert.deepEqual(lerNaoLidas('Você tem 3 mensagens não lidas'), {tem: true, n: 3});
+    assert.deepEqual(lerNaoLidas('You have unread messages'), {tem: true, n: null});
+    assert.deepEqual(lerNaoLidas('12 unread messages'), {tem: true, n: 12});
+    assert.deepEqual(lerNaoLidas('2 menções'), {tem: true, n: 2});
+    assert.deepEqual(lerNaoLidas('Nova mensagem'), {tem: true, n: null});
+});
+
+test('textoDoSelo: número, 99+ ou só o ponto', () => {
+    assert.equal(textoDoSelo(null), '');
+    assert.equal(textoDoSelo(undefined), '');
+    assert.equal(textoDoSelo(7), '7');
+    assert.equal(textoDoSelo(99), '99');
+    assert.equal(textoDoSelo(150), '99+');
 });

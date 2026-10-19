@@ -402,7 +402,8 @@ class DockView {
             widget,
             larg: widget.larg,
             label: () => widget.etiqueta,
-            onClick: () => this._openItemMenu(key, menu => widget.fillMenu(menu)),
+            // widgets como o Slack levam a um app em vez de abrir um painel
+            onClick: () => (widget.aoClicar ? widget.aoClicar() : this._openItemMenu(key, menu => widget.fillMenu(menu))),
         }, old);
     }
 

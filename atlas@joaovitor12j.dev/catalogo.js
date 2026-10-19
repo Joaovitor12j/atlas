@@ -24,5 +24,6 @@ export const WIDGETS = [
     ['rede', 'Rede', 'Download e upload com gráfico; a versão larga dá mais espaço a ele', true],
     ['contagem', 'Contagem regressiva', 'Quantos dias faltam para uma data; nome e data nas opções gerais'],
     ['clipboard', 'Área de transferência', 'Histórico do que você copiou (só texto, só na memória); os fixados ficam salvos'],
+    ['slack', 'Slack', 'O ícone do Slack com um selo quando há mensagens não lidas; o clique abre o Slack'],
     ['nota', 'Nota', 'Um recado fixo na doca; edite pelo clique ou nas opções gerais'],
 ];

@@ -223,3 +223,14 @@
 .atlas-musica-play { background-color: rgba(255, 255, 255, 0.18); }
 .atlas-papel .atlas-musica-btn:hover { background-color: rgba(60, 50, 30, 0.12); }
 .atlas-papel .atlas-musica-play { background-color: rgba(60, 50, 30, 0.14); }
+
+/* Selo de notificação do widget do Slack */
+.atlas-slack-selo {
+    background-color: #e01e5a;
+    color: white;
+    font-weight: bold;
+    border-radius: 99px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    text-align: center;
+    padding: 0 3px;
+}
