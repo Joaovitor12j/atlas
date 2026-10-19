@@ -84,6 +84,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         });
         page.add(atalhos);
         atalhos.add(this._switch(settings, 'mostrar-seletor', 'Seletor na doca', 'Círculo colorido com a inicial do ambiente'));
+        atalhos.add(this._switch(settings, 'janelas-seguem', 'Janelas seguem o ambiente', 'Ao trocar, minimiza as janelas dos apps de outros ambientes e as traz de volta ao retornar. Apps que não estão em nenhum ambiente não são mexidos'));
         atalhos.add(this._switch(settings, 'troca-roda', 'Roda do mouse', 'Troca de ambiente ao rolar sobre a doca'));
         atalhos.add(this._switch(settings, 'roda-inverter', 'Inverter a roda', 'Troca a direção ao rolar'));
         atalhos.add(this._switch(settings, 'atalhos-ativos', 'Atalhos de teclado', 'Liga ou desliga os dois atalhos abaixo'));

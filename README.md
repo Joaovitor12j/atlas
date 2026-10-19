@@ -21,6 +21,7 @@ Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 - Ambientes: conjuntos de apps com nome e cor, criados na janela de preferências. Seletor redondo na doca, roda do mouse sobre a doca e atalhos de teclado (Super+Alt+←/→) trocam de ambiente; cada forma pode ser desligada
 - Widgets por ambiente (tiles vivos que abrem um painel ao clicar): **Relógio**, **Pomodoro**, **Bateria** (UPower), **Música** (qualquer player MPRIS), **Progresso do tempo**, **Cronômetro**, **Timer**, **Atividade** (CPU/RAM) e **Rede**; ordem e posição (antes ou depois dos apps) configuráveis na aba Widgets
 - Coleções: um ícone com mosaico que guarda um grupo de apps e abre a lista ao clicar
+- Janelas seguem o ambiente (opcional, desligado por padrão): ao trocar, minimiza as janelas dos apps de outros ambientes e as traz de volta ao retornar
 - Ícone do ATLAS no painel superior (menu com ambientes, temas, auto-ocultar e Configurações; pode ser ocultado)
 - Menu de clique direito nos ícones: ações do app, nova janela, fixar/desafixar, fechar janelas; no vidro ou no seletor: menu geral com Configurações
 - Esconde no Overview e em tela cheia
@@ -50,4 +51,4 @@ Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Clima e calendário, janelas que saem da frente ao trocar de ambiente, prateleira de arquivos.
+Clima e calendário, prateleira de arquivos.
