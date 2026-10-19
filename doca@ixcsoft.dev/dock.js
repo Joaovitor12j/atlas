@@ -7,6 +7,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
@@ -110,6 +111,7 @@ class DockView {
             this._rebuildId = 0;
         }
         this._cancelHide();
+        this._closeMenu();
         for (const [obj, id] of this._signals)
             obj.disconnect(id);
         this._signals = [];
@@ -238,7 +240,7 @@ class DockView {
             child: icon,
             reactive: true,
             track_hover: true,
-            button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO,
+            button_mask: St.ButtonMask.ONE | St.ButtonMask.TWO | St.ButtonMask.THREE,
         });
         btn.set_size(c.maxPx, c.maxPx);
         btn.set_pivot_point(...PIVOT[c.pos]);
@@ -249,7 +251,12 @@ class DockView {
         this._container.add_child(dot);
 
         const item = {key, app, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize};
-        btn.connect('clicked', (_b, button) => onClick(button));
+        btn.connect('clicked', (_b, button) => {
+            if (button === Clutter.BUTTON_SECONDARY)
+                this._openMenu(item, btn);
+            else
+                onClick(button);
+        });
         btn.connect('notify::hover', () => {
             if (btn.hover) {
                 this._hoverItem = item;
@@ -269,6 +276,65 @@ class DockView {
         const actor = new St.Widget({style_class: 'atlas-sep'});
         this._container.add_child(actor);
         this._items.push({app: null, actor, dot: null, s: 1, base: this._c.sepWidth, sep: true});
+    }
+
+    // Menu de clique direito: ações do app, nova janela, fixar/desafixar e fechar janelas.
+    _openMenu(item, btn) {
+        const app = item.app;
+        if (!app)
+            return;
+        this._closeMenu();
+        this._tooltip.hide();
+
+        const side = {baixo: St.Side.BOTTOM, esquerda: St.Side.LEFT, direita: St.Side.RIGHT}[this._c.pos];
+        const menu = new PopupMenu.PopupMenu(btn, 0.5, side);
+        Main.uiGroup.add_child(menu.actor);
+        this._menuManager ??= new PopupMenu.PopupMenuManager(this._container);
+        this._menuManager.addMenu(menu);
+        this._menu = menu;
+
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(app.get_name()));
+        const info = app.get_app_info();
+        for (const action of info?.list_actions() ?? [])
+            menu.addAction(info.get_action_name(action), () => app.launch_action(action, global.get_current_time(), -1));
+        menu.addAction('Nova janela', () => app.open_new_window(-1));
+
+        const favs = AppFavorites.getAppFavorites();
+        const id = app.get_id();
+        if (favs.isFavorite(id))
+            menu.addAction('Desafixar da doca', () => favs.removeFavorite(id));
+        else
+            menu.addAction('Fixar na doca', () => favs.addFavorite(id));
+
+        if (app.get_n_windows() > 0) {
+            menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            menu.addAction('Fechar todas as janelas', () => {
+                const t = global.get_current_time();
+                app.get_windows().forEach(w => w.delete(t));
+            });
+        }
+
+        menu.connect('open-state-changed', (_m, open) => {
+            if (open)
+                return;
+            // destrói depois que o menu termina de fechar, e reavalia o auto-ocultar
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                if (this._menu === menu)
+                    this._closeMenu();
+                return GLib.SOURCE_REMOVE;
+            });
+            this._scheduleHide();
+        });
+        menu.open();
+    }
+
+    _closeMenu() {
+        const menu = this._menu;
+        this._menu = null;
+        if (menu) {
+            this._menuManager?.removeMenu(menu);
+            menu.destroy();
+        }
     }
 
     _activate(app, button) {
@@ -379,7 +445,7 @@ class DockView {
                 this._hideId = 0;
                 return GLib.SOURCE_REMOVE;
             }
-            fora = this._pointerZone().inside ? 0 : fora + 150;
+            fora = (this._pointerZone().inside || this._menu?.isOpen) ? 0 : fora + 150;
             if (fora >= 450) {
                 this._hideId = 0;
                 this._setHidden(true);
@@ -571,15 +637,28 @@ export class Dock {
 
     _buildViews() {
         this._destroyViews();
-        const todas = this._settings?.get_string('monitores') === 'todas';
-        const idxs = todas
-            ? Main.layoutManager.monitors.map((_m, i) => i)
-            : [Main.layoutManager.primaryIndex];
-        for (const i of idxs) {
+        for (const i of this._monitorIndexes()) {
             const view = new DockView(this._settings, i);
             view.enable();
             this._views.push(view);
         }
+    }
+
+    // "todas", "principal" ou "tela-N" (N = posição da esquerda para a direita, depois de cima para baixo).
+    _monitorIndexes() {
+        const mons = Main.layoutManager.monitors;
+        const valor = this._settings?.get_string('monitores') ?? 'principal';
+        if (valor === 'todas')
+            return mons.map((_m, i) => i);
+        const m = /^tela-(\d+)$/.exec(valor);
+        if (m) {
+            const ordem = mons.map((mon, i) => ({i, x: mon.x, y: mon.y}))
+                .sort((a, b) => a.x - b.x || a.y - b.y);
+            const alvo = ordem[Number(m[1]) - 1];
+            if (alvo)
+                return [alvo.i];
+        }
+        return [Main.layoutManager.primaryIndex];
     }
 
     _destroyViews() {

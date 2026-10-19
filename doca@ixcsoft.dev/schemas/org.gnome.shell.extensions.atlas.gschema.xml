@@ -51,13 +51,9 @@
       <description>Esconde a doca e mostra ao encostar o ponteiro na borda da tela.</description>
     </key>
     <key name="monitores" type="s">
-      <choices>
-        <choice value="principal"/>
-        <choice value="todas"/>
-      </choices>
       <default>"principal"</default>
       <summary>Telas</summary>
-      <description>Mostrar a doca só na tela principal ou em todas as telas.</description>
+      <description>Onde a doca aparece: "principal", "todas" ou "tela-N" (N = posição da tela, da esquerda para a direita).</description>
     </key>
   </schema>
 </schemalist>

@@ -1,5 +1,6 @@
 // Janela de preferências do ATLAS. As mudanças valem ao vivo: o dock escuta o GSettings.
 import Adw from 'gi://Adw';
+import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -41,10 +42,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
         posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
         posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
         posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
-        posicao.add(this._combo(settings, 'monitores', 'Telas', [
-            ['principal', 'Só na tela principal'],
-            ['todas', 'Em todas as telas'],
-        ]));
+        posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
 
         const rodape = new Adw.PreferencesGroup();
         page.add(rodape);
@@ -69,6 +67,21 @@ export default class AtlasPrefs extends ExtensionPreferences {
         row.connect('notify::selected', () => settings.set_string(key, valores[row.selected]));
         settings.connect(`changed::${key}`, sync);
         return row;
+    }
+
+    // Opções de tela: principal, todas e cada monitor, na mesma ordem usada pelo dock (esquerda para a direita).
+    _opcoesTelas() {
+        const opcoes = [['principal', 'Só na tela principal'], ['todas', 'Em todas as telas']];
+        const lista = Gdk.Display.get_default()?.get_monitors();
+        const mons = [];
+        for (let i = 0; lista && i < lista.get_n_items(); i++) {
+            const m = lista.get_item(i);
+            const g = m.get_geometry();
+            mons.push({x: g.x, y: g.y, w: g.width, h: g.height, nome: m.get_connector() ?? m.get_model() ?? ''});
+        }
+        mons.sort((a, b) => a.x - b.x || a.y - b.y);
+        mons.forEach((m, i) => opcoes.push([`tela-${i + 1}`, `Só na tela ${i + 1}: ${m.nome} (${m.w}×${m.h})`]));
+        return opcoes;
     }
 
     // Linha com interruptor ligada a uma chave booleana.

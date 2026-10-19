@@ -10,7 +10,8 @@
 - Clique: ativa/abre; botão do meio ou Ctrl+clique: nova janela
 - Temas: **Noite** (padrão), **Papel** e **Cristal** (blur do fundo)
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
-- Uma doca por tela (opção "Em todas as telas")
+- Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
+- Menu de clique direito: ações do app, nova janela, fixar/desafixar, fechar janelas
 - Esconde no Overview e em tela cheia
 
 ## Configurar
@@ -38,4 +39,4 @@ Mudanças em `extension.js` e `metadata.json` só valem após novo login.
 Logs: `journalctl -f -o cat /usr/bin/gnome-shell`
 
 ## Próximos passos
-Menu de clique direito, prévia de janelas, ambientes, widgets (relógio, pomodoro).
+Prévia de janelas, ambientes, widgets (relógio, pomodoro).
