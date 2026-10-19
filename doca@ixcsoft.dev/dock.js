@@ -142,8 +142,8 @@ class DockView {
 
         // Zona fina na borda da tela que traz a doca de volta no modo auto-ocultar.
         // Faixa transparente que reserva espaço (strut) para as janelas maximizadas não ficarem sob a doca.
-        this._strut = new St.Widget({reactive: false, visible: false});
-        Main.layoutManager.addChrome(this._strut, {affectsStruts: true, trackFullscreen: true});
+        this._strut = new St.Widget({reactive: false});
+        this._strutAtivo = false;
 
         this._hot = new St.Widget({reactive: true, visible: false});
         Main.layoutManager.addChrome(this._hot, {affectsStruts: false, trackFullscreen: true});
@@ -216,6 +216,7 @@ class DockView {
             obj.disconnect(id);
         this._signals = [];
         this._bg?.remove_effect_by_name('atlas-blur');
+        this._setStrut(false);
         this._container?.destroy();
         this._strut?.destroy();
         this._hot?.destroy();
@@ -763,11 +764,22 @@ class DockView {
         Main.layoutManager.uiGroup.set_child_above_sibling(this._tooltip, null);
     }
 
+    // Liga/desliga a reserva: entrar e sair do rastreio do LayoutManager é o que o faz recalcular a área útil.
+    _setStrut(ativo) {
+        if (!this._strut || ativo === !!this._strutAtivo)
+            return;
+        this._strutAtivo = ativo;
+        if (ativo)
+            Main.layoutManager.addChrome(this._strut, {affectsStruts: true, trackFullscreen: true});
+        else
+            Main.layoutManager.removeChrome(this._strut);
+    }
+
     // Reserva da borda até a face externa do vidro. O Mutter converte isso em uma faixa que vai de ponta
     // a ponta da tela, então só importa de qual lado o actor encosta.
     _placeStrut(mon) {
         const c = this._c;
-        this._strut.visible = c.reserve && !c.autoHide;
+        this._setStrut(c.reserve && !c.autoHide);
         const t = Math.ceil(this._d0 + c.iconSize + c.padV + c.margin);
         const [cx, cy] = [this._container.x, this._container.y];
         if (c.pos === 'baixo') {
@@ -1069,8 +1081,12 @@ export class Dock {
         this._destroyViews();
         for (const i of this._monitorIndexes()) {
             const view = new DockView(this._settings, i, () => this._openPrefs());
-            view.enable();
-            this._views.push(view);
+            this._views.push(view); // entra antes, para o disable limpar mesmo se o enable falhar no meio
+            try {
+                view.enable();
+            } catch (e) {
+                console.error(`[atlas] falha ao criar a doca da tela ${i}: ${e}\n${e.stack}`);
+            }
         }
     }
 
