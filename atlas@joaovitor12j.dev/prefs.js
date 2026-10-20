@@ -6,8 +6,8 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from './catalogo.js';
-import {cuco} from './desenho.js';
-import {diasAte, quadroCuco} from './logica.js';
+import {boneco, chama, cuco, esqueleto, fantasma, noel} from './desenho.js';
+import {diasAte, quadroBoneco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel} from './logica.js';
 
 const POSICOES = [
     ['baixo', 'Embaixo'],
@@ -485,8 +485,22 @@ export default class AtlasPrefs extends ExtensionPreferences {
         page.add(intro);
 
         // miniatura de cada mascote (o desenho de verdade, num quadro parado) e as opções que ele tem
-        const miniaturas = {cuco: (cr, w, h) => cuco(cr, w, h, quadroCuco(900, 1))};
-        const opcoes = {cuco: linha => this._opcoesCuco(settings, linha)};
+        const miniaturas = {
+            cuco: (cr, w, h) => cuco(cr, w, h, quadroCuco(900, 1)),
+            chama: (cr, w, h) => chama(cr, w, h, quadroChama(1200)),
+            fantasma: (cr, w, h) => fantasma(cr, w, h, quadroFantasma(1500)),
+            esqueleto: (cr, w, h) => esqueleto(cr, w, h, quadroEsqueleto(1000)),
+            noel: (cr, w, h) => noel(cr, w, h, quadroNoel(1200)),
+            boneco: (cr, w, h) => boneco(cr, w, h, quadroBoneco(1200)),
+        };
+        const opcoes = {
+            cuco: linha => this._opcoesCuco(settings, linha),
+            chama: linha => this._opcoesChama(settings, linha),
+            fantasma: linha => this._opcoesSazonal(settings, linha, 'fantasma', 'o fantasma'),
+            esqueleto: linha => this._opcoesSazonal(settings, linha, 'esqueleto', 'o esqueleto'),
+            noel: linha => this._opcoesSazonal(settings, linha, 'noel', 'o Papai Noel'),
+            boneco: linha => this._opcoesSazonal(settings, linha, 'boneco', 'o boneco de neve'),
+        };
 
         for (const [catId, titulo] of CATEGORIAS_MASCOTE) {
             const daCategoria = MASCOTES.filter(m => m[3] === catId);
@@ -532,6 +546,33 @@ export default class AtlasPrefs extends ExtensionPreferences {
         const testar = new Adw.ActionRow({title: 'Testar agora', subtitle: 'Faz o cuco aparecer na hora, mesmo fora da janela de horas'});
         const botao = new Gtk.Button({label: 'Testar', valign: Gtk.Align.CENTER});
         botao.connect('clicked', () => settings.set_string('mascote-teste', `cuco:${GLib.get_monotonic_time()}`));
+        testar.add_suffix(botao);
+        testar.set_activatable_widget(botao);
+        linha.add_row(testar);
+    }
+
+    _opcoesChama(settings, linha) {
+        linha.add_row(this._spin(settings, 'chama-limiar', 'Uso de memória (%)', 'A chama aparece quando o uso chega a este valor', 50, 99, 1, 0));
+        linha.add_row(this._spin(settings, 'chama-espera', 'Minutos entre aparições', 'Tempo mínimo entre duas aparições, mesmo com a memória alta', 1, 240, 1, 0));
+        const testar = new Adw.ActionRow({title: 'Testar agora', subtitle: 'Faz a chama aparecer na hora, mesmo com a memória baixa'});
+        const botao = new Gtk.Button({label: 'Testar', valign: Gtk.Align.CENTER});
+        botao.connect('clicked', () => settings.set_string('mascote-teste', `chama:${GLib.get_monotonic_time()}`));
+        testar.add_suffix(botao);
+        testar.set_activatable_widget(botao);
+        linha.add_row(testar);
+    }
+
+    // Opções dos mascotes sazonais (fantasma, esqueleto, Papai Noel, boneco de neve): todos têm as chaves
+    // `<id>-intervalo`, `<id>-das` e `<id>-ate` e o botão de teste. `quem` é o nome com artigo ("o fantasma").
+    _opcoesSazonal(settings, linha, id, quem) {
+        linha.add_row(this._combo(settings, `${id}-intervalo`, 'Quando aparece', [
+            ['hora', 'Nas horas cheias'], ['meia-hora', 'Nas horas cheias e nas meias horas'],
+        ]));
+        linha.add_row(this._spin(settings, `${id}-das`, 'Primeira hora do dia', `Antes disso ${quem} fica quieto`, 0, 23, 1, 0));
+        linha.add_row(this._spin(settings, `${id}-ate`, 'Última hora do dia', `Depois disso ${quem} fica quieto; se for menor que a primeira, a janela cruza a meia-noite`, 0, 23, 1, 0));
+        const testar = new Adw.ActionRow({title: 'Testar agora', subtitle: `Faz ${quem} aparecer na hora, mesmo fora da temporada e da janela de horas`});
+        const botao = new Gtk.Button({label: 'Testar', valign: Gtk.Align.CENTER});
+        botao.connect('clicked', () => settings.set_string('mascote-teste', `${id}:${GLib.get_monotonic_time()}`));
         testar.add_suffix(botao);
         testar.set_activatable_widget(botao);
         linha.add_row(testar);

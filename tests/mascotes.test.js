@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    avaliarDisparo, batidasDoDisparo, duracaoCuco, esperaAte, naJanela, posicionarMascote, proximoDisparo, quadroCuco,
+    avaliarDisparo, batidasDoDisparo, duracaoCuco, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoNoel, quadroBoneco, quadroNoel, duracaoChama, memoriaPedeAparicao, quadroChama, rearmarMemoria, usoMemoria, duracaoEsqueleto, duracaoFantasma, escolherAparicao, esperaAte, naJanela, naTemporada, posicionarMascote,
+    proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();
@@ -99,4 +100,128 @@ test('posicionarMascote: centrado na doca, encostado no topo; null se não cabe'
     assert.deepEqual(posicionarMascote({x: 100, y: 800, w: 600, h: 90}, {w: 80, h: 100}, 30), {x: 360, y: 700});
     assert.equal(posicionarMascote({x: 100, y: 120, w: 600, h: 90}, {w: 80, h: 100}, 30), null);
     assert.deepEqual(posicionarMascote({x: 100, y: 130, w: 600, h: 90}, {w: 80, h: 100}, 30), {x: 360, y: 30});
+});
+
+test('naTemporada: bordas inclusivas e temporada que vira o ano', () => {
+    const d = (m, dia) => new Date(2026, m, dia);
+    assert.equal(naTemporada(d(9, 24), [9, 24], [9, 31]), true);
+    assert.equal(naTemporada(d(9, 31), [9, 24], [9, 31]), true);
+    assert.equal(naTemporada(d(9, 23), [9, 24], [9, 31]), false);
+    assert.equal(naTemporada(d(10, 1), [9, 24], [9, 31]), false);
+    assert.equal(naTemporada(d(11, 25), [11, 20], [0, 6]), true);
+    assert.equal(naTemporada(d(0, 3), [11, 20], [0, 6]), true);
+    assert.equal(naTemporada(d(5, 3), [11, 20], [0, 6]), false);
+});
+
+test('quadroFantasma: começa e termina escondido, valores no intervalo, null depois do fim', () => {
+    const fim = duracaoFantasma();
+    assert.ok(quadroFantasma(0).sobe < 1e-9);
+    assert.equal(quadroFantasma(fim), null);
+    assert.ok(quadroFantasma(fim - 1).sobe < 0.01);
+    let susto = 0;
+    for (let t = 0; t < fim; t += 5) {
+        const q = quadroFantasma(t);
+        assert.ok(q.sobe >= 0 && q.sobe <= 1.2, `sobe fora em ${t}`);
+        assert.ok(q.susto >= 0 && q.susto <= 1, `susto fora em ${t}`);
+        assert.ok(Math.abs(q.balanco) <= 1);
+        susto = Math.max(susto, q.susto);
+    }
+    assert.equal(susto, 1);
+});
+
+test('quadroEsqueleto: começa e termina escondido, valores no intervalo, null depois do fim', () => {
+    const fim = duracaoEsqueleto();
+    assert.ok(quadroEsqueleto(0).sobe < 1e-9);
+    assert.equal(quadroEsqueleto(fim), null);
+    assert.ok(quadroEsqueleto(fim - 1).sobe < 0.01);
+    let aceno = 0, queixo = 0;
+    for (let t = 0; t < fim; t += 5) {
+        const q = quadroEsqueleto(t);
+        assert.ok(q.sobe >= 0 && q.sobe <= 1.2, `sobe fora em ${t}`);
+        assert.ok(q.mandibula >= 0 && q.mandibula <= 1, `mandíbula fora em ${t}`);
+        assert.ok(Math.abs(q.aceno) <= 1 && Math.abs(q.balanco) <= 1);
+        aceno = Math.max(aceno, Math.abs(q.aceno));
+        queixo = Math.max(queixo, q.mandibula);
+    }
+    assert.ok(aceno > 0.9 && queixo > 0.9);
+});
+
+test('escolherAparicao: um só aparece sozinho; vários, metade todos e metade um sorteado', () => {
+    assert.deepEqual(escolherAparicao(0, 0.3), []);
+    assert.deepEqual(escolherAparicao(1, 0.9), [0]);
+    assert.deepEqual(escolherAparicao(2, 0.1), [0, 1]);
+    assert.deepEqual(escolherAparicao(2, 0.49), [0, 1]);
+    assert.deepEqual(escolherAparicao(2, 0.5), [0]);
+    assert.deepEqual(escolherAparicao(2, 0.99), [1]);
+    assert.deepEqual(escolherAparicao(3, 0.99), [2]);
+});
+
+test('deslocamentosLado: um fica em 0; dois ficam simétricos com a folga entre eles', () => {
+    assert.deepEqual(deslocamentosLado([60]), [0]);
+    assert.deepEqual(deslocamentosLado([60, 40], 10), [-25, 35]);
+    const [a, b] = deslocamentosLado([50, 50], 10);
+    assert.equal(a, -b);
+});
+
+test('deslocamentoAleatorio: de ponta a ponta sem passar das bordas; doca estreita fica no centro', () => {
+    assert.equal(deslocamentoAleatorio(600, 100, 0), -250);
+    assert.equal(deslocamentoAleatorio(600, 100, 0.5), 0);
+    assert.equal(deslocamentoAleatorio(600, 100, 1), 250);
+    assert.equal(deslocamentoAleatorio(80, 100, 0.9), 0);
+});
+
+test('usoMemoria: lê /proc/meminfo e devolve null quando falta dado', () => {
+    assert.equal(usoMemoria('MemTotal:       1000 kB\nMemFree: 10 kB\nMemAvailable:    250 kB\n'), 75);
+    assert.equal(usoMemoria('MemTotal: 1000 kB\nMemAvailable: 0 kB\n'), 100);
+    assert.equal(usoMemoria('MemTotal: 1000 kB\n'), null);
+    assert.equal(usoMemoria(''), null);
+});
+
+test('memória alta: dispara no limiar, respeita a espera e só rearma 5 pontos abaixo', () => {
+    const espera = 600_000;
+    assert.equal(memoriaPedeAparicao(90, 90, true, 1_000_000, -Infinity, espera), true);
+    assert.equal(memoriaPedeAparicao(89, 90, true, 1_000_000, -Infinity, espera), false);
+    assert.equal(memoriaPedeAparicao(95, 90, false, 1_000_000, -Infinity, espera), false);
+    assert.equal(memoriaPedeAparicao(95, 90, true, 1_000_000, 500_000, espera), false);
+    assert.equal(memoriaPedeAparicao(95, 90, true, 1_100_000, 500_000, espera), true);
+    assert.equal(memoriaPedeAparicao(null, 90, true, 1_000_000, -Infinity, espera), false);
+    assert.equal(rearmarMemoria(88, 90, false), false);
+    assert.equal(rearmarMemoria(84, 90, false), true);
+    assert.equal(rearmarMemoria(95, 90, true), true);
+    assert.equal(rearmarMemoria(null, 90, false), false);
+});
+
+test('quadroChama: começa e termina escondida, valores no intervalo, null depois do fim', () => {
+    const fim = duracaoChama();
+    assert.ok(quadroChama(0).sobe < 1e-9);
+    assert.equal(quadroChama(fim), null);
+    assert.ok(quadroChama(fim - 1).sobe < 0.01);
+    let aflicao = 0;
+    for (let t = 0; t < fim; t += 5) {
+        const q = quadroChama(t);
+        assert.ok(q.sobe >= 0 && q.sobe <= 1.2 && q.aflicao >= 0 && q.aflicao <= 1);
+        aflicao = Math.max(aflicao, q.aflicao);
+    }
+    assert.equal(aflicao, 1);
+});
+
+test('quadroNoel e quadroBoneco: começam e terminam escondidos, valores no intervalo, null depois do fim', () => {
+    for (const [quadro, duracao] of [[quadroNoel, duracaoNoel()], [quadroBoneco, duracaoBoneco()]]) {
+        assert.ok(quadro(0).sobe < 1e-9);
+        assert.equal(quadro(duracao), null);
+        assert.ok(quadro(duracao - 1).sobe < 0.01);
+        for (let t = 0; t < duracao; t += 5) {
+            const q = quadro(t);
+            assert.ok(q.sobe >= 0 && q.sobe <= 1.2, `sobe fora em ${t}`);
+            assert.ok(Math.abs(q.balanco) <= 1);
+        }
+    }
+    let aceno = 0, riso = 0;
+    for (let t = 0; t < duracaoNoel(); t += 5) {
+        const q = quadroNoel(t);
+        aceno = Math.max(aceno, Math.abs(q.aceno));
+        riso = Math.max(riso, q.riso);
+        assert.ok(q.riso >= 0 && q.riso <= 1 && Math.abs(q.aceno) <= 1);
+    }
+    assert.ok(aceno > 0.9 && riso > 0.9);
 });

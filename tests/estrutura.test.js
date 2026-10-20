@@ -48,9 +48,16 @@ test('todo mascote do catálogo tem implementação em mascotes.js', () => {
 
 test('as chaves de mascotes lidas pelo prefs e pelo motor existem no schema', () => {
     const prefsJs = readFileSync(new URL('prefs.js', raiz), 'utf8');
-    const chaves = [...(mascotesJs + prefsJs).matchAll(/'((?:cuco|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
+    const chaves = [...(mascotesJs + prefsJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
     assert.ok(chaves.length > 0);
-    const rotulos = new Set(['mascote-quadro']); // nomes de linha do perf.js, não chaves
+    const rotulos = new Set(['mascote-quadro', 'mascote-memoria']); // nomes de linha do perf.js, não chaves
     for (const chave of new Set(chaves).difference(rotulos))
         assert.ok(schema.includes(`<key name="${chave}"`), `schema sem a chave ${chave}`);
+});
+
+test('todo mascote de horário sazonal tem as três chaves no schema', () => {
+    for (const id of ['fantasma', 'esqueleto', 'noel', 'boneco']) {
+        for (const sufixo of ['intervalo', 'das', 'ate'])
+            assert.ok(schema.includes(`<key name="${id}-${sufixo}"`), `schema sem ${id}-${sufixo}`);
+    }
 });

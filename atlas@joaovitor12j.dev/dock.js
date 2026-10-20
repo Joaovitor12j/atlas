@@ -191,7 +191,8 @@ class DockView {
         if (this._settings) {
             this._connect(this._settings, 'changed', (_s, key) => {
                 // os mascotes têm o próprio motor; mexer neles não reconstrói a doca
-                if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' || key.startsWith('cuco-'))
+                if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' || key.startsWith('cuco-') || key.startsWith('fantasma-') || key.startsWith('esqueleto-') || key.startsWith('chama-') ||
+                    key.startsWith('noel-') || key.startsWith('boneco-'))
                     return;
                 this._readConfig();
                 // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica

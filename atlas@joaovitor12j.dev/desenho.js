@@ -335,3 +335,418 @@ export function cuco(cr, w, h, q, {hora = 10, minuto = 10} = {}) {
     cr.fill();
     cr.restore();
 }
+
+// Fantasma no retângulo (0, 0, w, h): sobe de trás da borda de baixo (y = h) e dá um "bu!".
+// `q` vem de quadroFantasma (logica.js): {sobe, balanco, susto, fase}. Quem chama recorta no retângulo.
+export function fantasma(cr, w, h, q) {
+    const gw = w * 0.62, gh = h * 0.84, r = gw / 2;
+    const d = gw * 0.07;
+    cr.save();
+    // a barra ondulada fica um pouco acima de y = h quando sobe = 1, para a ondulação aparecer inteira
+    cr.translate(w / 2 + q.balanco * w * 0.05, h - (gh + d) * q.sobe);
+    cr.rotate(q.balanco * 0.1);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+
+    const corpo = [0.96, 0.96, 1, 0.94];
+    const borda = [0.15, 0.12, 0.3, 0.55];
+
+    // braços, atrás do corpo
+    cr.setLineWidth(gw * 0.15);
+    for (const lado of [-1, 1]) {
+        cr.moveTo(lado * r * 0.85, gh * 0.55);
+        cr.lineTo(lado * (r * 1.2), gh * 0.55 - q.susto * gh * 0.28);
+        cr.setSourceRGBA(...borda);
+        cr.strokePreserve();
+        cr.setLineWidth(gw * 0.11);
+        cr.setSourceRGBA(...corpo);
+        cr.stroke();
+        cr.setLineWidth(gw * 0.15);
+    }
+
+    // corpo: cabeça redonda, laterais retas e barra ondulada
+    cr.newPath();
+    cr.arc(0, r, r, Math.PI, 0);
+    cr.lineTo(r, gh - d);
+    const ondas = 4;
+    for (let i = 0; i < ondas; i++) {
+        const x0 = r - (gw / ondas) * i;
+        const x1 = x0 - gw / ondas;
+        const s = (i % 2 ? -1 : 1) * d * (1 + 0.5 * Math.sin(q.fase + i * 1.3));
+        cr.curveTo(x0, gh - d + s * 2, x1, gh - d + s * 2, x1, gh - d);
+    }
+    cr.closePath();
+    cr.setSourceRGBA(...corpo);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(...borda);
+    cr.stroke();
+
+    // olhos e boca; no susto os olhos arregalam e a boca vira um "o"
+    cr.setSourceRGBA(0.1, 0.08, 0.2, 1);
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(lado * gw * 0.17, r * 0.95);
+        cr.scale(1, 1 + 0.5 * q.susto);
+        cr.arc(0, 0, gw * 0.075, 0, Math.PI * 2);
+        cr.restore();
+        cr.fill();
+    }
+    cr.save();
+    cr.translate(0, r * 1.5);
+    cr.scale(1, 0.6 + 1.2 * q.susto);
+    cr.arc(0, 0, gw * (0.05 + 0.05 * q.susto), 0, Math.PI * 2);
+    cr.restore();
+    cr.fill();
+    // bochechas
+    cr.setSourceRGBA(1, 0.55, 0.45, 0.35);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * gw * 0.3, r * 1.3, gw * 0.06, 0, Math.PI * 2);
+        cr.fill();
+    }
+    cr.restore();
+}
+
+// Esqueleto no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e bate o queixo.
+// `q` vem de quadroEsqueleto (logica.js): {sobe, balanco, aceno, mandibula}. Quem chama recorta no retângulo.
+export function esqueleto(cr, w, h, q) {
+    const alt = h * 0.9;
+    const r = Math.min(w * 0.28, alt / 5.6);
+    const osso = [0.95, 0.93, 0.85, 1];
+    const sombra = [0.2, 0.17, 0.12, 0.8];
+    const vazio = [0.08, 0.06, 0.1, 1];
+    // um osso: contorno escuro por baixo, miolo claro por cima
+    const haste = (x0, y0, x1, y1, esp) => {
+        cr.setLineWidth(esp + 2);
+        cr.setSourceRGBA(...sombra);
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+        cr.setLineWidth(esp);
+        cr.setSourceRGBA(...osso);
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+    };
+    cr.save();
+    cr.translate(w / 2 + q.balanco * w * 0.03, h - alt * q.sobe);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+
+    const ombro = r * 2.7;
+    const espinha = r * 2.3;
+    // coluna, costelas e bacia
+    haste(0, espinha, 0, alt - r * 0.5, r * 0.28);
+    for (let i = 0; i < 3; i++) {
+        const y = ombro + i * r * 0.62;
+        const largura = r * (1.15 - i * 0.12);
+        haste(-largura, y, largura, y, r * 0.22);
+        haste(-largura, y, -largura * 0.9, y + r * 0.35, r * 0.2);
+        haste(largura, y, largura * 0.9, y + r * 0.35, r * 0.2);
+    }
+    cr.save();
+    cr.translate(0, alt - r * 0.45);
+    cr.scale(1.3, 0.55);
+    cr.arc(0, 0, r * 0.75, 0, Math.PI * 2);
+    cr.restore();
+    cr.setSourceRGBA(...osso);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(...sombra);
+    cr.stroke();
+
+    // braço esquerdo caído e braço direito acenando
+    haste(-r * 1.15, ombro, -r * 1.6, ombro + r * 1.9, r * 0.24);
+    const mao = {x: r * 1.9 + q.aceno * r * 0.5, y: ombro - r * 1.5};
+    haste(r * 1.15, ombro, r * 1.7, ombro - r * 0.5, r * 0.24);
+    haste(r * 1.7, ombro - r * 0.5, mao.x, mao.y, r * 0.22);
+    cr.arc(mao.x, mao.y, r * 0.2, 0, Math.PI * 2);
+    cr.setSourceRGBA(...osso);
+    cr.fill();
+
+    // caveira: crânio, olhos, nariz e mandíbula que desce ao bater o queixo
+    const queixo = q.mandibula * r * 0.35;
+    cr.rectangle(-r * 0.62, r * 1.55 + queixo, r * 1.24, r * 0.5);
+    cr.setSourceRGBA(...osso);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(...sombra);
+    cr.stroke();
+    for (let i = -1; i <= 1; i++) {
+        cr.moveTo(i * r * 0.31, r * 1.55 + queixo);
+        cr.lineTo(i * r * 0.31, r * 2.05 + queixo);
+    }
+    cr.stroke();
+    cr.arc(0, r, r, 0, Math.PI * 2);
+    cr.setSourceRGBA(...osso);
+    cr.fillPreserve();
+    cr.setSourceRGBA(...sombra);
+    cr.stroke();
+    cr.setSourceRGBA(...vazio);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * r * 0.4, r * 0.95, r * 0.26, 0, Math.PI * 2);
+        cr.fill();
+    }
+    cr.moveTo(0, r * 1.2);
+    cr.lineTo(-r * 0.12, r * 1.45);
+    cr.lineTo(r * 0.12, r * 1.45);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+}
+
+// Chama no retângulo (0, 0, w, h): sobe de trás da borda de baixo e dança, com cara de quem não aguenta o calor.
+// `q` vem de quadroChama (logica.js): {sobe, fase, aflicao}. Quem chama recorta no retângulo.
+export function chama(cr, w, h, q) {
+    const gw = w * 0.74, gh = h * 0.88;
+    // contorno da chama com a ponta dançando; `k` a encolhe em direção à base
+    const forma = (k, atraso) => {
+        const f = q.fase + atraso;
+        const ponta = Math.sin(f) * gw * 0.16;
+        const lingua = Math.sin(f * 1.7 + 1) * gw * 0.06;
+        cr.save();
+        cr.translate(0, gh);
+        cr.scale(k, k);
+        cr.translate(0, -gh);
+        cr.newPath();
+        cr.moveTo(0, gh);
+        cr.curveTo(-gw * 0.62, gh * 0.98, -gw * 0.58, gh * 0.55, -gw * 0.42 + lingua, gh * 0.24);
+        cr.curveTo(-gw * 0.3, gh * 0.4, -gw * 0.2, gh * 0.45, -gw * 0.14, gh * 0.4);
+        cr.curveTo(-gw * 0.05, gh * 0.25, ponta * 0.4, gh * 0.1, ponta, 0);
+        cr.curveTo(gw * 0.2 + ponta * 0.3, gh * 0.2, gw * 0.62, gh * 0.5, gw * 0.5, gh * 0.78);
+        cr.curveTo(gw * 0.44, gh * 0.95, gw * 0.2, gh, 0, gh);
+        cr.closePath();
+        cr.restore();
+    };
+    cr.save();
+    cr.translate(w / 2, h - gh * q.sobe);
+    cr.setLineJoin(1);
+    forma(1, 0);
+    cr.setSourceRGBA(0.88, 0.27, 0.16, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(0.45, 0.1, 0.06, 0.6);
+    cr.stroke();
+    forma(0.74, 0.8);
+    cr.setSourceRGBA(0.96, 0.6, 0.14, 1);
+    cr.fill();
+    forma(0.46, 1.6);
+    cr.setSourceRGBA(1, 0.85, 0.37, 1);
+    cr.fill();
+
+    // cara: olhos arregalados e boca em "o" que cresce com a aflição; uma gota de suor
+    const ya = gh * 0.66;
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * gw * 0.15, ya, gw * (0.075 + 0.03 * q.aflicao), 0, Math.PI * 2);
+        cr.setSourceRGBA(1, 1, 1, 1);
+        cr.fill();
+        cr.arc(lado * gw * 0.15, ya + gw * 0.015, gw * 0.035, 0, Math.PI * 2);
+        cr.setSourceRGBA(0.1, 0.05, 0.05, 1);
+        cr.fill();
+    }
+    cr.save();
+    cr.translate(0, gh * 0.8);
+    cr.scale(1, 0.8 + 0.8 * q.aflicao);
+    cr.arc(0, 0, gw * (0.045 + 0.04 * q.aflicao), 0, Math.PI * 2);
+    cr.restore();
+    cr.setSourceRGBA(0.35, 0.05, 0.05, 1);
+    cr.fill();
+    cr.save();
+    cr.translate(gw * 0.34, gh * 0.55 + q.aflicao * gh * 0.06 + Math.sin(q.fase * 2) * 1.5);
+    cr.moveTo(0, -gw * 0.07);
+    cr.curveTo(gw * 0.05, -gw * 0.01, gw * 0.05, gw * 0.04, 0, gw * 0.04);
+    cr.curveTo(-gw * 0.05, gw * 0.04, -gw * 0.05, -gw * 0.01, 0, -gw * 0.07);
+    cr.setSourceRGBA(0.55, 0.8, 1, 0.9 * q.aflicao);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+}
+
+// Papai Noel no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e ri com a barriga.
+// `q` vem de quadroNoel (logica.js): {sobe, balanco, aceno, riso}. Quem chama recorta no retângulo.
+export function noel(cr, w, h, q) {
+    const alt = h * 0.92;
+    const a = Math.min(w * 0.2, alt / 7);
+    const vermelho = [0.78, 0.13, 0.15, 1];
+    const contorno = [0.3, 0.04, 0.06, 0.7];
+    const branco = [0.98, 0.97, 0.95, 1];
+    const pele = [0.97, 0.78, 0.65, 1];
+    const ya = a * 1.75;                       // centro da cabeça
+    const ombro = ya + a * 1.15;
+    const luva = {x: a * 2.3, y: ombro - a * 1.9 + q.aceno * a * 0.35};
+
+    cr.save();
+    cr.translate(w / 2 + q.balanco * w * 0.02, h - alt * q.sobe);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    // braços: manga vermelha, punho e luva brancos
+    const manga = (x0, y0, x1, y1) => {
+        cr.setLineWidth(a * 0.7);
+        cr.setSourceRGBA(...contorno);
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+        cr.setLineWidth(a * 0.7 - 2);
+        cr.setSourceRGBA(...vermelho);
+        cr.moveTo(x0, y0);
+        cr.lineTo(x1, y1);
+        cr.stroke();
+        cr.arc(x1, y1, a * 0.42, 0, Math.PI * 2);
+        cr.setSourceRGBA(...branco);
+        cr.fillPreserve();
+        cr.setLineWidth(1);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+    };
+    manga(-a * 1.05, ombro + a * 0.2, -a * 1.7, ombro + a * 2);
+    manga(a * 1.05, ombro + a * 0.2, luva.x, luva.y);
+
+    // casaco, com a barriga sacudindo, faixa preta e fivela
+    cr.save();
+    cr.translate(0, alt);
+    cr.scale(1 + q.riso * 0.05, 1 - q.riso * 0.04);
+    cr.translate(0, -alt);
+    cr.moveTo(-a * 1.25, ombro);
+    cr.curveTo(-a * 1.7, ombro + a * 1.6, -a * 1.7, alt - a * 0.2, -a * 1.2, alt);
+    cr.lineTo(a * 1.2, alt);
+    cr.curveTo(a * 1.7, alt - a * 0.2, a * 1.7, ombro + a * 1.6, a * 1.25, ombro);
+    cr.closePath();
+    cr.setSourceRGBA(...vermelho);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    const cinto = ombro + a * 1.7;
+    cr.rectangle(-a * 1.6, cinto, a * 3.2, a * 0.45);
+    cr.setSourceRGBA(0.1, 0.08, 0.08, 1);
+    cr.fill();
+    cr.rectangle(-a * 0.28, cinto - a * 0.04, a * 0.56, a * 0.53);
+    cr.setSourceRGBA(0.95, 0.78, 0.2, 1);
+    cr.fill();
+    cr.restore();
+
+    // cabeça, barba, bigode, nariz e olhos
+    cr.arc(0, ya, a * 0.82, 0, Math.PI * 2);
+    cr.setSourceRGBA(...pele);
+    cr.fill();
+    cr.moveTo(-a * 0.95, ya - a * 0.05);
+    cr.curveTo(-a * 1.1, ya + a * 1.5, a * 1.1, ya + a * 1.5, a * 0.95, ya - a * 0.05);
+    cr.curveTo(a * 0.5, ya + a * 0.35, -a * 0.5, ya + a * 0.35, -a * 0.95, ya - a * 0.05);
+    cr.setSourceRGBA(...branco);
+    cr.fillPreserve();
+    cr.setLineWidth(1);
+    cr.setSourceRGBA(0.5, 0.5, 0.55, 0.6);
+    cr.stroke();
+    cr.arc(0, ya + a * 0.1, a * 0.13, 0, Math.PI * 2);
+    cr.setSourceRGBA(0.92, 0.5, 0.45, 1);
+    cr.fill();
+    cr.setSourceRGBA(0.1, 0.08, 0.08, 1);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * a * 0.32, ya - a * 0.22, a * 0.07, 0, Math.PI * 2);
+        cr.fill();
+    }
+
+    // gorro com barra branca e pompom que balança junto com o aceno
+    const balanca = q.aceno * a * 0.25;
+    cr.moveTo(-a * 0.9, ya - a * 0.35);
+    cr.curveTo(-a * 0.8, ya - a * 1.5, a * 0.1 + balanca, ya - a * 1.8, a * 0.6 + balanca * 2, ya - a * 1.45);
+    cr.curveTo(a * 0.7, ya - a * 1.2, a * 0.9, ya - a * 0.8, a * 0.9, ya - a * 0.35);
+    cr.closePath();
+    cr.setSourceRGBA(...vermelho);
+    cr.fillPreserve();
+    cr.setLineWidth(1.2);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    cr.arc(a * 0.62 + balanca * 2, ya - a * 1.45, a * 0.2, 0, Math.PI * 2);
+    cr.setSourceRGBA(...branco);
+    cr.fill();
+    cr.rectangle(-a * 0.98, ya - a * 0.5, a * 1.96, a * 0.3);
+    cr.setSourceRGBA(...branco);
+    cr.fillPreserve();
+    cr.setLineWidth(1);
+    cr.setSourceRGBA(0.5, 0.5, 0.55, 0.6);
+    cr.stroke();
+    cr.restore();
+}
+
+// Boneco de neve no retângulo (0, 0, w, h): sobe de trás da borda de baixo e balança ao vento.
+// `q` vem de quadroBoneco (logica.js): {sobe, balanco, vento}. Quem chama recorta no retângulo.
+export function boneco(cr, w, h, q) {
+    const alt = h * 0.92;
+    const a = alt / 7.2;
+    const neve = [0.97, 0.98, 1, 1];
+    const contorno = [0.35, 0.42, 0.55, 0.8];
+    const r1 = a, r2 = a * 1.3, r3 = a * 1.65;
+    const y1 = r1 + a * 0.9;                 // abaixo do chapéu
+    const y2 = y1 + r1 * 0.75 + r2 * 0.85;
+    const y3 = alt - r3 * 0.95;
+
+    cr.save();
+    cr.translate(w / 2 + q.balanco * w * 0.02, h - alt * q.sobe);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    // galhos dos braços, atrás do corpo
+    cr.setSourceRGBA(0.35, 0.22, 0.12, 1);
+    cr.setLineWidth(a * 0.16);
+    for (const lado of [-1, 1]) {
+        cr.moveTo(lado * r2 * 0.8, y2);
+        cr.lineTo(lado * (r2 * 1.9), y2 - a * 0.7 + q.vento * lado * a * 0.35);
+        cr.moveTo(lado * r2 * 1.4, y2 - a * 0.35);
+        cr.lineTo(lado * (r2 * 1.65), y2 - a * 1.2 + q.vento * lado * a * 0.35);
+        cr.stroke();
+    }
+    cr.setLineWidth(1.2);
+    for (const [y, r] of [[y3, r3], [y2, r2], [y1, r1]]) {
+        cr.arc(0, y, r, 0, Math.PI * 2);
+        cr.setSourceRGBA(...neve);
+        cr.fillPreserve();
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+    }
+    // botões, olhos de carvão e nariz de cenoura
+    cr.setSourceRGBA(0.12, 0.12, 0.16, 1);
+    for (const dy of [-0.35, 0.25]) {
+        cr.arc(0, y2 + r2 * dy, a * 0.1, 0, Math.PI * 2);
+        cr.fill();
+    }
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * r1 * 0.38, y1 - r1 * 0.22, a * 0.09, 0, Math.PI * 2);
+        cr.fill();
+    }
+    for (let i = -2; i <= 2; i++) {
+        cr.arc(i * r1 * 0.2, y1 + r1 * (0.42 + 0.06 * Math.abs(i) * Math.abs(i) * 0.3) - 0.5, a * 0.045, 0, Math.PI * 2);
+        cr.fill();
+    }
+    cr.moveTo(0, y1 - a * 0.02);
+    cr.lineTo(r1 * 0.95 + q.vento * 1, y1 + a * 0.12);
+    cr.lineTo(0, y1 + a * 0.22);
+    cr.closePath();
+    cr.setSourceRGBA(0.95, 0.5, 0.12, 1);
+    cr.fill();
+    // cachecol vermelho e a ponta que balança
+    const pescoco = y1 + r1 * 0.85;
+    cr.rectangle(-r1 * 0.95, pescoco - a * 0.2, r1 * 1.9, a * 0.42);
+    cr.setSourceRGBA(0.8, 0.15, 0.17, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(1);
+    cr.setSourceRGBA(0.3, 0.05, 0.07, 0.7);
+    cr.stroke();
+    cr.moveTo(r1 * 0.5, pescoco + a * 0.2);
+    cr.curveTo(r1 * 0.6 + q.vento * a * 0.5, pescoco + a * 0.7, r1 * 0.9 + q.vento * a * 0.7, pescoco + a * 1.1, r1 * 0.55 + q.vento * a * 0.9, pescoco + a * 1.5);
+    cr.lineTo(r1 * 0.25 + q.vento * a * 0.9, pescoco + a * 1.4);
+    cr.curveTo(r1 * 0.3 + q.vento * a * 0.4, pescoco + a * 0.9, r1 * 0.25, pescoco + a * 0.6, r1 * 0.2, pescoco + a * 0.2);
+    cr.closePath();
+    cr.setSourceRGBA(0.8, 0.15, 0.17, 1);
+    cr.fillPreserve();
+    cr.stroke();
+    // cartola
+    cr.rectangle(-r1 * 1.1, y1 - r1 * 0.95, r1 * 2.2, a * 0.2);
+    cr.setSourceRGBA(0.1, 0.1, 0.14, 1);
+    cr.fill();
+    cr.rectangle(-r1 * 0.68, y1 - r1 * 0.95 - a * 0.95, r1 * 1.36, a * 0.95);
+    cr.fill();
+    cr.rectangle(-r1 * 0.68, y1 - r1 * 0.95 - a * 0.3, r1 * 1.36, a * 0.16);
+    cr.setSourceRGBA(0.8, 0.15, 0.17, 1);
+    cr.fill();
+    cr.restore();
+}
