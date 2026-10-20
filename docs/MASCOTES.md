@@ -164,3 +164,23 @@ Tomadas em 2026-10-19:
 4. **Batidas:** limite padrão 3.
 5. **Clique:** o cuco ignora (os cliques passam).
 6. **Som:** fica de fora. Antes de incluir, conferir a API de som do Shell (`Meta.SoundPlayer`) e a licença do áudio.
+
+## Segundo mascote: fantasma (Halloween)
+
+Primeiro mascote de data. Mesmo contrato do cuco, com `temporada` (24 a 31 de outubro, `naTemporada` em `logica.js`) e chaves `fantasma-intervalo`, `fantasma-das`, `fantasma-ate`. O motor agenda todos os ligados com um só temporizador (o do disparo mais próximo); se dois coincidem, o primeiro da lista aparece. Linha do tempo: sobe 450 ms, fica 2 s (balança, "bu!" com olhos arregalados e braços para cima), desce 400 ms. Os gatilhos `metrica` e `evento` seguem para os próximos.
+
+## Terceiro mascote: esqueleto (Halloween)
+
+Mesma temporada e mesmas opções do fantasma (`esqueleto-intervalo`, `-das`, `-ate`). Sobe 450 ms, fica 2,4 s (acena com o braço direito e bate o queixo) e desce 400 ms. Quando dois ou mais mascotes caem na mesma hora, o motor sorteia: metade das vezes um só (escolhido ao acaso), metade das vezes todos juntos, lado a lado e centrados na doca (`escolherAparicao`, `deslocamentosLado`). Vários actors dividem o mesmo temporizador de quadros. No teste, `mascote-teste` aceita `id+id:marca` para forçar o lado a lado.
+
+## Posição horizontal
+
+Cada aparição sorteia um ponto qualquer ao longo da doca (`deslocamentoAleatorio`), sem passar das pontas; vale para todos os mascotes, não só os de Halloween. Um grupo lado a lado se move junto. Só o eixo da doca varia: a altura continua encostada na borda.
+
+## Chama (gatilho de memória)
+
+Primeiro mascote que não é de horário. Com ela ligada, um temporizador `mascote-memoria` lê `/proc/meminfo` a cada 15 s (sem ela, não existe). `usoMemoria` calcula `1 - MemAvailable/MemTotal`; `memoriaPedeAparicao` exige uso no limiar (`chama-limiar`, padrão 90), estar armada e ter passado `chama-espera` minutos (padrão 10) desde a última aparição; `rearmarMemoria` só rearma quando o uso cai 5 pontos abaixo do limiar. Respeita doca escondida, Overview e Não perturbe, e se não conseguir aparecer continua tentando a cada amostra. Validada subindo o uso real de 41% para ~55% com limiar 50%.
+
+## Natal: Papai Noel e boneco de neve
+
+De 1 a 25 de dezembro, mesmo esquema do Halloween (`noel-*`, `boneco-*`; opções num bloco só em `prefs.js`). Noel: acena e a barriga sacode no "ho ho ho" (3,65 s). Boneco: balança, com cachecol e galhos ao vento (3,45 s).
