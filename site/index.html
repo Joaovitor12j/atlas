@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATLAS, o dock do GNOME com lente e ambientes</title>
+<meta name="description" content="ATLAS é um dock para GNOME Shell 46 com lente de ampliação, ambientes com cor própria, widgets desenhados e mascotes. Projeto pessoal, feito em GJS.">
+<meta property="og:title" content="ATLAS, o dock do GNOME com lente e ambientes">
+<meta property="og:description" content="Um dock. Vários ambientes. Lente de ampliação, widgets e mascotes para o GNOME Shell 46.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#E3EBEE">
+<link rel="icon" href="img/atlas.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topo">
+  <a class="marca" href="#inicio" aria-label="ATLAS, início"><img src="img/atlas.svg" alt="" width="28" height="28"><span>ATLAS</span></a>
+  <nav aria-label="Seções">
+    <a href="#legenda">Recursos</a>
+    <a href="#widgets">Widgets</a>
+    <a href="#mascotes">Mascotes</a>
+    <a href="#desempenho">Desempenho</a>
+    <a href="#compatibilidade">Compatibilidade</a>
+  </nav>
+</header>
+
+<main id="inicio">
+
+<section class="hero">
+  <svg class="regiao" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <path id="curva" d="M120 330 C90 220 190 120 320 110 C430 100 470 40 580 70 C700 105 740 220 700 320 C665 405 700 480 590 520 C500 552 430 505 340 520 C230 538 150 450 120 330 Z"/>
+    </defs>
+    <g class="curvas">
+      <use href="#curva" class="c1"/>
+      <use href="#curva" class="c2" transform="translate(400 300) scale(.82) translate(-400 -300)"/>
+      <use href="#curva" class="c3" transform="translate(400 300) scale(.64) translate(-400 -300)"/>
+      <use href="#curva" class="c4" transform="translate(400 300) scale(.46) translate(-400 -300)"/>
+      <use href="#curva" class="c5" transform="translate(400 300) scale(.28) translate(-400 -300)"/>
+    </g>
+  </svg>
+
+  <svg class="rosa" viewBox="-50 -50 100 100" width="84" height="84" aria-hidden="true">
+    <circle r="40" fill="none" stroke="currentColor" stroke-width=".8"/>
+    <circle r="30" fill="none" stroke="currentColor" stroke-width=".5" stroke-dasharray="1 2.4"/>
+    <path d="M0 -46 L6 0 L0 46 L-6 0 Z" fill="currentColor"/>
+    <path d="M-46 0 L0 -5 L46 0 L0 5 Z" fill="none" stroke="currentColor" stroke-width=".8"/>
+    <text y="-52" text-anchor="middle" font-size="11" fill="currentColor" font-family="Spline Sans Mono, monospace">N</text>
+  </svg>
+
+  <div class="hero-texto">
+    <h1>Um dock.<br>Vários ambientes.</h1>
+    <p class="lide">ATLAS é um dock para o GNOME com lente de ampliação. Cada ambiente guarda seus apps, tem uma cor e muda com um giro da roda do mouse.</p>
+  </div>
+
+  <div class="palco" id="palco">
+    <div class="rotulo-ambiente" id="rotulo" aria-live="polite">Trabalho</div>
+    <div class="dock-area">
+      <div class="dock tema-noite" id="dock" role="toolbar" aria-label="Dock de demonstração">
+        <div class="trilho" id="trilho"></div>
+      </div>
+      <div class="dica" id="tip" role="tooltip" hidden></div>
+    </div>
+    <div class="controles">
+      <div class="grupo" role="radiogroup" aria-label="Ambiente" id="g-ambiente"></div>
+      <div class="grupo" role="radiogroup" aria-label="Tema do dock" id="g-tema"></div>
+    </div>
+    <p class="como" id="como">Passe o mouse sobre o dock. Gire a roda para trocar de ambiente.</p>
+  </div>
+</section>
+
+<section class="secao" id="legenda">
+  <h2>O que cabe no dock</h2>
+  <p class="sub">O nome é uma sigla, e cada letra é uma parte do dock.</p>
+  <dl class="legenda">
+    <div class="linha">
+      <dt><span class="sigla">A</span>Ambientes</dt>
+      <dd>Conjuntos de apps com nome e cor, como Trabalho, Estudo e Lazer. Troque pela roda do mouse, por <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> ou por <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd> a <kbd>9</kbd>. Um ambiente pode entrar sozinho quando o Não perturbe liga.</dd>
+    </div>
+    <div class="linha">
+      <dt><span class="sigla">T</span>Tarefas</dt>
+      <dd>Pomodoro, cronômetro, timer, contagem regressiva e nota, sempre à mão ao lado dos apps.</dd>
+    </div>
+    <div class="linha">
+      <dt><span class="sigla">L</span>Lançadores</dt>
+      <dd>Os favoritos do GNOME, coleções que guardam um grupo de apps num só ícone e o botão da grade de apps.</dd>
+    </div>
+    <div class="linha">
+      <dt><span class="sigla">A</span>Aplicativos</dt>
+      <dd>Indicador de app aberto, prévia ao vivo das janelas ao parar o mouse e menu de clique direito para fixar, abrir nova janela ou fechar.</dd>
+    </div>
+    <div class="linha">
+      <dt><span class="sigla">S</span>Sistema</dt>
+      <dd>Bateria, rede, CPU e memória, música e mensagens não lidas. Em posição embaixo, à esquerda ou à direita, com auto-ocultar e uma doca por tela.</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="secao" id="widgets">
+  <h2>Treze widgets, todos desenhados</h2>
+  <p class="sub">Cada ambiente liga os seus. Os tiles são desenhados com anéis, gráficos e um relógio de ponteiros, e abrem um painel ao clicar.</p>
+  <ul class="lista-widgets">
+    <li><strong>Relógio</strong><span>Ponteiros ou digital, com versão larga.</span></li>
+    <li><strong>Pomodoro</strong><span>Foco e pausa com anel de progresso.</span></li>
+    <li><strong>Bateria</strong><span>Nível e estado lidos do UPower.</span></li>
+    <li><strong>Música</strong><span>Qualquer player MPRIS, em pílula de vidro.</span></li>
+    <li><strong>Progresso do tempo</strong><span>Quanto do dia, da semana e do ano já passou.</span></li>
+    <li><strong>Cronômetro</strong><span>Conta para cima, com voltas.</span></li>
+    <li><strong>Timer</strong><span>Conta para baixo e avisa no fim.</span></li>
+    <li><strong>Atividade</strong><span>CPU e memória em gráfico.</span></li>
+    <li><strong>Rede</strong><span>Subida e descida em tempo real.</span></li>
+    <li><strong>Contagem regressiva</strong><span>Dias que faltam para uma data.</span></li>
+    <li><strong>Nota</strong><span>Um recado editável pelo clique.</span></li>
+    <li><strong>Área de transferência</strong><span>Histórico de texto e itens fixados.</span></li>
+    <li><strong>Slack</strong><span>Selo com as mensagens não lidas.</span></li>
+  </ul>
+</section>
+
+<section class="secao" id="mascotes">
+  <h2>Mascotes que aparecem na hora certa</h2>
+  <p class="sub">Desligados por padrão e desenhados em vetor, sem arquivo de imagem no dock. Ficam fora de cena com o Não perturbe ligado, com o dock escondido e em tela cheia. As tiras abaixo mostram os quadros de cada animação.</p>
+
+  <figure class="mascote largo">
+    <img src="img/cuco.png" width="1380" height="348" loading="lazy" alt="Quadros da animação do cuco: a casinha sobe, a porta abre, o pássaro sai e canta, e a casinha desce">
+    <figcaption><strong>Cuco.</strong> Na hora cheia ou na meia hora, a casinha sobe de trás do dock, o pássaro canta e ela desce. Você escolhe o horário e o máximo de batidas.</figcaption>
+  </figure>
+  <div class="mascotes-grade">
+    <figure class="mascote">
+      <img src="img/fantasma.png" width="1236" height="290" loading="lazy" alt="Quadros da animação do fantasma flutuando">
+      <figcaption><strong>Fantasma.</strong> Visita o dock no Halloween.</figcaption>
+    </figure>
+    <figure class="mascote">
+      <img src="img/esqueleto.png" width="1080" height="304" loading="lazy" alt="Quadros da animação do esqueleto">
+      <figcaption><strong>Esqueleto.</strong> Também no Halloween, às vezes lado a lado com o fantasma.</figcaption>
+    </figure>
+    <figure class="mascote">
+      <img src="img/noel.png" width="1152" height="290" loading="lazy" alt="Quadros da animação do Papai Noel">
+      <figcaption><strong>Papai Noel.</strong> Aparece no Natal.</figcaption>
+    </figure>
+    <figure class="mascote">
+      <img src="img/boneco.png" width="1080" height="290" loading="lazy" alt="Quadros da animação do boneco de neve">
+      <figcaption><strong>Boneco de neve.</strong> Também no Natal.</figcaption>
+    </figure>
+    <figure class="mascote">
+      <img src="img/chama.png" width="996" height="252" loading="lazy" alt="Quadros da animação da chama que indica memória alta">
+      <figcaption><strong>Chama.</strong> Acende quando a memória do computador está alta.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="secao" id="desempenho">
+  <h2>Leve o bastante para esquecer que existe</h2>
+  <p class="sub">Medido por dentro, com um cronômetro próprio em cada temporizador e cada desenho. Comparar o <code>gnome-shell</code> ligado e desligado só mede ruído.</p>
+  <figure class="barras" aria-label="Uso de CPU do ATLAS, em porcentagem de um núcleo">
+    <div class="barra"><span class="nome">Sem widgets</span><span class="trilha"><i style="--v:0"></i></span><span class="valor">0%</span></div>
+    <div class="barra"><span class="nome">Dock escondido</span><span class="trilha"><i style="--v:8.1"></i></span><span class="valor">0,03%</span></div>
+    <div class="barra"><span class="nome">Dock visível</span><span class="trilha"><i style="--v:37.8"></i></span><span class="valor">0,14%</span></div>
+    <div class="barra"><span class="nome">Os 13 widgets ligados</span><span class="trilha"><i style="--v:100"></i></span><span class="valor">0,37%</span></div>
+    <figcaption>Porcentagem de um núcleo, em duas telas com os widgets de uso diário. A memória própria fica na faixa de 2 a 5 MB, uma estimativa, porque o ATLAS roda dentro do processo do GNOME Shell.</figcaption>
+  </figure>
+</section>
+
+<section class="secao" id="compatibilidade">
+  <h2>Feito para uma versão só</h2>
+  <p class="sub">Cada distribuição e cada configuração do Linux muda alguma coisa, e não dá para prometer que tudo funciona em todas. Por isso o ATLAS mira um ambiente e funciona bem nele.</p>
+  <dl class="compat">
+    <div><dt>Testado</dt><dd>GNOME Shell 46, em Wayland e em X11</dd></div>
+    <div><dt>Não testado</dt><dd>Outras versões do GNOME e outras distribuições</dd></div>
+    <div><dt>Tecnologia</dt><dd>Extensão em GJS, ajustes em GSettings, janela de preferências em libadwaita</dd></div>
+    <div><dt>Situação</dt><dd>Projeto pessoal em desenvolvimento, de código fechado. Versão 0.3.0</dd></div>
+  </dl>
+</section>
+
+</main>
+
+<footer class="rodape">
+  <img src="img/atlas.svg" alt="" width="24" height="24">
+  <p>ATLAS, versão 0.3.0. Ambientes, Tarefas, Lançadores, Aplicativos e Sistema.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
