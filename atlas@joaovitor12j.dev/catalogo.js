@@ -27,3 +27,15 @@ export const WIDGETS = [
     ['slack', 'Slack', 'O ícone do Slack com um selo quando há mensagens não lidas; o clique abre o Slack'],
     ['nota', 'Nota', 'Um recado fixo na doca; edite pelo clique ou nas opções gerais'],
 ];
+
+// Grupos da aba Mascotes: [id, título]. Grupo sem mascote não aparece.
+export const CATEGORIAS_MASCOTE = [
+    ['hora', 'Hora do dia'],
+    ['datas', 'Datas e temas'],
+    ['eventos', 'Eventos do sistema'],
+];
+
+// [id, nome, descrição, categoria]
+export const MASCOTES = [
+    ['cuco', 'Cuco', 'Uma casinha sobe da doca e o cuco canta a hora', 'hora'],
+];
