@@ -117,18 +117,13 @@ kbd {
 .secao + .secao { border-top: 1px solid var(--linha); }
 .sub { max-width: 40em; margin-top: 14px; font-size: 1.1rem; color: var(--texto-2); }
 
-/* legenda */
-.legenda { margin: 40px 0 0; border-top: 1px solid var(--linha-forte); }
-.legenda .linha { display: grid; grid-template-columns: 250px 1fr; border-bottom: 1px solid var(--linha); }
-.legenda dt, .legenda dd { margin: 0; padding: 18px 0; }
-.legenda dt { display: flex; align-items: center; gap: 14px; font-family: var(--f-titulo); font-weight: 600; font-stretch: 85%; font-size: 1.25rem; }
-.legenda dd { color: var(--texto-2); }
-.sigla { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border: 1px solid var(--ambar); color: var(--ambar); font-size: 1.05rem; }
-@media (max-width: 720px) {
-  .legenda .linha { grid-template-columns: 1fr; }
-  .legenda dt { padding-bottom: 2px; }
-  .legenda dd { padding-top: 0; }
-}
+/* legenda: as iniciais descem pela esquerda e formam o nome */
+.legenda { margin: 44px 0 0; border-top: 1px solid var(--linha-forte); }
+.legenda .linha { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 8px 40px; align-items: baseline; padding: 26px 0; border-bottom: 1px solid var(--linha); }
+.legenda dt { margin: 0; font-family: var(--f-titulo); font-stretch: 85%; font-weight: 600; font-size: clamp(1.6rem, 3.4vw, 2.1rem); line-height: 1.1; letter-spacing: -0.02em; }
+.legenda dt b { color: var(--ambar); font-weight: 700; }
+.legenda dd { margin: 0; max-width: 38em; color: var(--texto); font-size: 1.1rem; line-height: 1.55; }
+@media (max-width: 720px) { .legenda .linha { grid-template-columns: 1fr; padding: 20px 0; } }
 
 /* ambientes */
 #ambientes .faixa { margin-top: 36px; }
