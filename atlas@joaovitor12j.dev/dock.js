@@ -12,6 +12,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
+import {Mascotes} from './mascotes.js';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {agendar, perfilar} from './perf.js';
@@ -189,7 +190,8 @@ class DockView {
 
         if (this._settings) {
             this._connect(this._settings, 'changed', (_s, key) => {
-                if (key === 'monitores')
+                // os mascotes têm o próprio motor; mexer neles não reconstrói a doca
+                if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' || key.startsWith('cuco-'))
                     return;
                 this._readConfig();
                 // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica
@@ -972,6 +974,20 @@ class DockView {
         }
     }
 
+    // Onde um mascote pousa: o vidro da doca na tela, o tamanho do ícone e o topo da área útil.
+    // null com a doca escondida (auto-ocultar) ou ainda sem construir.
+    ancoraMascote() {
+        if (!this._container || !this._bg || (this._hidden && this._c.autoHide))
+            return null;
+        const [x, y] = this._bg.get_transformed_position();
+        const [w, h] = this._bg.get_transformed_size();
+        return {
+            caixa: {x, y, w, h},
+            icone: this._c.iconSize,
+            topoUtil: Main.layoutManager.getWorkAreaForMonitor(this._monIdx).y,
+        };
+    }
+
     // Deslocamento que leva a doca toda para fora da tela.
     _hideShift() {
         const away = this._thick + this._c.margin + 2;
@@ -1246,6 +1262,14 @@ export class Dock {
             perfilar(this._settings.get_boolean('perfil-ativo'));
             this._connect(this._settings, 'changed::perfil-ativo', () => perfilar(this._settings.get_boolean('perfil-ativo')));
         }
+        if (this._settings) {
+            // um temporizador só, e só com um mascote ligado
+            this._mascotes = new Mascotes(this._settings, {
+                doca: () => this._views.find(v => v._monIdx === Main.layoutManager.primaryIndex) ?? this._views[0],
+                naoPerturbe: () => !!this._notif && !this._notif.get_boolean('show-banners'),
+            });
+            this._mascotes.enable();
+        }
         this._minimizadas = new Map(); // janela -> id do sinal 'unmanaged'
         if (this._settings) {
             this._connect(this._settings, 'changed::ambiente-atual', () => this._seguirAmbiente());
@@ -1267,6 +1291,8 @@ export class Dock {
             Main.wm.removeKeybinding(chave);
         this._atalhos = [];
         this._restaurarJanelas();
+        this._mascotes?.disable();
+        this._mascotes = null;
         perfilar(false);
         pararClipboard();
         this._notif = null;

@@ -188,3 +188,97 @@ export function textoDoSelo(n) {
         return '';
     return n > 99 ? '99+' : String(n);
 }
+
+// ----- Mascotes -----
+
+// Cuco: quantas vezes canta. `hora` (0..23) vira 1..12, limitado por `max`; na meia hora é uma só.
+export function batidasDoDisparo(hora, minuto, max = 3) {
+    if (minuto === 30)
+        return 1;
+    return Math.min(hora % 12 || 12, max);
+}
+
+// Próxima hora cheia ou meia hora, em hora local, estritamente depois de `agoraMs` (epoch em ms).
+// `intervalo`: 'hora' ou 'meia-hora'. Devolve {ms, hora, minuto} do alvo.
+export function proximoDisparo(agoraMs, intervalo) {
+    const passo = intervalo === 'meia-hora' ? 30 : 60;
+    const d = new Date(agoraMs);
+    d.setSeconds(0, 0);
+    d.setMinutes((Math.floor(d.getMinutes() / passo) + 1) * passo);
+    return {ms: d.getTime(), hora: d.getHours(), minuto: d.getMinutes()};
+}
+
+// `hora` está entre `das` e `ate`, inclusive; se `das > ate` a janela cruza a meia-noite.
+export function naJanela(hora, das, ate) {
+    return das <= ate ? hora >= das && hora <= ate : hora >= das || hora <= ate;
+}
+
+// Ao acordar: ainda cedo, hora de disparar, ou perdido (a suspensão do computador parou o relógio do GLib).
+export function avaliarDisparo(agoraMs, alvoMs, toleranciaMs = 90_000) {
+    if (agoraMs < alvoMs)
+        return 'esperar';
+    return agoraMs - alvoMs <= toleranciaMs ? 'disparar' : 'perdido';
+}
+
+// Quanto dormir até o alvo: um pouco depois dele, no máximo `teto` (o erro do relógio monotônico fica limitado).
+export function esperaAte(agoraMs, alvoMs, teto = 15 * 60_000, folgaMs = 200) {
+    return Math.max(folgaMs, Math.min(alvoMs - agoraMs + folgaMs, teto));
+}
+
+const limitar01 = x => Math.max(0, Math.min(1, x));
+const easeOutCubic = x => 1 - (1 - x) ** 3;
+const easeInCubic = x => x ** 3;
+const easeInOut = x => (x < 0.5 ? 2 * x * x : 1 - ((-2 * x + 2) ** 2) / 2);
+const easeOutBack = x => {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
+};
+
+const CUCO = {sobe: 300, porta: 200, batida: 700, saida: 200, canto: 300, fecha: 200, desce: 300};
+CUCO.inicio = CUCO.sobe + CUCO.porta;
+
+export const duracaoCuco = batidas => CUCO.inicio + CUCO.batida * batidas + CUCO.fecha + CUCO.desce;
+
+// Estado do cuco em `t` ms: {casa, porta, passaro, bico, inclina}, todos de 0 a 1 (o pássaro passa um pouco de 1
+// no overshoot da saída). null depois do fim.
+export function quadroCuco(t, batidas) {
+    t = Math.max(0, t);
+    const fimBatidas = CUCO.inicio + CUCO.batida * batidas;
+    if (t >= duracaoCuco(batidas))
+        return null;
+    const q = {casa: 1, porta: 1, passaro: 0, bico: 0, inclina: 0};
+    if (t < CUCO.sobe) {
+        q.casa = easeOutCubic(t / CUCO.sobe);
+        q.porta = 0;
+    } else if (t < CUCO.inicio) {
+        q.porta = easeInOut((t - CUCO.sobe) / CUCO.porta);
+    } else if (t < fimBatidas) {
+        const s = (t - CUCO.inicio) % CUCO.batida;
+        if (s < CUCO.saida) {
+            q.passaro = easeOutBack(s / CUCO.saida);
+        } else if (s < CUCO.saida + CUCO.canto) {
+            const x = (s - CUCO.saida) / CUCO.canto;
+            q.passaro = 1;
+            q.bico = Math.abs(Math.sin(x * 2 * Math.PI));
+            q.inclina = Math.sin(x * Math.PI);
+        } else {
+            q.passaro = 1 - easeInOut((s - CUCO.saida - CUCO.canto) / (CUCO.batida - CUCO.saida - CUCO.canto));
+        }
+    } else if (t < fimBatidas + CUCO.fecha) {
+        q.porta = 1 - easeInOut((t - fimBatidas) / CUCO.fecha);
+    } else {
+        q.porta = 0;
+        q.casa = 1 - easeInCubic(limitar01((t - fimBatidas - CUCO.fecha) / CUCO.desce));
+    }
+    return q;
+}
+
+// Onde pôr um mascote de `tam` {w, h}: centrado na doca `caixa` {x, y, w, h} e encostado no topo dela.
+// null quando não cabe acima (abaixo de `topoUtil`, a borda de cima da área útil).
+export function posicionarMascote(caixa, tam, topoUtil) {
+    const y = caixa.y - tam.h;
+    if (y < topoUtil)
+        return null;
+    return {x: Math.round(caixa.x + (caixa.w - tam.w) / 2), y: Math.round(y)};
+}

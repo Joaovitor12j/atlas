@@ -249,5 +249,42 @@
       <default>"ponto"</default>
       <summary>Indicador de app aberto</summary>
     </key>
+    <key name="mascotes-ativos" type="as">
+      <default>[]</default>
+      <summary>Mascotes ligados</summary>
+      <description>Ids dos mascotes que aparecem na doca. Todos começam desligados.</description>
+    </key>
+    <key name="cuco-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Cuco: quando canta</summary>
+      <description>"hora" canta nas horas cheias (uma batida por hora, até o limite); "meia-hora" também canta às :30, com uma batida.</description>
+    </key>
+    <key name="cuco-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Cuco: primeira hora do dia</summary>
+      <description>O cuco só canta a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="cuco-ate" type="i">
+      <range min="0" max="23"/>
+      <default>22</default>
+      <summary>Cuco: última hora do dia</summary>
+      <description>O cuco só canta até esta hora (inclusive).</description>
+    </key>
+    <key name="cuco-max-batidas" type="i">
+      <range min="1" max="12"/>
+      <default>3</default>
+      <summary>Cuco: máximo de cantos</summary>
+      <description>Limite de vezes que o cuco canta a cada aparição; 12 batidas duram uns 9 segundos.</description>
+    </key>
+    <key name="mascote-teste" type="s">
+      <default>''</default>
+      <summary>Disparo de teste de um mascote</summary>
+      <description>Uso interno das preferências: "id:marca-de-tempo" faz o mascote aparecer na hora.</description>
+    </key>
   </schema>
 </schemalist>
