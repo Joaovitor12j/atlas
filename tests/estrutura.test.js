@@ -2,12 +2,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
 const css = readFileSync(new URL('temas.css', raiz), 'utf8');
 const widgetsJs = readFileSync(new URL('widgets.js', raiz), 'utf8');
+const mascotesJs = readFileSync(new URL('mascotes.js', raiz), 'utf8');
 
 test('todo tema do catálogo está no schema e tem CSS', () => {
     for (const [id] of TEMAS) {
@@ -32,9 +33,31 @@ test('as chaves que o código lê existem no schema', () => {
     // de schemas do GNOME, não do ATLAS: favoritos (prefs) e Não perturbe (dock)
     for (const externa of ['favorite-apps', 'show-banners'])
         chaves.add(externa);
-    for (const arq of ['dock.js', 'widgets.js', 'prefs.js']) {
+    for (const arq of ['dock.js', 'widgets.js', 'prefs.js', 'mascotes.js']) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
             assert.ok(chaves.has(m[1]), `${arq} usa a chave ${m[1]}, que não está no schema`);
+    }
+});
+
+test('todo mascote do catálogo tem implementação em mascotes.js', () => {
+    for (const [id] of MASCOTES)
+        assert.match(mascotesJs, new RegExp(`\\b${id}: \\{`), `mascotes.js sem o mascote ${id}`);
+    assert.equal(new Set(MASCOTES.map(m => m[0])).size, MASCOTES.length);
+});
+
+test('as chaves de mascotes lidas pelo prefs e pelo motor existem no schema', () => {
+    const prefsJs = readFileSync(new URL('prefs.js', raiz), 'utf8');
+    const chaves = [...(mascotesJs + prefsJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
+    assert.ok(chaves.length > 0);
+    const rotulos = new Set(['mascote-quadro', 'mascote-memoria']); // nomes de linha do perf.js, não chaves
+    for (const chave of new Set(chaves).difference(rotulos))
+        assert.ok(schema.includes(`<key name="${chave}"`), `schema sem a chave ${chave}`);
+});
+
+test('todo mascote de horário sazonal tem as três chaves no schema', () => {
+    for (const id of ['fantasma', 'esqueleto', 'noel', 'boneco']) {
+        for (const sufixo of ['intervalo', 'das', 'ate'])
+            assert.ok(schema.includes(`<key name="${id}-${sufixo}"`), `schema sem ${id}-${sufixo}`);
     }
 });

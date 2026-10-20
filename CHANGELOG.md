@@ -5,6 +5,14 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Adicionado
+- **Mascotes** (aba própria nas preferências, todos desligados por padrão) e o primeiro: o **Cuco**. Na hora cheia (ou na meia hora) uma casinha sobe de trás da doca, a porta abre e o cuco canta uma vez por hora do relógio, até um limite (padrão 3). Opções: janela de horas, intervalo e máximo de cantos, mais o botão **Testar agora**. Só aparece na doca da tela principal e pula a aparição com a doca escondida, no Overview e com o Não perturbe ligado. Desenhado com Cairo, sem imagens; em repouso é só um temporizador de até 15 min, e o actor só existe durante a aparição. Spec em [docs/MASCOTES.md](docs/MASCOTES.md).
+- `tests/previa-cuco.js`, que gera um PNG com quadros do cuco para conferir sem abrir o Shell.
+- Mascote **Fantasma** (categoria Datas e temas): de 24 a 31 de outubro, nas horas cheias (ou meias horas), um fantasminha sobe da doca e dá um "bu!". Mesmas opções de janela de horas e o botão **Testar agora**, que ignora a temporada. O motor passou a agendar vários mascotes com um só temporizador. `tests/previa-fantasma.js` gera os quadros.
+- Mascote **Esqueleto** (Datas e temas): na mesma temporada, um esqueleto sobe da doca, acena e bate o queixo. Mesmas opções do fantasma; quando os dois caem na mesma hora, o motor sorteia: ou um só, ou os dois lado a lado. `tests/previa-esqueleto.js` gera os quadros.
+- Mascote **Chama** (categoria Eventos do sistema): aparece em apuros, com cara de calor, quando o uso de memória passa do limiar (padrão 90%, opção de 50 a 99%). Um amostrador lê `/proc/meminfo` a cada 15 s, só com a chama ligada, e ela só volta depois que o uso cai 5 pontos e passa o tempo de espera (padrão 10 min).
+- Mascotes **Papai Noel** (acena e ri com a barriga) e **Boneco de neve** (balança ao vento), de 1 a 25 de dezembro, com as mesmas opções dos de Halloween. Prévias em `tests/previa-chama.js`, `previa-noel.js` e `previa-boneco.js`.
+
 ## [0.3.0] - 2026-10-19
 
 ### Adicionado

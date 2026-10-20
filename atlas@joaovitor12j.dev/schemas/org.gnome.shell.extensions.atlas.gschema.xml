@@ -249,5 +249,138 @@
       <default>"ponto"</default>
       <summary>Indicador de app aberto</summary>
     </key>
+    <key name="mascotes-ativos" type="as">
+      <default>[]</default>
+      <summary>Mascotes ligados</summary>
+      <description>Ids dos mascotes que aparecem na doca. Todos começam desligados.</description>
+    </key>
+    <key name="cuco-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Cuco: quando canta</summary>
+      <description>"hora" canta nas horas cheias (uma batida por hora, até o limite); "meia-hora" também canta às :30, com uma batida.</description>
+    </key>
+    <key name="cuco-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Cuco: primeira hora do dia</summary>
+      <description>O cuco só canta a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="cuco-ate" type="i">
+      <range min="0" max="23"/>
+      <default>22</default>
+      <summary>Cuco: última hora do dia</summary>
+      <description>O cuco só canta até esta hora (inclusive).</description>
+    </key>
+    <key name="cuco-max-batidas" type="i">
+      <range min="1" max="12"/>
+      <default>3</default>
+      <summary>Cuco: máximo de cantos</summary>
+      <description>Limite de vezes que o cuco canta a cada aparição; 12 batidas duram uns 9 segundos.</description>
+    </key>
+    <key name="fantasma-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Fantasma: com que frequência aparece</summary>
+      <description>Na temporada (24 a 31 de outubro) o fantasma aparece nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="fantasma-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Fantasma: primeira hora do dia</summary>
+      <description>O fantasma só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="fantasma-ate" type="i">
+      <range min="0" max="23"/>
+      <default>23</default>
+      <summary>Fantasma: última hora do dia</summary>
+      <description>O fantasma só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="esqueleto-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Esqueleto: com que frequência aparece</summary>
+      <description>Na temporada (24 a 31 de outubro) o esqueleto aparece nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="esqueleto-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Esqueleto: primeira hora do dia</summary>
+      <description>O esqueleto só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="esqueleto-ate" type="i">
+      <range min="0" max="23"/>
+      <default>23</default>
+      <summary>Esqueleto: última hora do dia</summary>
+      <description>O esqueleto só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="noel-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Papai Papai Noel: com que frequência aparece</summary>
+      <description>Na temporada (1 a 25 de dezembro) o Papai Noel aparece nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="noel-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Papai Papai Noel: primeira hora do dia</summary>
+      <description>O noel só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="noel-ate" type="i">
+      <range min="0" max="23"/>
+      <default>23</default>
+      <summary>Papai Papai Noel: última hora do dia</summary>
+      <description>O noel só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="boneco-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Boneco de neve: com que frequência aparece</summary>
+      <description>Na temporada (1 a 25 de dezembro) o boneco aparece nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="boneco-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Boneco de neve: primeira hora do dia</summary>
+      <description>O boneco só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="boneco-ate" type="i">
+      <range min="0" max="23"/>
+      <default>23</default>
+      <summary>Boneco de neve: última hora do dia</summary>
+      <description>O boneco só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="chama-limiar" type="i">
+      <range min="50" max="99"/>
+      <default>90</default>
+      <summary>Chama: uso de memória que a chama</summary>
+      <description>A chama aparece quando o uso de memória chega a este percentual. Só volta a aparecer depois que o uso cair 5 pontos abaixo.</description>
+    </key>
+    <key name="chama-espera" type="i">
+      <range min="1" max="240"/>
+      <default>10</default>
+      <summary>Chama: minutos entre aparições</summary>
+      <description>Tempo mínimo, em minutos, entre duas aparições da chama.</description>
+    </key>
+    <key name="mascote-teste" type="s">
+      <default>''</default>
+      <summary>Disparo de teste de um mascote</summary>
+      <description>Uso interno das preferências: "id:marca-de-tempo" faz o mascote aparecer na hora.</description>
+    </key>
   </schema>
 </schemalist>
