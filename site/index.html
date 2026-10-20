@@ -79,19 +79,19 @@
     <li>O ambiente marcado entra sozinho quando o Não perturbe do GNOME liga, e volta ao anterior quando desliga.</li>
   </ul>
 
-  <div class="trio">
-    <figure class="faixa">
-      <img src="img/dock/dock-a1-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Trabalho, com borda âmbar, apps, pomodoro, música, relógio e atividade">
-      <figcaption><span class="ponto" style="--c: var(--ambar)"></span>Trabalho</figcaption>
-    </figure>
-    <figure class="faixa">
-      <img src="img/dock/dock-a2-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Estudo, com borda verde-água, leitor de PDF, notas, contagem regressiva e nota">
-      <figcaption><span class="ponto" style="--c: var(--agua)"></span>Estudo</figcaption>
-    </figure>
-    <figure class="faixa">
-      <img src="img/dock/dock-a3-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Lazer, com borda azul, música, vídeo, jogos e widget de rede">
-      <figcaption><span class="ponto" style="--c: var(--azul)"></span>Lazer</figcaption>
-    </figure>
+  <div class="palco" id="palco">
+    <div class="dock-area">
+      <div class="dock tema-noite" id="dock" role="toolbar" aria-label="Dock de demonstração">
+        <div class="trilho" id="trilho"></div>
+      </div>
+      <div class="dica" id="dica" role="tooltip" hidden></div>
+      <div class="aviso" id="aviso" aria-live="polite"></div>
+    </div>
+    <div class="controles">
+      <div class="grupo" role="radiogroup" aria-label="Ambiente" id="g-ambiente"></div>
+      <div class="grupo" role="radiogroup" aria-label="Tema do dock" id="g-tema"></div>
+    </div>
+    <p class="como" id="como">Experimente: passe o mouse sobre o dock e gire a roda para trocar de ambiente.</p>
   </div>
 </section>
 
@@ -215,6 +215,7 @@
 
 <footer class="rodape">
   <div class="rodape-marca"><img src="img/atlas.svg" alt="" width="24" height="24"><p>ATLAS, versão 0.3.0. Projeto pessoal, código fechado.</p></div>
+  <p class="creditos">Ícones dos apps do GNOME: tema Yaru.</p>
   <p class="contato"><a href="mailto:contato@email.com">contato@email.com</a> <a href="https://github.com/Joaovitor12j" rel="me noopener">GitHub</a></p>
 </footer>
 
