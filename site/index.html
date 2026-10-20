@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ATLAS, o dock do GNOME com lente e ambientes</title>
-<meta name="description" content="ATLAS é um dock para GNOME Shell 46 com lente de ampliação, ambientes com cor própria, widgets desenhados e mascotes. Projeto pessoal, feito em GJS.">
+<meta name="description" content="ATLAS é um dock para o GNOME Shell 46 com lente de ampliação, ambientes com cor própria, widgets, prévia de janelas e mascotes. Tudo configurável pela janela de preferências.">
 <meta property="og:title" content="ATLAS, o dock do GNOME com lente e ambientes">
 <meta property="og:description" content="Um dock. Vários ambientes. Lente de ampliação, widgets e mascotes para o GNOME Shell 46.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#E3EBEE">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0F1B28">
 <link rel="icon" href="img/atlas.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,8 +21,9 @@
 <header class="topo">
   <a class="marca" href="#inicio" aria-label="ATLAS, início"><img src="img/atlas.svg" alt="" width="28" height="28"><span>ATLAS</span></a>
   <nav aria-label="Seções">
-    <a href="#legenda">Recursos</a>
+    <a href="#ambientes">Ambientes</a>
     <a href="#widgets">Widgets</a>
+    <a href="#configuracao">Configuração</a>
     <a href="#mascotes">Mascotes</a>
     <a href="#desempenho">Desempenho</a>
     <a href="#compatibilidade">Compatibilidade</a>
@@ -31,146 +33,180 @@
 <main id="inicio">
 
 <section class="hero">
-  <svg class="regiao" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs>
-      <path id="curva" d="M120 330 C90 220 190 120 320 110 C430 100 470 40 580 70 C700 105 740 220 700 320 C665 405 700 480 590 520 C500 552 430 505 340 520 C230 538 150 450 120 330 Z"/>
-    </defs>
-    <g class="curvas">
-      <use href="#curva" class="c1"/>
-      <use href="#curva" class="c2" transform="translate(400 300) scale(.82) translate(-400 -300)"/>
-      <use href="#curva" class="c3" transform="translate(400 300) scale(.64) translate(-400 -300)"/>
-      <use href="#curva" class="c4" transform="translate(400 300) scale(.46) translate(-400 -300)"/>
-      <use href="#curva" class="c5" transform="translate(400 300) scale(.28) translate(-400 -300)"/>
-    </g>
-  </svg>
-
-  <svg class="rosa" viewBox="-50 -50 100 100" width="84" height="84" aria-hidden="true">
-    <circle r="40" fill="none" stroke="currentColor" stroke-width=".8"/>
-    <circle r="30" fill="none" stroke="currentColor" stroke-width=".5" stroke-dasharray="1 2.4"/>
-    <path d="M0 -46 L6 0 L0 46 L-6 0 Z" fill="currentColor"/>
-    <path d="M-46 0 L0 -5 L46 0 L0 5 Z" fill="none" stroke="currentColor" stroke-width=".8"/>
-    <text y="-52" text-anchor="middle" font-size="11" fill="currentColor" font-family="Spline Sans Mono, monospace">N</text>
-  </svg>
-
   <div class="hero-texto">
     <h1>Um dock.<br>Vários ambientes.</h1>
-    <p class="lide">ATLAS é um dock para o GNOME com lente de ampliação. Cada ambiente guarda seus apps, tem uma cor e muda com um giro da roda do mouse.</p>
+    <p class="lide">ATLAS é um dock para o GNOME com lente de ampliação. Cada ambiente guarda seus apps e widgets, tem uma cor própria e muda com um giro da roda do mouse.</p>
+    <p class="selo">Para GNOME Shell 46, em Wayland e em X11.</p>
+    <p><a class="acao" href="#ambientes">Ver os ambientes</a></p>
   </div>
-
-  <div class="palco" id="palco">
-    <div class="rotulo-ambiente" id="rotulo" aria-live="polite">Trabalho</div>
-    <div class="dock-area">
-      <div class="dock tema-noite" id="dock" role="toolbar" aria-label="Dock de demonstração">
-        <div class="trilho" id="trilho"></div>
-      </div>
-      <div class="dica" id="tip" role="tooltip" hidden></div>
-    </div>
-    <div class="controles">
-      <div class="grupo" role="radiogroup" aria-label="Ambiente" id="g-ambiente"></div>
-      <div class="grupo" role="radiogroup" aria-label="Tema do dock" id="g-tema"></div>
-    </div>
-    <p class="como" id="como">Passe o mouse sobre o dock. Gire a roda para trocar de ambiente.</p>
-  </div>
+  <figure class="faixa hero-video">
+    <video class="demo" muted loop playsinline preload="metadata" poster="media/lente.jpg" aria-hidden="true">
+      <source src="media/lente.webm" type="video/webm">
+      <source src="media/lente.mp4" type="video/mp4">
+    </video>
+    <figcaption class="so-leitor">O dock com a lente de ampliação passando pelos ícones, pelo widget de música, pelo relógio e pelo anel de atividade.</figcaption>
+  </figure>
 </section>
 
 <section class="secao" id="legenda">
   <h2>O que cabe no dock</h2>
   <p class="sub">O nome é uma sigla, e cada letra é uma parte do dock.</p>
   <dl class="legenda">
-    <div class="linha">
-      <dt><span class="sigla">A</span>Ambientes</dt>
-      <dd>Conjuntos de apps com nome e cor, como Trabalho, Estudo e Lazer. Troque pela roda do mouse, por <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> ou por <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd> a <kbd>9</kbd>. Um ambiente pode entrar sozinho quando o Não perturbe liga.</dd>
-    </div>
-    <div class="linha">
-      <dt><span class="sigla">T</span>Tarefas</dt>
-      <dd>Pomodoro, cronômetro, timer, contagem regressiva e nota, sempre à mão ao lado dos apps.</dd>
-    </div>
-    <div class="linha">
-      <dt><span class="sigla">L</span>Lançadores</dt>
-      <dd>Os favoritos do GNOME, coleções que guardam um grupo de apps num só ícone e o botão da grade de apps.</dd>
-    </div>
-    <div class="linha">
-      <dt><span class="sigla">A</span>Aplicativos</dt>
-      <dd>Indicador de app aberto, prévia ao vivo das janelas ao parar o mouse e menu de clique direito para fixar, abrir nova janela ou fechar.</dd>
-    </div>
-    <div class="linha">
-      <dt><span class="sigla">S</span>Sistema</dt>
-      <dd>Bateria, rede, CPU e memória, música e mensagens não lidas. Em posição embaixo, à esquerda ou à direita, com auto-ocultar e uma doca por tela.</dd>
-    </div>
+    <div class="linha"><dt><span class="sigla">A</span>Ambientes</dt><dd>Conjuntos de apps e widgets com nome e cor, como Trabalho, Estudo e Lazer.</dd></div>
+    <div class="linha"><dt><span class="sigla">T</span>Tarefas</dt><dd>Pomodoro, cronômetro, timer, contagem regressiva e nota, ao lado dos apps.</dd></div>
+    <div class="linha"><dt><span class="sigla">L</span>Lançadores</dt><dd>Os favoritos do GNOME, coleções que guardam vários apps num ícone e o botão da grade de apps.</dd></div>
+    <div class="linha"><dt><span class="sigla">A</span>Aplicativos</dt><dd>Indicador de app aberto, prévia ao vivo das janelas e menu de clique direito.</dd></div>
+    <div class="linha"><dt><span class="sigla">S</span>Sistema</dt><dd>Bateria, rede, CPU, memória, música e mensagens não lidas, sem pesar.</dd></div>
   </dl>
 </section>
 
-<section class="secao" id="widgets">
-  <h2>Treze widgets, todos desenhados</h2>
-  <p class="sub">Cada ambiente liga os seus. Os tiles são desenhados com anéis, gráficos e um relógio de ponteiros, e abrem um painel ao clicar.</p>
-  <ul class="lista-widgets">
-    <li><strong>Relógio</strong><span>Ponteiros ou digital, com versão larga.</span></li>
-    <li><strong>Pomodoro</strong><span>Foco e pausa com anel de progresso.</span></li>
-    <li><strong>Bateria</strong><span>Nível e estado lidos do UPower.</span></li>
-    <li><strong>Música</strong><span>Qualquer player MPRIS, em pílula de vidro.</span></li>
-    <li><strong>Progresso do tempo</strong><span>Quanto do dia, da semana e do ano já passou.</span></li>
-    <li><strong>Cronômetro</strong><span>Conta para cima, com voltas.</span></li>
-    <li><strong>Timer</strong><span>Conta para baixo e avisa no fim.</span></li>
-    <li><strong>Atividade</strong><span>CPU e memória em gráfico.</span></li>
-    <li><strong>Rede</strong><span>Subida e descida em tempo real.</span></li>
-    <li><strong>Contagem regressiva</strong><span>Dias que faltam para uma data.</span></li>
-    <li><strong>Nota</strong><span>Um recado editável pelo clique.</span></li>
-    <li><strong>Área de transferência</strong><span>Histórico de texto e itens fixados.</span></li>
-    <li><strong>Slack</strong><span>Selo com as mensagens não lidas.</span></li>
+<section class="secao" id="ambientes">
+  <h2>Cada contexto, o seu dock</h2>
+  <p class="sub">Um ambiente guarda os apps, os widgets e a cor de um momento do dia. Ao trocar, o dock inteiro muda e o nome aparece rapidamente.</p>
+
+  <figure class="faixa">
+    <video class="demo" muted loop playsinline preload="metadata" poster="media/ambientes.jpg" aria-hidden="true">
+      <source src="media/ambientes.webm" type="video/webm">
+      <source src="media/ambientes.mp4" type="video/mp4">
+    </video>
+    <figcaption>Girando a roda do mouse sobre o dock: Trabalho, Estudo, Lazer.</figcaption>
+  </figure>
+
+  <ul class="atalhos">
+    <li>Roda do mouse sobre o dock.</li>
+    <li><kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> ou <kbd>→</kbd> para o anterior e o próximo.</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd> a <kbd>9</kbd> para ir direto ao ambiente da posição.</li>
+    <li>O ambiente marcado entra sozinho quando o Não perturbe do GNOME liga, e volta ao anterior quando desliga.</li>
   </ul>
+
+  <div class="trio">
+    <figure class="faixa">
+      <img src="img/dock/dock-a1-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Trabalho, com borda âmbar, apps, pomodoro, música, relógio e atividade">
+      <figcaption><span class="ponto" style="--c: var(--ambar)"></span>Trabalho</figcaption>
+    </figure>
+    <figure class="faixa">
+      <img src="img/dock/dock-a2-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Estudo, com borda verde-água, leitor de PDF, notas, contagem regressiva e nota">
+      <figcaption><span class="ponto" style="--c: var(--agua)"></span>Estudo</figcaption>
+    </figure>
+    <figure class="faixa">
+      <img src="img/dock/dock-a3-noite.png" width="1300" height="76" loading="lazy" alt="Dock do ambiente Lazer, com borda azul, música, vídeo, jogos e widget de rede">
+      <figcaption><span class="ponto" style="--c: var(--azul)"></span>Lazer</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="secao" id="widgets">
+  <h2>Widgets que abrem um painel</h2>
+  <p class="sub">Os tiles ficam no dock, desenhados com anéis, gráficos e ponteiros. Um clique abre o painel. Há outros widgets além destes sete.</p>
+  <div class="visor" data-visor>
+    <div class="visor-lista" role="tablist" aria-label="Widgets" aria-orientation="vertical">
+      <button type="button" role="tab" aria-selected="true" data-img="img/widgets/painel-musica.png" data-w="760" data-h="560" data-alt="Painel de música aberto: capa do álbum, faixa, artista, barra de progresso e controles"><strong>Música</strong><span>Qualquer player compatível com MPRIS. Capa, faixa e controles, com versão larga em pílula de vidro.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-pomodoro.png" data-w="760" data-h="560" data-alt="Painel do pomodoro com anel de tempo e as ações Iniciar, Pular fase e Reiniciar"><strong>Pomodoro</strong><span>Foco e pausas com anel de progresso. Os minutos são ajustáveis nas preferências.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-relogio.png" data-w="760" data-h="560" data-alt="Painel do relógio aberto como calendário do mês, com o dia atual destacado"><strong>Relógio</strong><span>Hora e data no tile; o painel abre o calendário do mês.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-atividade.png" data-w="760" data-h="560" data-alt="Painel de atividade com gráfico de CPU e memória"><strong>Atividade</strong><span>CPU e memória em gráfico, com o anel de uso no tile.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-progresso.png" data-w="760" data-h="560" data-alt="Painel de progresso do tempo com barras para dia, semana, mês e ano"><strong>Progresso do tempo</strong><span>Quanto do dia, da semana, do mês e do ano já passou.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-contagem.png" data-w="760" data-h="560" data-alt="Painel de contagem regressiva mostrando quantos dias faltam para a data escolhida"><strong>Contagem regressiva</strong><span>Dias que faltam para uma data. Nome e data ficam nas preferências.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/widgets/painel-nota.png" data-w="760" data-h="560" data-alt="Painel de nota com um campo de texto editável"><strong>Nota</strong><span>Um recado que você edita clicando no tile.</span></button>
+    </div>
+    <figure class="visor-tela">
+      <img id="visor-img" src="img/widgets/painel-musica.png" width="760" height="560" alt="Painel de música aberto: capa do álbum, faixa, artista, barra de progresso e controles">
+    </figure>
+  </div>
+</section>
+
+<section class="secao" id="previa">
+  <h2>Veja a janela antes de abrir</h2>
+  <div class="duas">
+    <figure class="quadro">
+      <img src="img/widgets/previa-janelas.png" width="1100" height="560" loading="lazy" alt="Miniatura ao vivo da janela do Terminal aparecendo acima do ícone no dock, com botão de fechar">
+    </figure>
+    <div class="texto">
+      <p>Ao parar o mouse sobre um app aberto, o dock mostra uma miniatura ao vivo de cada janela. Um clique traz a janela, e o X ou o clique do meio fecha.</p>
+      <p>O clique direito abre o menu do app: ações, nova janela, fixar ou desafixar e fechar janelas.</p>
+    </div>
+  </div>
+</section>
+
+<section class="secao" id="temas">
+  <h2>Seis temas, um por ambiente se quiser</h2>
+  <p class="sub">O tema vale para o dock inteiro, e cada ambiente pode ter o seu. A cor da borda vem do ambiente.</p>
+  <div class="temas">
+    <figure class="faixa"><img src="img/dock/dock-a1-noite.png" width="1300" height="76" loading="lazy" alt="Dock no tema Noite"><figcaption>Noite, o padrão</figcaption></figure>
+    <figure class="faixa"><img src="img/dock/dock-a1-papel.png" width="1300" height="76" loading="lazy" alt="Dock no tema Papel"><figcaption>Papel</figcaption></figure>
+    <figure class="faixa"><img src="img/dock/dock-a1-cristal.png" width="1300" height="76" loading="lazy" alt="Dock no tema Cristal"><figcaption>Cristal, com o fundo desfocado</figcaption></figure>
+    <figure class="faixa"><img src="img/dock/dock-a1-neon.png" width="1300" height="76" loading="lazy" alt="Dock no tema Neon"><figcaption>Neon</figcaption></figure>
+    <figure class="faixa"><img src="img/dock/dock-a1-halloween.png" width="1300" height="76" loading="lazy" alt="Dock no tema Halloween"><figcaption>Halloween</figcaption></figure>
+    <figure class="faixa"><img src="img/dock/dock-a1-natal.png" width="1300" height="76" loading="lazy" alt="Dock no tema Natal"><figcaption>Natal</figcaption></figure>
+  </div>
+</section>
+
+<section class="secao" id="configuracao">
+  <h2>Tudo se controla pelas preferências</h2>
+  <p class="sub">Cada comportamento do ATLAS tem uma opção na janela de preferências, sem editar arquivo. As mudanças valem na hora, com o dock aberto.</p>
+  <div class="visor visor-prefs" data-visor>
+    <div class="visor-lista" role="tablist" aria-label="Abas das preferências" aria-orientation="vertical">
+      <button type="button" role="tab" aria-selected="true" data-img="img/prefs/geral.png" data-w="640" data-h="760" data-alt="Aba Geral das preferências, com tema, efeito ao passar o mouse, indicador, animação, tamanho dos ícones e prévia de janelas"><strong>Geral</strong><span>Tema, efeito ao passar o mouse, indicador de app aberto, animação de abertura, tamanho dos ícones, prévia de janelas e a lente de ampliação (força e largura). Também a posição (embaixo, esquerda ou direita), a margem, o auto-ocultar e em quais telas aparece.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/prefs/ambientes.png" data-w="640" data-h="760" data-alt="Aba Ambientes das preferências, com seletor na doca, roda do mouse e atalhos de teclado"><strong>Ambientes</strong><span>Nome, cor, apps e widgets de cada ambiente. Seletor na doca, roda do mouse, atalhos editáveis, Não perturbe e a opção de as janelas seguirem o ambiente.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/prefs/widgets.png" data-w="640" data-h="760" data-alt="Aba Widgets das preferências, com minutos do pomodoro, timer, posição na doca, contagem regressiva e nota"><strong>Widgets</strong><span>Quais aparecem, em que ordem, antes ou depois dos apps, e em versão larga. Minutos do pomodoro e do timer, nome e data da contagem, texto da nota e relógio de 12 ou 24 horas.</span></button>
+      <button type="button" role="tab" aria-selected="false" data-img="img/prefs/mascotes.png" data-w="640" data-h="760" data-alt="Aba Mascotes das preferências, com cada mascote, seu interruptor e o texto de quando aparece"><strong>Mascotes</strong><span>Liga cada mascote separadamente, define a janela de horas e o máximo de batidas do cuco, e tem o botão "Testar agora" para ver o mascote na hora.</span></button>
+    </div>
+    <figure class="visor-tela retrato">
+      <img id="visor-img-2" src="img/prefs/geral.png" width="640" height="760" loading="lazy" alt="Aba Geral das preferências, com tema, efeito ao passar o mouse, indicador, animação, tamanho dos ícones e prévia de janelas">
+    </figure>
+  </div>
+  <p class="nota-tecnica">As opções são GSettings, então o dock reage ao vivo, sem reiniciar o GNOME Shell.</p>
 </section>
 
 <section class="secao" id="mascotes">
   <h2>Mascotes que aparecem na hora certa</h2>
-  <p class="sub">Desligados por padrão e desenhados em vetor, sem arquivo de imagem no dock. Ficam fora de cena com o Não perturbe ligado, com o dock escondido e em tela cheia. As tiras abaixo mostram os quadros de cada animação.</p>
-
-  <figure class="mascote largo">
-    <img src="img/cuco.png" width="1380" height="348" loading="lazy" alt="Quadros da animação do cuco: a casinha sobe, a porta abre, o pássaro sai e canta, e a casinha desce">
-    <figcaption><strong>Cuco.</strong> Na hora cheia ou na meia hora, a casinha sobe de trás do dock, o pássaro canta e ela desce. Você escolhe o horário e o máximo de batidas.</figcaption>
-  </figure>
-  <div class="mascotes-grade">
+  <p class="sub">Começam desligados. Parados, o custo é quase zero. Não aparecem com o dock escondido, na visão geral de atividades nem com o Não perturbe ligado.</p>
+  <div class="mascotes">
     <figure class="mascote">
-      <img src="img/fantasma.png" width="1236" height="290" loading="lazy" alt="Quadros da animação do fantasma flutuando">
-      <figcaption><strong>Fantasma.</strong> Visita o dock no Halloween.</figcaption>
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-cuco.jpg" aria-hidden="true"><source src="media/mascote-cuco.webm" type="video/webm"><source src="media/mascote-cuco.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Cuco</strong> Sobe de trás do dock na hora cheia, ou na meia hora, e canta. Você escolhe o horário e o máximo de batidas.</figcaption>
     </figure>
     <figure class="mascote">
-      <img src="img/esqueleto.png" width="1080" height="304" loading="lazy" alt="Quadros da animação do esqueleto">
-      <figcaption><strong>Esqueleto.</strong> Também no Halloween, às vezes lado a lado com o fantasma.</figcaption>
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-fantasma.jpg" aria-hidden="true"><source src="media/mascote-fantasma.webm" type="video/webm"><source src="media/mascote-fantasma.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Fantasma</strong> Visita o dock de 24 a 31 de outubro e dá um "bu!".</figcaption>
     </figure>
     <figure class="mascote">
-      <img src="img/noel.png" width="1152" height="290" loading="lazy" alt="Quadros da animação do Papai Noel">
-      <figcaption><strong>Papai Noel.</strong> Aparece no Natal.</figcaption>
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-esqueleto.jpg" aria-hidden="true"><source src="media/mascote-esqueleto.webm" type="video/webm"><source src="media/mascote-esqueleto.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Esqueleto</strong> Também de 24 a 31 de outubro: acena e bate o queixo.</figcaption>
     </figure>
     <figure class="mascote">
-      <img src="img/boneco.png" width="1080" height="290" loading="lazy" alt="Quadros da animação do boneco de neve">
-      <figcaption><strong>Boneco de neve.</strong> Também no Natal.</figcaption>
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-noel.jpg" aria-hidden="true"><source src="media/mascote-noel.webm" type="video/webm"><source src="media/mascote-noel.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Papai Noel</strong> De 1 a 25 de dezembro, sobe do dock, acena e ri.</figcaption>
     </figure>
     <figure class="mascote">
-      <img src="img/chama.png" width="996" height="252" loading="lazy" alt="Quadros da animação da chama que indica memória alta">
-      <figcaption><strong>Chama.</strong> Acende quando a memória do computador está alta.</figcaption>
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-boneco.jpg" aria-hidden="true"><source src="media/mascote-boneco.webm" type="video/webm"><source src="media/mascote-boneco.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Boneco de neve</strong> Também de 1 a 25 de dezembro, balançando ao vento.</figcaption>
+    </figure>
+    <figure class="mascote">
+      <div class="recorte"><video class="demo" muted loop playsinline preload="none" poster="media/mascote-chama.jpg" aria-hidden="true"><source src="media/mascote-chama.webm" type="video/webm"><source src="media/mascote-chama.mp4" type="video/mp4"></video></div>
+      <figcaption><strong>Chama</strong> Acende quando a memória do computador passa do limite que você definiu.</figcaption>
     </figure>
   </div>
 </section>
 
 <section class="secao" id="desempenho">
   <h2>Leve o bastante para esquecer que existe</h2>
-  <p class="sub">Medido por dentro, com um cronômetro próprio em cada temporizador e cada desenho. Comparar o <code>gnome-shell</code> ligado e desligado só mede ruído.</p>
+  <p class="sub">Medido por dentro, com um cronômetro em cada temporizador e em cada desenho. Comparar o <code>gnome-shell</code> ligado e desligado só mede ruído.</p>
   <figure class="barras" aria-label="Uso de CPU do ATLAS, em porcentagem de um núcleo">
     <div class="barra"><span class="nome">Sem widgets</span><span class="trilha"><i style="--v:0"></i></span><span class="valor">0%</span></div>
     <div class="barra"><span class="nome">Dock escondido</span><span class="trilha"><i style="--v:8.1"></i></span><span class="valor">0,03%</span></div>
     <div class="barra"><span class="nome">Dock visível</span><span class="trilha"><i style="--v:37.8"></i></span><span class="valor">0,14%</span></div>
-    <div class="barra"><span class="nome">Os 13 widgets ligados</span><span class="trilha"><i style="--v:100"></i></span><span class="valor">0,37%</span></div>
-    <figcaption>Porcentagem de um núcleo, em duas telas com os widgets de uso diário. A memória própria fica na faixa de 2 a 5 MB, uma estimativa, porque o ATLAS roda dentro do processo do GNOME Shell.</figcaption>
+    <div class="barra"><span class="nome">Todos os widgets</span><span class="trilha"><i style="--v:100"></i></span><span class="valor">0,37%</span></div>
+    <figcaption>Porcentagem de um núcleo, em duas telas. A memória própria fica na faixa de 2 a 5 MB, uma estimativa, porque o ATLAS roda dentro do processo do GNOME Shell.</figcaption>
   </figure>
 </section>
 
 <section class="secao" id="compatibilidade">
   <h2>Feito para uma versão só</h2>
-  <p class="sub">Cada distribuição e cada configuração do Linux muda alguma coisa, e não dá para prometer que tudo funciona em todas. Por isso o ATLAS mira um ambiente e funciona bem nele.</p>
+  <p class="sub">Cada distribuição e cada configuração do Linux muda alguma coisa, e não dá para garantir que tudo funcione em todas. Por isso o ATLAS mira um ambiente e funciona bem nele.</p>
   <dl class="compat">
     <div><dt>Testado</dt><dd>GNOME Shell 46, em Wayland e em X11</dd></div>
     <div><dt>Não testado</dt><dd>Outras versões do GNOME e outras distribuições</dd></div>
-    <div><dt>Tecnologia</dt><dd>Extensão em GJS, ajustes em GSettings, janela de preferências em libadwaita</dd></div>
+    <div><dt>Tecnologia</dt><dd>Extensão em GJS, ajustes em GSettings e janela de preferências em libadwaita</dd></div>
     <div><dt>Situação</dt><dd>Projeto pessoal em desenvolvimento, de código fechado. Versão 0.3.0</dd></div>
   </dl>
 </section>
@@ -178,8 +214,8 @@
 </main>
 
 <footer class="rodape">
-  <img src="img/atlas.svg" alt="" width="24" height="24">
-  <p>ATLAS, versão 0.3.0. Ambientes, Tarefas, Lançadores, Aplicativos e Sistema.</p>
+  <div class="rodape-marca"><img src="img/atlas.svg" alt="" width="24" height="24"><p>ATLAS, versão 0.3.0. Projeto pessoal, código fechado.</p></div>
+  <p class="contato"><a href="mailto:contato@email.com">contato@email.com</a> <a href="https://github.com/Joaovitor12j" rel="me noopener">GitHub</a></p>
 </footer>
 
 <script src="app.js"></script>
