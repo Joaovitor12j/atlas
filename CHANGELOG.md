@@ -5,6 +5,10 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Adicionado
+- **Mascotes** (aba própria nas preferências, todos desligados por padrão) e o primeiro: o **Cuco**. Na hora cheia (ou na meia hora) uma casinha sobe de trás da doca, a porta abre e o cuco canta uma vez por hora do relógio, até um limite (padrão 3). Opções: janela de horas, intervalo e máximo de cantos, mais o botão **Testar agora**. Só aparece na doca da tela principal e pula a aparição com a doca escondida, no Overview e com o Não perturbe ligado. Desenhado com Cairo, sem imagens; em repouso é só um temporizador de até 15 min, e o actor só existe durante a aparição. Spec em [docs/MASCOTES.md](docs/MASCOTES.md).
+- `tests/previa-cuco.js`, que gera um PNG com quadros do cuco para conferir sem abrir o Shell.
+
 ## [0.3.0] - 2026-10-19
 
 ### Adicionado

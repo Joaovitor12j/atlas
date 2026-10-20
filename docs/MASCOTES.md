@@ -1,6 +1,6 @@
 # Mascotes do ATLAS: especificação
 
-Status: rascunho para revisão. Nada aqui está implementado. Primeiro mascote: o **cuco**.
+Status: implementado na branch `feat/mascotes` (motor + cuco). Faltam a conferência visual no Shell, a medição com `perf.js` e a revisão. Primeiro mascote: o **cuco**.
 
 ## Objetivo
 
@@ -14,7 +14,7 @@ Fora de escopo desta etapa: mascotes sazonais, estáticos, de passagem e de mét
 2. **Zero em repouso.** Sem mascote ligado não há timer. Com mascote ligado, o único custo parado é um temporizador que acorda no máximo a cada 15 min.
 3. **Actor efêmero.** O desenho só existe durante a aparição. Ao terminar, o actor é destruído (`null`), sem textura retida.
 4. **Vetorial com Cairo**, como os widgets (`desenho.js`): sem PNG, sem arquivo de arte, escala com o tamanho dos ícones.
-5. **Lógica pura testável com node.** Horários, linha do tempo e easing ficam em `logica.js`; o desenho em `desenho.js`, visível fora do Shell por `tests/previa-desenho.js`.
+5. **Lógica pura testável com node.** Horários, linha do tempo e easing ficam em `logica.js`; o desenho em `desenho.js`, visível fora do Shell por `tests/previa-cuco.js`.
 6. **Respeita o usuário.** Não aparece com a doca escondida, em tela cheia, no Overview nem com o Não perturbe ligado.
 
 ## O cuco
@@ -121,7 +121,7 @@ Janela de preferências: aba **Mascotes** com uma linha por mascote do catálogo
 | `dock.js` | cria o motor no `Dock.enable`, expõe a âncora de cada `DockView`, avisa sobre Overview e Não perturbe, destrói no `disable` |
 | `prefs.js` | aba Mascotes |
 | schema | chaves acima |
-| `tests/` | casos novos em `logica.test.js`, `estrutura.test.js` e `previa-desenho.js` |
+| `tests/` | `mascotes.test.js` (lógica pura), casos novos em `estrutura.test.js` e `previa-cuco.js` |
 
 `extension.js` não muda: o carregador já copia todo `.js` novo.
 
@@ -134,7 +134,7 @@ Automáticos (`npm test`, sem Shell):
 - `quadroCuco`: valores em 0..1, começa e termina com a casa e a porta fechadas, `t` depois do fim devolve `null`, número de cantos igual a N.
 - `estrutura.test.js`: todo mascote do catálogo tem entrada em `mascotes.js`; as chaves lidas por `mascotes.js` existem no schema (incluir o arquivo na lista que o teste varre).
 
-Visual (sem abrir o Shell): `tests/previa-desenho.js` ganha uma tira com ~8 quadros do cuco, nos fundos escuro e claro.
+Visual (sem abrir o Shell): `gjs -m tests/previa-cuco.js saida.png` gera uma tira com 12 quadros do cuco, nos fundos escuro e claro.
 
 No Shell real (a validar de verdade):
 - botão **Testar agora**, nas quatro posições da doca;
