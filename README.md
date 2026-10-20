@@ -8,6 +8,8 @@
 
 Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 
+**Página do projeto:** https://atlas-dock-sage.vercel.app
+
 </div>
 
 ## Recursos
@@ -66,3 +68,9 @@ O histórico de mudanças está no [CHANGELOG](CHANGELOG.md).
 
 ## Próximos passos
 Prateleira de arquivos, clima e calendário.
+
+## Página do projeto
+A página de apresentação fica em `site/` (HTML, CSS e JS puros, direção visual em `site/DESIGN.md`) e está publicada em https://atlas-dock-sage.vercel.app. Para atualizar:
+```bash
+cd site && vercel deploy --prod --yes
+```
