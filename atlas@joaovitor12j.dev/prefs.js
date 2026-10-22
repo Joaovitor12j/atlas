@@ -4,10 +4,11 @@ import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
+import Soup from 'gi://Soup?version=3.0';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from './catalogo.js';
 import {boneco, chama, cuco, esqueleto, fantasma, noel} from './desenho.js';
-import {diasAte, quadroBoneco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel} from './logica.js';
+import {diasAte, lerLocais, quadroBoneco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from './logica.js';
 
 const POSICOES = [
     ['baixo', 'Embaixo'],
@@ -365,6 +366,7 @@ export default class AtlasPrefs extends ExtensionPreferences {
             v => v === '' || diasAte({ano: 2000, mes: 1, dia: 1}, v) !== null));
         geral.add(this._texto(settings, 'nota-texto', 'Nota', v => v.length <= 200));
         geral.add(this._switch(settings, 'relogio-24h', 'Relógio em 24 horas', 'Desligado mostra 12 horas'));
+        page.add(this._grupoClima(settings));
 
         const ler = () => {
             try {
@@ -607,6 +609,107 @@ export default class AtlasPrefs extends ExtensionPreferences {
             settings.set_strv(key, texto ? [texto] : []);
         });
         return row;
+    }
+
+    // Cidade do widget Clima: a linha mostra a escolhida; "Escolher" abre a busca e "Remover" desliga a busca do tempo.
+    _grupoClima(settings) {
+        const grupo = new Adw.PreferencesGroup({
+            title: 'Clima',
+            description: 'A previsão vem do Open-Meteo, sem conta nem chave. Só as coordenadas da cidade saem da sua máquina.',
+        });
+        const row = new Adw.ActionRow({title: 'Cidade', use_markup: false});
+        const mostrar = () => {
+            row.subtitle = settings.get_string('clima-cidade') || 'Nenhuma: o widget fica sem dados';
+        };
+        const remover = new Gtk.Button({icon_name: 'user-trash-symbolic', tooltip_text: 'Remover', valign: Gtk.Align.CENTER, css_classes: ['flat']});
+        remover.connect('clicked', () => settings.set_string('clima-cidade', ''));
+        const escolher = new Gtk.Button({label: 'Escolher', valign: Gtk.Align.CENTER});
+        escolher.connect('clicked', () => this._escolherCidade(row.get_root(), ({rotulo, lat, lon}) => {
+            settings.set_double('clima-latitude', lat);
+            settings.set_double('clima-longitude', lon);
+            settings.set_string('clima-cidade', rotulo); // por último: o widget escuta esta chave
+        }));
+        row.add_suffix(remover);
+        row.add_suffix(escolher);
+        const id = settings.connect('changed::clima-cidade', mostrar);
+        row.connect('destroy', () => settings.disconnect(id));
+        mostrar();
+        grupo.add(row);
+        return grupo;
+    }
+
+    // Janela com busca de cidade (geocodificação do Open-Meteo); busca meio segundo depois de parar de digitar.
+    _escolherCidade(pai, aoEscolher) {
+        const win = new Gtk.Window({title: 'Escolher cidade', modal: true, transient_for: pai, default_width: 420, default_height: 460});
+        const caixa = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 8, margin_top: 12, margin_bottom: 12, margin_start: 12, margin_end: 12});
+        const busca = new Gtk.SearchEntry({placeholder_text: 'Nome da cidade'});
+        const aviso = new Gtk.Label({label: 'Digite ao menos 2 letras.', css_classes: ['dim-label'], xalign: 0});
+        const lista = new Gtk.ListBox({selection_mode: Gtk.SelectionMode.NONE, css_classes: ['boxed-list']});
+        caixa.append(busca);
+        caixa.append(aviso);
+        caixa.append(new Gtk.ScrolledWindow({vexpand: true, child: lista}));
+        win.set_child(caixa);
+
+        const sessao = new Soup.Session({user_agent: 'ATLAS (preferências)', timeout: 15});
+        let cancelar = null;
+        let esperaId = 0;
+        const limpar = () => {
+            for (let r = lista.get_row_at_index(0); r; r = lista.get_row_at_index(0))
+                lista.remove(r);
+        };
+        const buscar = () => {
+            esperaId = 0;
+            cancelar?.cancel();
+            limpar();
+            const url = urlBuscaLocal(busca.text);
+            if (!url) {
+                aviso.label = 'Digite ao menos 2 letras.';
+                return GLib.SOURCE_REMOVE;
+            }
+            aviso.label = 'Buscando…';
+            const msg = Soup.Message.new('GET', url);
+            const meu = cancelar = new Gio.Cancellable();
+            sessao.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, meu, (s, res) => {
+                let locais = null;
+                try {
+                    const bytes = s.send_and_read_finish(res);
+                    if (msg.get_status() === Soup.Status.OK)
+                        locais = lerLocais(JSON.parse(new TextDecoder().decode(bytes.get_data())));
+                } catch (_e) { /* cancelada ou sem rede */ }
+                if (meu.is_cancelled())
+                    return;
+                if (locais === null) {
+                    aviso.label = 'Não consegui buscar: confira a conexão.';
+                    return;
+                }
+                aviso.label = locais.length ? 'Clique na cidade.' : 'Nada encontrado.';
+                for (const local of locais) {
+                    const row = new Adw.ActionRow({title: local.rotulo, use_markup: false, activatable: true,
+                        subtitle: `${local.lat.toFixed(2)}, ${local.lon.toFixed(2)}`});
+                    row.connect('activated', () => {
+                        aoEscolher(local);
+                        win.close();
+                    });
+                    lista.append(row);
+                }
+            });
+            return GLib.SOURCE_REMOVE;
+        };
+        busca.connect('search-changed', () => {
+            if (esperaId)
+                GLib.source_remove(esperaId);
+            esperaId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, buscar);
+        });
+        win.connect('close-request', () => {
+            if (esperaId)
+                GLib.source_remove(esperaId);
+            esperaId = 0;
+            cancelar?.cancel();
+            sessao.abort();
+            return false;
+        });
+        win.present();
+        busca.grab_focus();
     }
 
     // Janela com busca para escolher um aplicativo instalado.
