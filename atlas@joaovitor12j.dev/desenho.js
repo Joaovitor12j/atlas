@@ -856,3 +856,492 @@ export function boneco(cr, w, h, q) {
     cr.fill();
     cr.restore();
 }
+
+// ----- Mascotes do clima (frio e calor) -----
+// Todos recebem `ctx` com `base` (a linha do topo da doca dentro do actor; o que fica abaixo dela é desenhado sobre a
+// doca) e `icone` (o tamanho dos ícones, a unidade dos desenhos). Os quadros vêm de logica.js.
+
+// Desenha `fn` num grupo e pinta com `alfa` (sumir de uma vez, sem mexer em cada cor).
+function comAlfa(cr, alfa, fn) {
+    if (alfa >= 0.999) {
+        fn();
+        return;
+    }
+    cr.pushGroup();
+    fn();
+    cr.popGroupToSource();
+    cr.paintWithAlpha(Math.max(0, alfa));
+}
+
+// Olhos e boca simples num rosto centrado em (x, y) de raio `r`. `boca`: 'sorriso', 'aflito' ou 'aberta'.
+function rosto(cr, x, y, r, boca = 'sorriso', olhos = true) {
+    cr.setSourceRGBA(0.12, 0.1, 0.1, 1);
+    if (olhos) {
+        for (const lado of [-1, 1]) {
+            cr.arc(x + lado * r * 0.36, y - r * 0.12, r * 0.11, 0, VOLTA);
+            cr.fill();
+        }
+    }
+    cr.setLineWidth(Math.max(1, r * 0.1));
+    cr.setLineCap(1);
+    if (boca === 'aberta') {
+        cr.save();
+        cr.translate(x, y + r * 0.38);
+        cr.scale(1, 0.75);
+        cr.arc(0, 0, r * 0.22, 0, VOLTA);
+        cr.restore();
+        cr.fill();
+    } else if (boca === 'aflito') {
+        cr.arc(x, y + r * 0.62, r * 0.28, Math.PI * 1.15, Math.PI * 1.85);
+        cr.stroke();
+    } else {
+        cr.arc(x, y + r * 0.12, r * 0.38, Math.PI * 0.2, Math.PI * 0.8);
+        cr.stroke();
+    }
+}
+
+// Gota d'água (ponta para cima) com a base redonda em (x, y) e raio `r`.
+function gota(cr, x, y, r, rgba) {
+    cr.moveTo(x, y - r * 2.2);
+    cr.curveTo(x + r * 0.4, y - r * 1.3, x + r, y - r * 0.6, x + r, y);
+    cr.arc(x, y, r, 0, Math.PI);
+    cr.curveTo(x - r, y - r * 0.6, x - r * 0.4, y - r * 1.3, x, y - r * 2.2);
+    cr.closePath();
+    cr.setSourceRGBA(...rgba);
+    cr.fill();
+}
+
+// Sol com rosto. `oculos` põe óculos escuros; `giro` gira os raios.
+function solRosto(cr, cx, cy, r, giro, {oculos = true, boca = 'sorriso'} = {}) {
+    cr.save();
+    cr.translate(cx, cy);
+    cr.setSourceRGBA(...cor('#f2a93b'));
+    for (let i = 0; i < 12; i++) {
+        const a = giro + (VOLTA * i) / 12;
+        const larg = 0.16;
+        cr.moveTo(Math.cos(a - larg) * r * 1.08, Math.sin(a - larg) * r * 1.08);
+        cr.lineTo(Math.cos(a) * r * (i % 2 ? 1.42 : 1.62), Math.sin(a) * r * (i % 2 ? 1.42 : 1.62));
+        cr.lineTo(Math.cos(a + larg) * r * 1.08, Math.sin(a + larg) * r * 1.08);
+        cr.closePath();
+    }
+    cr.fill();
+    cr.arc(0, 0, r, 0, VOLTA);
+    cr.setSourceRGBA(...cor('#f7c548'));
+    cr.fillPreserve();
+    cr.setLineWidth(Math.max(1, r * 0.06));
+    cr.setSourceRGBA(...cor('#d9822b'));
+    cr.stroke();
+    rosto(cr, 0, 0, r, boca, !oculos);
+    if (oculos) {
+        cr.setSourceRGBA(0.1, 0.1, 0.14, 1);
+        for (const lado of [-1, 1]) {
+            retanguloArredondado(cr, lado * r * 0.08 + (lado < 0 ? -r * 0.62 : 0), -r * 0.32, r * 0.54, r * 0.34, r * 0.14);
+            cr.fill();
+        }
+        cr.setLineWidth(Math.max(1, r * 0.07));
+        cr.moveTo(-r * 0.1, -r * 0.24);
+        cr.lineTo(r * 0.1, -r * 0.24);
+        cr.stroke();
+        cr.setSourceRGBA(1, 1, 1, 0.45); // reflexo
+        cr.moveTo(-r * 0.46, -r * 0.24);
+        cr.lineTo(-r * 0.32, -r * 0.24);
+        cr.moveTo(r * 0.24, -r * 0.24);
+        cr.lineTo(r * 0.38, -r * 0.24);
+        cr.stroke();
+    }
+    cr.restore();
+}
+
+// Picolé derretendo: sobe da doca, pinga pela borda (sobre a doca) e vira uma poça que evapora.
+export function picole(cr, w, h, q, {base, icone}) {
+    const a = icone;
+    const cx = w / 2;
+    const bw = a * 0.56, bh = a * 0.82, pw = a * 0.12, ph = a * 0.34;
+    const altura = (bh + ph) * (1 - q.derrete * 0.92);
+    const sabor = cor('#f0866a');
+    comAlfa(cr, q.alfa, () => {
+        // poça na linha da doca
+        const poca = Math.max(q.derrete, Math.min(0.3, q.fase * 0.08)) * (q.sobe >= 1 ? 1 : 0);
+        if (poca > 0) {
+            cr.save();
+            cr.translate(cx, base);
+            cr.scale(1, 0.22);
+            cr.arc(0, 0, bw * (0.4 + 0.9 * poca), 0, VOLTA);
+            cr.restore();
+            cr.setSourceRGBA(...sabor);
+            cr.fill();
+        }
+        // pingos: formam na base do picolé, caem na doca e escorrem pela borda dela
+        if (q.sobe >= 1 && q.derrete < 0.9) {
+            for (const [dx, atraso] of [[-0.2, 0], [0.18, 0.55]]) {
+                const f = ((q.fase + atraso) % 1.1) / 1.1;
+                const x = cx + dx * a * (1 + q.derrete * 0.6);
+                const topo = base - ph * 0.6;
+                const r = a * 0.05;
+                if (f < 0.35)
+                    gota(cr, x, topo + (base - topo) * (f / 0.35), r, sabor);
+                else
+                    gota(cr, x, base + (h - base - r * 2) * easeIn((f - 0.35) / 0.65), r * (1 - 0.3 * (f - 0.35)), sabor);
+            }
+        }
+        // o picolé, que sobe de trás da doca e encolhe ao derreter
+        cr.save();
+        cr.rectangle(0, 0, w, base);
+        cr.clip();
+        cr.translate(0, (1 - q.sobe) * (bh + ph + a * 0.1));
+        const pe = base;
+        cr.setSourceRGBA(...cor('#d9b07a'));
+        retanguloArredondado(cr, cx - pw / 2, pe - Math.min(ph, altura), pw, Math.min(ph, altura) + pw, pw / 2);
+        cr.fill();
+        const corpo = Math.max(0, altura - ph * (1 - q.derrete));
+        if (corpo > a * 0.05) {
+            const larg = bw * (1 + q.derrete * 0.35);
+            const topo = pe - ph * (1 - q.derrete) - corpo;
+            retanguloArredondado(cr, cx - larg / 2, topo, larg, corpo, Math.min(larg / 2, a * 0.26));
+            cr.setSourceRGBA(...sabor);
+            cr.fillPreserve();
+            cr.setLineWidth(1.2);
+            cr.setSourceRGBA(0.55, 0.2, 0.12, 0.6);
+            cr.stroke();
+            // cobertura que escorre, com ondas na borda de baixo
+            cr.moveTo(cx - larg / 2, topo + corpo * 0.35);
+            for (let i = 0; i <= 6; i++) {
+                const x = cx - larg / 2 + (larg * i) / 6;
+                const y = topo + corpo * (0.35 + (i % 2 ? 0.1 : 0)) + Math.sin(q.fase * 3 + i) * a * 0.015;
+                cr.lineTo(x, y);
+            }
+            cr.lineTo(cx + larg / 2, topo + a * 0.2);
+            cr.arc(cx + larg / 2 - a * 0.2, topo + a * 0.2, a * 0.2, 0, -Math.PI / 2);
+            cr.lineTo(cx - larg / 2 + a * 0.2, topo);
+            cr.arc(cx - larg / 2 + a * 0.2, topo + a * 0.2, a * 0.2, -Math.PI / 2, -Math.PI);
+            cr.closePath();
+            cr.setSourceRGBA(...cor('#f6c2b4'));
+            cr.fill();
+            if (corpo > a * 0.3)
+                rosto(cr, cx, topo + corpo * 0.62, a * 0.2, 'aflito');
+            // suor
+            if (q.suor > 0 && corpo > a * 0.3)
+                gota(cr, cx + larg * 0.55, topo + corpo * 0.35 + Math.sin(q.fase * 4) * a * 0.03, a * 0.045, [0.55, 0.78, 1, q.suor]);
+        }
+        cr.restore();
+        // vapor saindo da poça
+        if (q.vapor > 0) {
+            cr.setLineWidth(Math.max(1, a * 0.04));
+            cr.setLineCap(1);
+            for (const dx of [-0.2, 0, 0.2]) {
+                const sobe = q.vapor * a * 0.5;
+                cr.moveTo(cx + dx * a, base - a * 0.05 - sobe);
+                for (let i = 1; i <= 4; i++)
+                    cr.lineTo(cx + dx * a + Math.sin(i * 1.6 + q.fase * 6) * a * 0.04, base - a * 0.05 - sobe - i * a * 0.08);
+                cr.setSourceRGBA(1, 1, 1, 0.7 * Math.sin(Math.PI * q.vapor));
+                cr.stroke();
+            }
+        }
+    });
+}
+
+const easeIn = x => Math.max(0, Math.min(1, x)) ** 2;
+
+// Sol atravessando: nasce de trás de uma ponta da doca, faz um arco por cima e se põe na outra.
+export function solArco(cr, w, h, q, {base, icone}) {
+    const r = icone * 0.4;
+    const cx = r * 1.7 + q.x * (w - r * 3.4);
+    const baixo = base + r * 1.7;          // escondido atrás da doca
+    const alto = r * 1.75;                 // topo do arco, com os raios dentro do actor
+    const cy = baixo - q.altura * (baixo - alto);
+    cr.save();
+    cr.rectangle(0, 0, w, base);
+    cr.clip();
+    // brilho em volta
+    cr.arc(cx, cy, r * 2.2, 0, VOLTA);
+    cr.setSourceRGBA(0.97, 0.77, 0.28, 0.12 * q.altura);
+    cr.fill();
+    solRosto(cr, cx, cy, r, q.giro);
+    cr.restore();
+}
+
+// Sol de óculos andando: pernas, um leque na mão e a outra mão que enxuga a testa.
+export function solLeque(cr, w, h, q, {base, icone}) {
+    const a = icone;
+    const r = a * 0.36;
+    const perna = a * 0.32;
+    const cx = q.x * w;
+    const pulo = Math.abs(Math.sin(q.passo)) * a * 0.05 * q.anda;
+    const cy = base - perna - r - pulo;
+    const d = q.dir;
+    cr.save();
+    cr.setLineCap(1);
+    cr.setLineJoin(1);
+    // pernas que alternam ao andar
+    cr.setSourceRGBA(...cor('#8a4b16'));
+    cr.setLineWidth(Math.max(1.5, a * 0.06));
+    for (const lado of [-1, 1]) {
+        const passo = Math.sin(q.passo + (lado > 0 ? Math.PI : 0)) * a * 0.12 * q.anda;
+        cr.moveTo(cx + lado * r * 0.35, cy + r * 0.9);
+        cr.lineTo(cx + lado * r * 0.35 + passo, base - a * 0.02);
+        cr.lineTo(cx + lado * r * 0.35 + passo + d * a * 0.08, base - a * 0.02);
+    }
+    cr.stroke();
+    // braço de trás com o leque
+    const mao = [cx - d * r * 1.25, cy + r * 0.15];
+    cr.moveTo(cx - d * r * 0.8, cy + r * 0.3);
+    cr.lineTo(...mao);
+    cr.stroke();
+    cr.save();
+    cr.translate(...mao);
+    cr.rotate(-d * 0.9 + q.leque * 0.6);
+    cr.moveTo(0, 0);
+    cr.arc(0, 0, a * 0.34, -Math.PI / 2 - 0.75, -Math.PI / 2 + 0.75);
+    cr.closePath();
+    cr.setSourceRGBA(...cor('#3fb8a8'));
+    cr.fillPreserve();
+    cr.setSourceRGBA(0.1, 0.35, 0.32, 0.9);
+    cr.setLineWidth(1);
+    cr.stroke();
+    for (let i = -2; i <= 2; i++) {
+        const ang = -Math.PI / 2 + i * 0.32;
+        cr.moveTo(0, 0);
+        cr.lineTo(Math.cos(ang) * a * 0.32, Math.sin(ang) * a * 0.32);
+    }
+    cr.stroke();
+    cr.restore();
+    // corpo
+    solRosto(cr, cx, cy, r, q.passo * 0.15, {boca: q.leque !== 0 || q.enxuga > 0 ? 'aflito' : 'sorriso'});
+    // braço da frente: solto, ou com a mão na testa
+    cr.setSourceRGBA(...cor('#8a4b16'));
+    cr.setLineWidth(Math.max(1.5, a * 0.06));
+    const solto = [cx + d * r * 1.25, cy + r * 0.8 + Math.sin(q.passo) * a * 0.05 * q.anda];
+    const testa = [cx + d * r * 0.25 + Math.sin(q.enxuga * 18) * r * 0.25 * q.enxuga, cy - r * 0.62];
+    const m = [solto[0] + (testa[0] - solto[0]) * q.enxuga, solto[1] + (testa[1] - solto[1]) * q.enxuga];
+    cr.moveTo(cx + d * r * 0.85, cy + r * 0.35);
+    cr.lineTo(...m);
+    cr.stroke();
+    cr.arc(...m, a * 0.045, 0, VOLTA);
+    cr.fill();
+    // gotas de suor voando quando enxuga
+    if (q.enxuga > 0.5)
+        gota(cr, cx - d * r * 0.9, cy - r * 1.05 - (q.enxuga - 0.5) * a * 0.3, a * 0.04, [0.55, 0.78, 1, 1]);
+    cr.restore();
+}
+
+// Pinguim deslizando de barriga pela doca, com o pulinho no fim.
+export function pinguim(cr, w, h, q, {base, icone}) {
+    const a = icone;
+    const L = a * 0.95, A = a * 0.4;
+    const cx = q.x * w;
+    const cy = base - A / 2 - q.pulo * a * 0.55;
+    const d = q.dir;
+    // rastro de vento atrás
+    if (q.pulo === 0) {
+        cr.setLineCap(1);
+        cr.setLineWidth(Math.max(1, a * 0.035));
+        cr.setSourceRGBA(0.8, 0.9, 1, 0.7);
+        for (const [dy, comp] of [[-0.12, 0.35], [0.02, 0.5], [0.14, 0.3]]) {
+            cr.moveTo(cx - d * (L * 0.62), cy + dy * a);
+            cr.lineTo(cx - d * (L * 0.62 + comp * a), cy + dy * a);
+        }
+        cr.stroke();
+    }
+    cr.save();
+    cr.translate(cx, cy);
+    cr.rotate(q.inclina);
+    cr.scale(d, 1);
+    // pés atrás
+    cr.setSourceRGBA(...cor('#f0a030'));
+    for (const dy of [-0.06, 0.08]) {
+        poligono(cr, [[-L * 0.48, dy * a], [-L * 0.66, dy * a - a * 0.06], [-L * 0.66, dy * a + a * 0.06]]);
+        cr.fill();
+    }
+    // corpo deitado: costas pretas por cima, barriga branca por baixo
+    cr.save();
+    cr.scale(L / 2, A / 2);
+    cr.arc(0, 0, 1, 0, VOLTA);
+    cr.restore();
+    cr.setSourceRGBA(0.1, 0.12, 0.16, 1);
+    cr.fill();
+    cr.save();
+    cr.translate(L * 0.04, A * 0.12);
+    cr.scale(L * 0.42, A * 0.34);
+    cr.arc(0, 0, 1, 0, Math.PI);
+    cr.restore();
+    cr.setSourceRGBA(0.97, 0.97, 1, 1);
+    cr.fill();
+    // asinha para trás
+    cr.moveTo(-L * 0.05, -A * 0.1);
+    cr.curveTo(-L * 0.2, -A * 0.35, -L * 0.4, -A * 0.3, -L * 0.45, -A * 0.12);
+    cr.closePath();
+    cr.setSourceRGBA(0.2, 0.22, 0.28, 1);
+    cr.fill();
+    // cabeça na frente, olho e bico
+    const hx = L * 0.5, hy = -A * 0.12, hr = A * 0.48;
+    cr.arc(hx, hy, hr, 0, VOLTA);
+    cr.setSourceRGBA(0.1, 0.12, 0.16, 1);
+    cr.fill();
+    cr.arc(hx + hr * 0.2, hy + hr * 0.1, hr * 0.55, 0, VOLTA);
+    cr.setSourceRGBA(0.97, 0.97, 1, 1);
+    cr.fill();
+    cr.arc(hx + hr * 0.3, hy - hr * 0.15, hr * 0.13, 0, VOLTA);
+    cr.setSourceRGBA(0.05, 0.05, 0.08, 1);
+    cr.fill();
+    poligono(cr, [[hx + hr * 0.8, hy - hr * 0.05], [hx + hr * 1.45, hy + hr * 0.15], [hx + hr * 0.8, hy + hr * 0.35]]);
+    cr.setSourceRGBA(...cor('#f0a030'));
+    cr.fill();
+    // cachecol
+    cr.rectangle(hx - hr * 0.95, hy + hr * 0.45, hr * 0.5, hr * 0.7);
+    cr.setSourceRGBA(...cor('#e24b4a'));
+    cr.fill();
+    cr.restore();
+}
+
+// Boneco agasalhado: cabeça com gorro de pompom, olhos e nariz vermelho de frio, centrada em (x, y) de raio `r`.
+function cabecaAgasalhada(cr, x, y, r, boca = 'aflito', olhosFechados = false) {
+    cr.arc(x, y, r, 0, VOLTA);
+    cr.setSourceRGBA(...cor('#f1c7a0'));
+    cr.fill();
+    if (olhosFechados) {
+        cr.setSourceRGBA(0.12, 0.1, 0.1, 1);
+        cr.setLineWidth(Math.max(1, r * 0.1));
+        for (const lado of [-1, 1]) {
+            cr.moveTo(x + lado * r * 0.48, y - r * 0.12);
+            cr.lineTo(x + lado * r * 0.22, y - r * 0.08);
+        }
+        cr.stroke();
+        rosto(cr, x, y, r, boca, false);
+    } else {
+        rosto(cr, x, y, r, boca);
+    }
+    cr.arc(x, y + r * 0.12, r * 0.13, 0, VOLTA); // nariz vermelho de frio
+    cr.setSourceRGBA(...cor('#e0654f'));
+    cr.fill();
+    // gorro
+    cr.moveTo(x - r * 1.02, y - r * 0.2);
+    cr.curveTo(x - r * 1.05, y - r * 1.5, x + r * 1.05, y - r * 1.5, x + r * 1.02, y - r * 0.2);
+    cr.closePath();
+    cr.setSourceRGBA(...cor('#4a90d9'));
+    cr.fill();
+    retanguloArredondado(cr, x - r * 1.1, y - r * 0.42, r * 2.2, r * 0.32, r * 0.12);
+    cr.setSourceRGBA(...cor('#e8eef7'));
+    cr.fill();
+    cr.arc(x, y - r * 1.25, r * 0.24, 0, VOLTA);
+    cr.fill();
+}
+
+// Neve acumulando: flocos caem e formam um monte; o boneco agasalhado espia, treme e afunda.
+export function neve(cr, w, h, q, {base, icone, flocos}) {
+    const a = icone;
+    const monteH = a * 0.62 * q.monte;
+    const topoMonte = base - monteH;
+    comAlfa(cr, q.alfa, () => {
+        // cabeça atrás do monte
+        if (q.cabeca > 0) {
+            const r = a * 0.27;
+            const y = topoMonte + r * 1.3 - q.cabeca * r * 1.9;
+            cr.save();
+            cr.rectangle(0, 0, w, base);
+            cr.clip();
+            cabecaAgasalhada(cr, w / 2 + q.treme * a * 0.03, y, r, 'aberta');
+            // dentes batendo
+            cr.setSourceRGBA(1, 1, 1, 1);
+            cr.rectangle(w / 2 + q.treme * a * 0.03 - r * 0.15, y + r * 0.33, r * 0.3, r * 0.08);
+            cr.fill();
+            cr.restore();
+        }
+        // o monte
+        if (monteH > 0.5) {
+            cr.moveTo(w * 0.05, base);
+            cr.curveTo(w * 0.2, base - monteH * 0.7, w * 0.3, topoMonte, w * 0.5, topoMonte);
+            cr.curveTo(w * 0.7, topoMonte, w * 0.8, base - monteH * 0.7, w * 0.95, base);
+            cr.closePath();
+            cr.setSourceRGBA(0.96, 0.98, 1, 1);
+            cr.fillPreserve();
+            cr.setLineWidth(1);
+            cr.setSourceRGBA(0.55, 0.65, 0.8, 0.7);
+            cr.stroke();
+        }
+        // flocos caindo, que pousam no monte
+        cr.setSourceRGBA(0.97, 0.98, 1, 0.95);
+        for (const f of flocos) {
+            const y = -a * 0.1 + f.y * (topoMonte + a * 0.1 + a * 0.05);
+            cr.newSubPath();
+            cr.arc(f.x * w, y, a * 0.055 * f.r, 0, VOLTA);
+        }
+        cr.fill();
+    });
+}
+
+// Pendurado tremendo: agarrado na borda de cima da doca pelas mãos, balança, espirra e cai.
+export function pendurado(cr, w, h, q, {base, icone}) {
+    const a = icone;
+    const r = a * 0.24;
+    const braco = a * 0.42;
+    const corpo = a * 0.5;
+    const total = braco + r * 2 + corpo + a * 0.3;
+    comAlfa(cr, q.alfa, () => {
+        cr.save();
+        // de cima para a borda (queda) e da borda para baixo (solta)
+        cr.translate(w / 2 + q.treme * a * 0.02, base + q.queda * (base + total) + q.solta * (h - base + a * 0.2));
+        cr.rotate(q.balanco);
+        cr.setLineCap(1);
+        cr.setLineJoin(1);
+        // braços erguidos até a borda
+        cr.setSourceRGBA(...cor('#2f6fb0'));
+        cr.setLineWidth(Math.max(2, a * 0.09));
+        const ombro = braco + r * 1.6;
+        for (const lado of [-1, 1]) {
+            cr.moveTo(lado * r * 0.9, ombro);
+            cr.lineTo(lado * r * 0.75 * (1 - q.solta), 0);
+        }
+        cr.stroke();
+        cr.setSourceRGBA(...cor('#f1c7a0'));
+        for (const lado of [-1, 1]) {
+            cr.arc(lado * r * 0.75 * (1 - q.solta), 0, a * 0.055, 0, VOLTA);
+            cr.fill();
+        }
+        // casaco
+        retanguloArredondado(cr, -r * 1.05, ombro - a * 0.04, r * 2.1, corpo, r * 0.5);
+        cr.setSourceRGBA(...cor('#2f6fb0'));
+        cr.fill();
+        // pernas balançando
+        cr.setSourceRGBA(0.2, 0.22, 0.3, 1);
+        cr.setLineWidth(Math.max(2, a * 0.08));
+        for (const lado of [-1, 1]) {
+            cr.moveTo(lado * r * 0.45, ombro + corpo - a * 0.06);
+            cr.lineTo(lado * r * 0.5 - q.balanco * a * 0.3, ombro + corpo + a * 0.24);
+        }
+        cr.stroke();
+        // cabeça: para trás ao inspirar, para frente no atchim
+        const cy = braco + r * 0.55;
+        cr.save();
+        cr.translate(0, cy);
+        cr.rotate(-q.inspira * 0.35 + q.atchim * 0.3);
+        cabecaAgasalhada(cr, 0, 0, r, q.atchim > 0.05 ? 'aberta' : q.inspira > 0.2 ? 'aberta' : 'aflito', q.atchim > 0.05);
+        cr.restore();
+        // cachecol
+        cr.rectangle(-r * 0.85, cy + r * 0.85, r * 1.7, r * 0.3);
+        cr.setSourceRGBA(...cor('#e24b4a'));
+        cr.fill();
+        // o espirro: gotinhas para a frente
+        if (q.atchim > 0) {
+            cr.setSourceRGBA(0.75, 0.88, 1, 1 - q.atchim * 0.6);
+            for (let i = 0; i < 6; i++) {
+                const ang = -0.4 + i * 0.16;
+                const dist = r * (1 + q.atchim * 2.2) * (0.8 + (i % 3) * 0.15);
+                cr.newSubPath();
+                cr.arc(Math.cos(ang) * dist, cy + r * 0.4 + Math.sin(ang) * dist, a * 0.025, 0, VOLTA);
+            }
+            cr.fill();
+        }
+        cr.restore();
+        // risquinhos de frio em volta, enquanto treme
+        if (Math.abs(q.treme) > 0.3 && q.solta < 0.1) {
+            cr.setSourceRGBA(0.75, 0.88, 1, 0.8);
+            cr.setLineWidth(1.2);
+            for (const lado of [-1, 1]) {
+                const x = w / 2 + lado * r * 1.6;
+                cr.moveTo(x, base + braco + r * 1.6);
+                cr.lineTo(x + lado * a * 0.06, base + braco + r * 1.6 + a * 0.05);
+            }
+            cr.stroke();
+        }
+    });
+}

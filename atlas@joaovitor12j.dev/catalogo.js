@@ -34,12 +34,15 @@ export const CATEGORIAS_MASCOTE = [
     ['hora', 'Hora do dia'],
     ['datas', 'Datas e temas'],
     ['eventos', 'Eventos do sistema'],
+    ['clima', 'Clima'],
 ];
 
 // [id, nome, descrição, categoria]
 export const MASCOTES = [
     ['noel', 'Papai Noel', 'De 1 a 25 de dezembro, o Papai Noel sobe da doca, acena e ri com a barriga', 'datas'],
     ['boneco', 'Boneco de neve', 'De 1 a 25 de dezembro, um boneco de neve sobe da doca e balança ao vento', 'datas'],
+    ['calor', 'Calor', 'Aparece quando a temperatura da cidade do widget Clima passa do limite: picolé derretendo, sol atravessando a doca ou sol de óculos se abanando', 'clima'],
+    ['frio', 'Frio', 'Aparece quando a temperatura da cidade do widget Clima cai do limite: pinguim no tobogã, neve acumulando ou boneco pendurado tremendo', 'clima'],
     ['chama', 'Chama', 'Aparece em apuros quando o uso de memória passa do limite', 'eventos'],
     ['cuco', 'Cuco', 'Uma casinha sobe da doca e o cuco canta a hora', 'hora'],
     ['fantasma', 'Fantasma', 'De 24 a 31 de outubro, um fantasminha sobe da doca e dá um "bu!"', 'datas'],
