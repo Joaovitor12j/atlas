@@ -9,11 +9,16 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
+import PangoCairo from 'gi://PangoCairo';
 import Shell from 'gi://Shell';
+import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anel, barra, cor, grafico, relogioAnalogico} from './desenho.js';
+import {anel, barra, cor, grafico, relogioAnalogico, tileClaude} from './desenho.js';
+import {
+    BETA_OAUTH, URL_USO, credencial, formatarFalta, formatarReinicio, juntarLimites, lerStatus, lerUso, nivel,
+} from './consumo.js';
 import {agendar, agora, registrar} from './perf.js';
 import {
     DIAS_SEMANA, MESES, calcularProgresso, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa,
@@ -1908,10 +1913,223 @@ class Slack extends Widget {
     }
 }
 
+// ----- Claude Code: limites do plano (janela de 5 h e semana), da API de uso ou da statusline -----
+// Estado compartilhado entre os tiles. A API é consultada no máximo a cada 5 min (1 min com o painel aberto);
+// o token é lido do arquivo a cada consulta e nunca guardado nem registrado.
+const CLAUDE = {api: null, erro: '', buscadoEm: 0, cancelar: null, sessao: null, status: [], statusEm: 0};
+const CLAUDE_INTERVALO = 5 * 60_000;
+const CLAUDE_STATUS_IDADE = 7 * 24 * 3600_000; // JSON da statusline mais velho que isto não conta
+
+function claudeCredencial() {
+    try {
+        const [, bytes] = GLib.file_get_contents(GLib.build_filenamev([GLib.get_home_dir(), '.claude', '.credentials.json']));
+        return credencial(JSON.parse(new TextDecoder().decode(bytes)), Date.now());
+    } catch (_e) {
+        return {erro: 'sem-login'};
+    }
+}
+
+function claudeBuscar(minimo = CLAUDE_INTERVALO) {
+    if (CLAUDE.cancelar || (CLAUDE.buscadoEm && Date.now() - CLAUDE.buscadoEm < minimo))
+        return;
+    CLAUDE.buscadoEm = Date.now();
+    const cred = claudeCredencial();
+    if (!cred.token) {
+        CLAUDE.erro = cred.erro;
+        return;
+    }
+    CLAUDE.sessao ??= new Soup.Session({user_agent: 'ATLAS (extensão do GNOME Shell)', timeout: 20});
+    const msg = Soup.Message.new('GET', URL_USO);
+    const cab = msg.get_request_headers();
+    cab.append('Authorization', `Bearer ${cred.token}`);
+    cab.append('anthropic-beta', BETA_OAUTH);
+    const cancelar = CLAUDE.cancelar = new Gio.Cancellable();
+    CLAUDE.sessao.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, cancelar, (sessao, res) => {
+        let uso = null;
+        let erro = 'rede';
+        try {
+            const bytes = sessao.send_and_read_finish(res);
+            const st = msg.get_status();
+            if (st === Soup.Status.OK) {
+                uso = lerUso(JSON.parse(new TextDecoder().decode(bytes.get_data())));
+                erro = '';
+            } else {
+                erro = st === 401 || st === 403 ? 'expirado' : st === 429 ? 'espera' : 'rede';
+            }
+        } catch (e) {
+            if (!cancelar.is_cancelled())
+                console.warn(`[atlas] claude: ${e.message}`);
+        }
+        if (cancelar !== CLAUDE.cancelar)
+            return; // cancelada (extensão desligada)
+        CLAUDE.cancelar = null;
+        CLAUDE.erro = erro;
+        if (uso)
+            CLAUDE.api = {...uso, lidoEm: Date.now()};
+    });
+}
+
+// JSONs da statusline (claude-statusline.sh, só no Claude Code do terminal): um por sessão.
+function claudeLerStatus() {
+    const t = agoraMs();
+    if (CLAUDE.statusEm && t - CLAUDE.statusEm < 3000)
+        return;
+    CLAUDE.statusEm = t;
+    const dir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'atlas', 'claude']);
+    const lista = [];
+    try {
+        const itens = Gio.File.new_for_path(dir).enumerate_children('standard::name,time::modified', Gio.FileQueryInfoFlags.NONE, null);
+        for (let f = itens.next_file(null); f; f = itens.next_file(null)) {
+            const mtime = f.get_modification_date_time().to_unix() * 1000;
+            if (!f.get_name().endsWith('.json') || Date.now() - mtime > CLAUDE_STATUS_IDADE)
+                continue;
+            try {
+                const [, bytes] = GLib.file_get_contents(GLib.build_filenamev([dir, f.get_name()]));
+                lista.push({mtime, dados: JSON.parse(new TextDecoder().decode(bytes))});
+            } catch (_e) {
+                // arquivo sendo trocado ou corrompido: pula
+            }
+        }
+    } catch (_e) {
+        // sem a pasta: a statusline nunca rodou
+    }
+    CLAUDE.status = lista;
+}
+
+// Cancela a consulta e esquece os números (chamado ao desativar a extensão).
+export function pararClaude() {
+    CLAUDE.cancelar?.cancel();
+    CLAUDE.sessao?.abort();
+    Object.assign(CLAUDE, {api: null, erro: '', buscadoEm: 0, cancelar: null, sessao: null, status: [], statusEm: 0});
+}
+
+function claudeResumo() {
+    const agora = Date.now();
+    const l = juntarLimites([CLAUDE.api, lerStatus(CLAUDE.status)], agora);
+    return {cinco: l?.cinco ?? null, semana: l?.semana ?? null, lidoEm: l?.lidoEm ?? 0, erro: CLAUDE.erro, agora};
+}
+
+const CLAUDE_ERROS = {
+    'sem-login': 'Sem login no Claude Code: rode "claude auth login" no terminal',
+    'expirado': 'Login do Claude Code vencido: rode "claude" no terminal para renovar',
+    'espera': 'A API de uso pediu um tempo; nova tentativa em 5 min',
+    'rede': 'Sem resposta da API de uso',
+};
+
+const corDoUso = pct => cor(COR[nivel(pct)]);
+const textoPct = w => (w ? `${Math.round(w.pct)}%` : '—');
+const textoReinicio = (w, agora) => (w?.fim ? `reinicia em ${formatarFalta(w.fim - agora)} (${formatarReinicio(w.fim, agora)})` : '');
+
+class ClaudeCode extends Widget {
+    get intervalo() {
+        return 5000;
+    }
+
+    logica() {
+        claudeBuscar();
+        claudeLerStatus();
+        this._r = claudeResumo();
+    }
+
+    get etiqueta() {
+        const r = this._r ?? claudeResumo();
+        if (!r.cinco && !r.semana)
+            return `Claude Code: ${CLAUDE_ERROS[r.erro] ?? 'sem dados ainda'}`;
+        const cinco = r.cinco ? `5 h ${textoPct(r.cinco)}${r.cinco.fim ? `, reinicia em ${formatarFalta(r.cinco.fim - r.agora)}` : ''}` : '';
+        return `Claude Code: ${[cinco, r.semana ? `semana ${textoPct(r.semana)}` : ''].filter(Boolean).join(' · ')}`;
+    }
+
+    construir() {
+        this._r = claudeResumo();
+        this._anelCinco = this._animado();
+        this._anelSemana = this._animado();
+        // tudo desenhado com Cairo (texto com Pango), para caber no miolo dos anéis
+        const camada = this._camada((cr, w, h, fg) => {
+            const r = this._r;
+            tileClaude(cr, w / 2, h / 2, Math.min(w, h), {
+                cinco: this._anelCinco.atual, semana: this._anelSemana.atual, corCinco: corDoUso(r.cinco?.pct ?? 0), fg,
+                textoCinco: textoPct(r.cinco), textoSemana: r.semana ? textoPct(r.semana) : '',
+            }, (texto, x, y, px, rgba, negrito) => {
+                if (!texto)
+                    return;
+                const layout = PangoCairo.create_layout(cr);
+                const fonte = camada.actor.get_theme_node().get_font().copy();
+                fonte.set_absolute_size(px * Pango.SCALE);
+                fonte.set_weight(negrito ? Pango.Weight.BOLD : Pango.Weight.NORMAL);
+                layout.set_font_description(fonte);
+                layout.set_text(texto, -1);
+                const [lw, lh] = layout.get_pixel_size();
+                cr.setSourceRGBA(...rgba);
+                cr.moveTo(x - lw / 2, y - lh / 2);
+                PangoCairo.show_layout(cr, layout);
+            });
+        });
+    }
+
+    atualizar() {
+        const r = this._r;
+        this._anelCinco.definir((r.cinco?.pct ?? 0) / 100);
+        this._anelSemana.definir((r.semana?.pct ?? 0) / 100);
+        this._redesenhar();
+    }
+
+    // Um bloco do painel: título e %, barra e quando reinicia.
+    _blocoLimite(titulo) {
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 4px;'});
+        const cab = new St.BoxLayout({x_expand: true});
+        const nome = this._textoPainel(titulo, 13, 'font-weight: bold;');
+        nome.x_expand = true;
+        const valor = this._textoPainel('', 13, 'font-weight: bold;');
+        cab.add_child(nome);
+        cab.add_child(valor);
+        let w = null;
+        const barraUso = new Camada((cr, lw, lh) => barra(cr, 0, 0, lw, lh, (w?.pct ?? 0) / 100, corDoUso(w?.pct ?? 0)), '');
+        barraUso.actor.set_size(260, 6);
+        const rodape = this._textoPainel('', 11, 'opacity: 180;');
+        for (const a of [cab, barraUso.actor, rodape])
+            caixa.add_child(a);
+        const atualizar = (janelaAtual, agora) => {
+            w = janelaAtual;
+            valor.text = textoPct(w);
+            rodape.text = w ? textoReinicio(w, agora) || 'sem uso desde o último reinício' : 'sem dados';
+            barraUso.redesenhar();
+        };
+        return {caixa, atualizar};
+    }
+
+    fillMenu(menu) {
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem('Claude Code'));
+        const caixa = new St.BoxLayout({vertical: true, style: 'spacing: 12px; min-width: 260px;'});
+        const cinco = this._blocoLimite('Sessão (5 h)');
+        const semana = this._blocoLimite('Semana');
+        const rodape = this._textoPainel('', 11, 'opacity: 160;');
+        rodape.clutter_text.line_wrap = true;
+        for (const a of [cinco.caixa, semana.caixa, rodape])
+            caixa.add_child(a);
+
+        const atualizar = () => {
+            claudeBuscar(60_000);
+            claudeLerStatus();
+            const r = claudeResumo();
+            cinco.atualizar(r.cinco, r.agora);
+            semana.atualizar(r.semana, r.agora);
+            const linhas = [];
+            if (r.lidoEm)
+                linhas.push(r.agora - r.lidoEm < 60_000 ? 'Atualizado agora' : `Atualizado há ${formatarFalta(r.agora - r.lidoEm)}`);
+            if (r.erro && (!r.lidoEm || r.agora - r.lidoEm > 2 * CLAUDE_INTERVALO))
+                linhas.push(CLAUDE_ERROS[r.erro] ?? r.erro);
+            rodape.text = linhas.join('\n');
+        };
+        atualizar();
+        this._item(menu, caixa);
+        this._vivo(menu, 5000, atualizar, caixa);
+    }
+}
+
 const CLASSES = {
     relogio: Relogio, pomodoro: Pomodoro, bateria: Bateria, musica: Musica,
     progresso: Progresso, cronometro: Cronometro, timer: Timer, atividade: Atividade, rede: Rede,
-    contagem: Contagem, nota: Nota, clipboard: AreaTransferencia, slack: Slack,
+    contagem: Contagem, nota: Nota, clipboard: AreaTransferencia, slack: Slack, claude: ClaudeCode,
 };
 
 // Cria e inicia o widget `id` num tile de `tam` px (`largo`: versão larga, se o widget tiver); null se não existe.

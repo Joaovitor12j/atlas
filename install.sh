@@ -26,5 +26,9 @@ DESKTOP
 gtk-update-icon-cache -q -t "$ICONS" 2>/dev/null || true
 update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
 
+# Statusline que alimenta o widget Claude Code com os números reais (ver claude-statusline.sh)
+mkdir -p "$HOME/.claude"
+cp "$(dirname "$SRC")/claude-statusline.sh" "$HOME/.claude/atlas-statusline.sh"
+
 echo "Instalado: $DEST"
 echo "No Wayland, faça logout/login e depois: gnome-extensions enable $UUID"

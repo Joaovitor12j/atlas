@@ -25,6 +25,7 @@ export const WIDGETS = [
     ['contagem', 'Contagem regressiva', 'Quantos dias faltam para uma data; nome e data nas opções gerais'],
     ['clipboard', 'Área de transferência', 'Histórico do que você copiou (só texto, só na memória); os fixados ficam salvos'],
     ['slack', 'Slack', 'O ícone do Slack com um selo quando há mensagens não lidas; o clique abre o Slack'],
+    ['claude', 'Claude Code', 'Limites do plano: anel da sessão de 5 h e, por dentro, o da semana; o painel mostra quando cada um reinicia'],
     ['nota', 'Nota', 'Um recado fixo na doca; edite pelo clique ou nas opções gerais'],
 ];
 

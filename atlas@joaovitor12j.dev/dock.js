@@ -14,7 +14,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
-import {criarWidget, pararClipboard} from './widgets.js';
+import {criarWidget, pararClaude, pararClipboard} from './widgets.js';
 import {agendar, perfilar} from './perf.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
@@ -1296,6 +1296,7 @@ export class Dock {
         this._mascotes = null;
         perfilar(false);
         pararClipboard();
+        pararClaude();
         this._notif = null;
         this._dndMemoria = null;
         this._destroyViews();

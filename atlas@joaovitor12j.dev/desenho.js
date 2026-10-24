@@ -39,6 +39,48 @@ function retanguloArredondado(cr, x, y, w, h, r) {
     cr.closePath();
 }
 
+// Faísca de raios afilados, inspirada no símbolo do Claude: identifica o widget Claude Code entre os outros anéis.
+const RAIOS_FAISCA = [1, 0.78, 0.94, 0.82, 1, 0.74, 0.9, 0.8, 0.97, 0.76, 0.92, 0.84];
+
+export function faisca(cr, cx, cy, raio, rgba) {
+    cr.setSourceRGBA(...rgba);
+    const n = RAIOS_FAISCA.length;
+    RAIOS_FAISCA.forEach((l, i) => {
+        const a = TOPO + (i / n) * VOLTA + (i % 2 ? 0.06 : 0);
+        const ponta = raio * l;
+        const base = raio * 0.28; // largura do raio junto ao centro
+        const lado = Math.PI / 2;
+        cr.moveTo(cx + Math.cos(a - lado) * base * 0.5, cy + Math.sin(a - lado) * base * 0.5);
+        cr.lineTo(cx + Math.cos(a) * ponta, cy + Math.sin(a) * ponta);
+        cr.lineTo(cx + Math.cos(a + lado) * base * 0.5, cy + Math.sin(a + lado) * base * 0.5);
+        cr.closePath();
+    });
+    cr.fill();
+    cr.arc(cx, cy, raio * 0.22, 0, VOLTA);
+    cr.fill();
+}
+
+// Tile do Claude Code num quadrado de lado `lado` centrado em (cx, cy): anel de fora = sessão de 5 h, anel de
+// dentro = semana, a faísca no canto de cima (fora dos anéis, para sobrar miolo) e, no miolo, o % da sessão e,
+// embaixo, o da semana na cor do anel de dentro.
+// `escrever(texto, x, y, px, rgba, negrito)` centra um texto em (x, y); vem de fora porque o Pango não é Cairo puro.
+export const COR_SEMANA = '#7cb8ff';
+export const COR_FAISCA = '#d97757';
+
+export function tileClaude(cr, cx, cy, lado, {cinco, semana, corCinco, fg, textoCinco, textoSemana}, escrever) {
+    const e1 = lado * 0.075;
+    const e2 = lado * 0.06;
+    const vao = lado * 0.025;
+    const r1 = lado / 2 - e1 / 2;
+    const r2 = r1 - e1 / 2 - vao - e2 / 2;
+    anel(cr, cx, cy, r1, e1, cinco, corCinco);
+    anel(cr, cx, cy, r2, e2, semana, cor(COR_SEMANA), cor(COR_SEMANA, 0.22));
+    faisca(cr, cx + lado * 0.385, cy - lado * 0.385, lado * 0.135, cor(COR_FAISCA));
+    const miolo = r2 - e2 / 2;
+    escrever(textoCinco, cx, cy - miolo * 0.16, miolo * 0.66, [...fg.slice(0, 3), 1], true);
+    escrever(textoSemana, cx, cy + miolo * 0.5, miolo * 0.46, cor(COR_SEMANA), true);
+}
+
 // Barra horizontal de progresso com cantos redondos.
 export function barra(cr, x, y, w, h, frac, rgba, trilha = FUNDO_TRILHA) {
     retanguloArredondado(cr, x, y, w, h, h / 2);
