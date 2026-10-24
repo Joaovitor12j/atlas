@@ -14,7 +14,8 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
-import {criarWidget, pararClima, pararClipboard} from './widgets.js';
+import {criarWidget, pararClipboard} from './widgets.js';
+import {pararClima} from './clima.js';
 import {agendar, perfilar} from './perf.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';

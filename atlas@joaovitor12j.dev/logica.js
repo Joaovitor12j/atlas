@@ -513,11 +513,12 @@ export function quadroBoneco(t) {
     return {sobe: b.sobe, balanco: Math.sin(t / 420) * 0.5, vento: Math.sin(t / 230) * (0.4 + 0.6 * b.ativo)};
 }
 
-// Onde pôr um mascote de `tam` {w, h}: centrado na doca `caixa` {x, y, w, h} e encostado no topo dela.
+// Onde pôr um mascote de `tam` {w, h, abaixo?}: centrado na doca `caixa` {x, y, w, h} e encostado no topo dela;
+// `abaixo` px do actor descem sobre a doca (pingos, quem fica pendurado na borda).
 // null quando não cabe acima (abaixo de `topoUtil`, a borda de cima da área útil).
 // `dx` desloca na horizontal (mascotes lado a lado).
 export function posicionarMascote(caixa, tam, topoUtil, dx = 0) {
-    const y = caixa.y - tam.h;
+    const y = caixa.y - tam.h + (tam.abaixo ?? 0);
     if (y < topoUtil)
         return null;
     return {x: Math.round(caixa.x + (caixa.w - tam.w) / 2 + dx), y: Math.round(y)};
@@ -550,4 +551,205 @@ export function deslocamentosLado(larguras, folga = 0) {
 export function deslocamentoAleatorio(larguraDoca, largura, r) {
     const folga = Math.max(0, larguraDoca - largura);
     return Math.round((r - 0.5) * folga);
+}
+
+// ----- Mascotes do clima (frio e calor) -----
+
+// Qual mascote do clima aparece agora: 'calor', 'frio' ou null. `temp` em °C (null sem previsão); `ligados`,
+// `limiares`, `ultimos` (ms da última aparição) e `esperas` (ms) são {frio, calor}. Enquanto o tempo segue quente
+// (ou frio), a espera é o que espaça as aparições.
+export function mascoteDoClima(temp, ligados, limiares, ultimos, esperas, agoraMs) {
+    if (typeof temp !== 'number' || !Number.isFinite(temp))
+        return null;
+    const tipo = temp >= limiares.calor ? 'calor' : temp <= limiares.frio ? 'frio' : null;
+    if (!tipo || !ligados[tipo] || agoraMs - (ultimos[tipo] ?? -Infinity) < esperas[tipo])
+        return null;
+    return tipo;
+}
+
+// Movimento escolhido nas preferências, ou um sorteado (`r` em [0, 1)) com "sortear" ou valor desconhecido.
+export function escolherVariante(valor, variantes, r) {
+    if (variantes.includes(valor))
+        return valor;
+    return variantes[Math.min(variantes.length - 1, Math.floor(r * variantes.length))];
+}
+
+// Rampa de 0 a 1 entre `a` e `b` ms (com easeInOut); antes 0, depois 1.
+const rampa = (t, a, b) => easeInOut(limitar01((t - a) / (b - a)));
+
+// Picolé: sobe da doca, pinga pela borda, derrete numa poça e a poça evapora.
+const PICOLE = {sobe: 450, pinga: 3000, derrete: 1300, evapora: 900};
+export const duracaoPicole = () => PICOLE.sobe + PICOLE.pinga + PICOLE.derrete + PICOLE.evapora;
+
+// {sobe, fase, suor, derrete, vapor, alfa}: `fase` cresce sempre (pingos), `derrete` de 0 (inteiro) a 1 (poça),
+// `vapor` e `alfa` cuidam da poça sumindo. null depois do fim.
+export function quadroPicole(t) {
+    t = Math.max(0, t);
+    if (t >= duracaoPicole())
+        return null;
+    const iDerrete = PICOLE.sobe + PICOLE.pinga;
+    const iEvapora = iDerrete + PICOLE.derrete;
+    const vapor = limitar01((t - iEvapora) / PICOLE.evapora);
+    return {
+        sobe: t < PICOLE.sobe ? easeOutBack(t / PICOLE.sobe) : 1,
+        fase: t / 1000,
+        suor: rampa(t, PICOLE.sobe, PICOLE.sobe + 500),
+        derrete: rampa(t, iDerrete, iEvapora),
+        vapor,
+        alfa: 1 - easeInCubic(vapor),
+    };
+}
+
+// Sol atravessando: nasce numa ponta da doca, faz um arco por cima e se põe na outra.
+const SOL_ARCO = 5200;
+export const duracaoSolArco = () => SOL_ARCO;
+
+// {x, altura, giro}: `x` de 0 a 1 ao longo da doca (`dir` -1 vai da direita para a esquerda), `altura` de 0 (atrás
+// da doca) a 1 (no alto do arco), `giro` em radianos (raios girando). null depois do fim.
+export function quadroSolArco(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= SOL_ARCO)
+        return null;
+    const p = easeInOut(t / SOL_ARCO);
+    return {x: dir < 0 ? 1 - p : p, altura: Math.sin(Math.PI * p), giro: t / 900};
+}
+
+// Sol de óculos: entra andando por uma ponta, para no meio, se abana e enxuga a testa, e sai pela outra.
+const SOL_LEQUE = {entra: 1800, abana: 2600, sai: 1600};
+export const duracaoSolLeque = () => SOL_LEQUE.entra + SOL_LEQUE.abana + SOL_LEQUE.sai;
+
+// {x, anda, passo, leque, enxuga, dir}: `x` de 0 a 1 ao longo da doca (fora dela nas pontas), `anda` 1 enquanto
+// caminha, `passo` é a fase das pernas, `leque` de -1 a 1 (abanando), `enxuga` de 0 a 1 (mão na testa). null no fim.
+export function quadroSolLeque(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= duracaoSolLeque())
+        return null;
+    const iSai = SOL_LEQUE.entra + SOL_LEQUE.abana;
+    let p;
+    if (t < SOL_LEQUE.entra)
+        p = -0.1 + 0.6 * easeOutCubic(t / SOL_LEQUE.entra);
+    else if (t < iSai)
+        p = 0.5;
+    else
+        p = 0.5 + 0.6 * easeInCubic((t - iSai) / SOL_LEQUE.sai);
+    const anda = t < SOL_LEQUE.entra - 150 || t >= iSai + 100 ? 1 : 0;
+    const abano = rampa(t, SOL_LEQUE.entra, SOL_LEQUE.entra + 300) * (1 - rampa(t, iSai - 1100, iSai - 800));
+    return {
+        x: dir < 0 ? 1 - p : p,
+        anda,
+        passo: t / 110,
+        leque: Math.sin(t / 85) * abano,
+        enxuga: rampa(t, iSai - 1100, iSai - 800) * (1 - rampa(t, iSai - 250, iSai)),
+        dir: dir < 0 ? -1 : 1,
+    };
+}
+
+// Pinguim no tobogã: desliza de barriga pela doca de ponta a ponta e dá um pulinho antes de sair.
+const PINGUIM = 3800;
+export const duracaoPinguim = () => PINGUIM;
+
+// {x, pulo, inclina, dir}: `x` de 0 a 1 (fora da doca nas pontas), `pulo` de 0 a 1 (altura do pulinho), `inclina` em
+// radianos (o corpo gira no pulo). null depois do fim.
+export function quadroPinguim(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= PINGUIM)
+        return null;
+    const p = t / PINGUIM;
+    const x = -0.08 + 1.16 * p;
+    const pul = limitar01((p - 0.78) / 0.14);
+    const pulo = pul > 0 && pul < 1 ? Math.sin(Math.PI * pul) : 0;
+    return {x: dir < 0 ? 1 - x : x, pulo, inclina: -0.5 * pulo * (dir < 0 ? -1 : 1), dir: dir < 0 ? -1 : 1};
+}
+
+// Neve acumulando: flocos caem e formam um monte em cima da doca; um boneco espia do monte, treme e afunda.
+const NEVE = {cai: 2600, espia: 2000, afunda: 500, derrete: 800, queda: 1100};
+export const duracaoNeve = () => NEVE.cai + NEVE.espia + NEVE.afunda + NEVE.derrete;
+
+// {t, monte, cabeca, treme, alfa}: `monte` de 0 a 1 (altura do monte), `cabeca` de 0 (escondida) a 1 (um pouco mais
+// no overshoot), `treme` de -1 a 1, `alfa` some no fim. `t` vai para flocosDeNeve. null depois do fim.
+export function quadroNeve(t) {
+    t = Math.max(0, t);
+    if (t >= duracaoNeve())
+        return null;
+    const iEspia = NEVE.cai;
+    const iAfunda = iEspia + NEVE.espia;
+    const iDerrete = iAfunda + NEVE.afunda;
+    let cabeca = 0;
+    if (t >= iEspia + 200 && t < iAfunda)
+        cabeca = easeOutBack(limitar01((t - iEspia - 200) / 450));
+    else if (t >= iAfunda && t < iDerrete)
+        cabeca = 1 - easeInCubic((t - iAfunda) / NEVE.afunda);
+    const alfa = 1 - easeInCubic(limitar01((t - iDerrete) / NEVE.derrete));
+    return {t, monte: easeOutCubic(limitar01(t / (NEVE.cai + 300))), cabeca, treme: Math.sin(t / 32) * Math.min(1, cabeca), alfa};
+}
+
+// Pseudoaleatório fixo por índice (o mesmo floco cai sempre no mesmo lugar), em [0, 1).
+const sorteioFixo = i => {
+    const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+    return x - Math.floor(x);
+};
+
+// Flocos no ar em `t` ms: [{x, y, r}] com `x` de 0 a 1 na largura, `y` de 0 (topo) a 1 (pousou) e `r` de 0.6 a 1
+// (tamanho relativo). Os `n` flocos começam a cair espalhados pelo tempo de queda da neve.
+export function flocosDeNeve(t, n = 22) {
+    const flocos = [];
+    for (let i = 0; i < n; i++) {
+        const ini = (i / n) * NEVE.cai * 0.8 + sorteioFixo(i + 50) * 250;
+        const f = (t - ini) / NEVE.queda;
+        if (f < 0 || f >= 1)
+            continue;
+        const x0 = 0.08 + 0.84 * sorteioFixo(i);
+        flocos.push({x: x0 + Math.sin(f * 5 + i) * 0.04, y: f, r: 0.6 + 0.4 * sorteioFixo(i + 100)});
+    }
+    return flocos;
+}
+
+// Pendurado tremendo: cai de cima, se agarra na borda da doca, balança, treme, espirra e cai.
+const PENDURADO = {cai: 500, balanca: 2400, espirro: 800, solta: 700};
+export const duracaoPendurado = () => PENDURADO.cai + PENDURADO.balanca + PENDURADO.espirro + PENDURADO.solta;
+
+// {queda, balanco, treme, inspira, atchim, solta, alfa}: `queda` de -1 (acima, fora) a 0 (agarrado), `balanco` em
+// radianos (pêndulo que amortece), `treme` de -1 a 1, `inspira` e `atchim` de 0 a 1 (o espirro), `solta` de 0
+// (agarrado) a 1 (caiu). null depois do fim.
+export function quadroPendurado(t) {
+    t = Math.max(0, t);
+    if (t >= duracaoPendurado())
+        return null;
+    const iBalanca = PENDURADO.cai;
+    const iEspirro = iBalanca + PENDURADO.balanca;
+    const iSolta = iEspirro + PENDURADO.espirro;
+    const s = limitar01((t - iBalanca) / (PENDURADO.balanca + PENDURADO.espirro));
+    const solta = easeInCubic(limitar01((t - iSolta) / PENDURADO.solta));
+    return {
+        queda: t < iBalanca ? easeOutBack(t / iBalanca) - 1 : 0,
+        balanco: t < iBalanca ? 0 : Math.sin((t - iBalanca) / 260) * 0.35 * (1 - 0.6 * s),
+        treme: Math.sin(t / 30) * rampa(t, iBalanca, iBalanca + 300) * (1 - rampa(t, iSolta, iSolta + 100)),
+        inspira: rampa(t, iEspirro, iEspirro + 500) * (1 - rampa(t, iEspirro + 500, iEspirro + 560)),
+        atchim: limitar01((t - iEspirro - 500) / 300) * (1 - limitar01((t - iSolta - 200) / 300)),
+        solta,
+        alfa: 1 - easeInCubic(limitar01((t - iSolta - PENDURADO.solta * 0.4) / (PENDURADO.solta * 0.6))),
+    };
+}
+
+// Tamanho do actor de cada movimento, em px, a partir do tamanho dos ícones `icone` e da largura da doca: {w, h,
+// abaixo} (`abaixo` é a parte que desce sobre a doca). Os que atravessam a doca ocupam a largura toda dela.
+export function tamanhoMascoteClima(variante, icone, larguraDoca) {
+    const a = icone;
+    const r = x => Math.round(x);
+    switch (variante) {
+    case 'picole':
+        return {w: r(a * 1.3), h: r(a * 2.2), abaixo: r(a * 0.7)};
+    case 'sol-arco':
+        return {w: r(larguraDoca), h: r(a * 2), abaixo: 0};
+    case 'sol-leque':
+        return {w: r(larguraDoca), h: r(a * 1.7), abaixo: 0};
+    case 'pinguim':
+        return {w: r(larguraDoca), h: r(a * 1.3), abaixo: 0};
+    case 'neve':
+        return {w: r(a * 2.6), h: r(a * 3.2), abaixo: 0};
+    case 'pendurado':
+        return {w: r(a * 1.6), h: r(a * 2.4), abaixo: r(a * 1.8)};
+    default:
+        return null;
+    }
 }

@@ -392,6 +392,72 @@
       <summary>Chama: minutos entre aparições</summary>
       <description>Tempo mínimo, em minutos, entre duas aparições da chama.</description>
     </key>
+    <key name="calor-limiar" type="i">
+      <range min="10" max="50"/>
+      <default>25</default>
+      <summary>Calor: temperatura (°C)</summary>
+      <description>O mascote do calor aparece quando a temperatura da cidade do widget Clima chega a este valor.</description>
+    </key>
+    <key name="calor-espera" type="i">
+      <range min="15" max="1440"/>
+      <default>120</default>
+      <summary>Calor: minutos entre aparições</summary>
+      <description>Tempo mínimo entre duas aparições enquanto a temperatura continuar no limite.</description>
+    </key>
+    <key name="calor-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="picole"/>
+        <choice value="sol-arco"/>
+        <choice value="sol-leque"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Calor: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="calor-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Calor: primeira hora do dia</summary>
+    </key>
+    <key name="calor-ate" type="i">
+      <range min="0" max="23"/>
+      <default>21</default>
+      <summary>Calor: última hora do dia</summary>
+    </key>
+    <key name="frio-limiar" type="i">
+      <range min="-30" max="35"/>
+      <default>18</default>
+      <summary>Frio: temperatura (°C)</summary>
+      <description>O mascote do frio aparece quando a temperatura da cidade do widget Clima cai a este valor.</description>
+    </key>
+    <key name="frio-espera" type="i">
+      <range min="15" max="1440"/>
+      <default>120</default>
+      <summary>Frio: minutos entre aparições</summary>
+      <description>Tempo mínimo entre duas aparições enquanto a temperatura continuar no limite.</description>
+    </key>
+    <key name="frio-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="pinguim"/>
+        <choice value="neve"/>
+        <choice value="pendurado"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Frio: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="frio-das" type="i">
+      <range min="0" max="23"/>
+      <default>8</default>
+      <summary>Frio: primeira hora do dia</summary>
+    </key>
+    <key name="frio-ate" type="i">
+      <range min="0" max="23"/>
+      <default>21</default>
+      <summary>Frio: última hora do dia</summary>
+    </key>
     <key name="mascote-teste" type="s">
       <default>''</default>
       <summary>Disparo de teste de um mascote</summary>

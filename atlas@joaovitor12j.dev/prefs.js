@@ -7,8 +7,8 @@ import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from './catalogo.js';
-import {boneco, chama, cuco, esqueleto, fantasma, noel} from './desenho.js';
-import {diasAte, lerLocais, quadroBoneco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from './logica.js';
+import {boneco, chama, cuco, esqueleto, fantasma, noel, pinguim, solArco} from './desenho.js';
+import {diasAte, lerLocais, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from './logica.js';
 
 const POSICOES = [
     ['baixo', 'Embaixo'],
@@ -494,6 +494,8 @@ export default class AtlasPrefs extends ExtensionPreferences {
             esqueleto: (cr, w, h) => esqueleto(cr, w, h, quadroEsqueleto(1000)),
             noel: (cr, w, h) => noel(cr, w, h, quadroNoel(1200)),
             boneco: (cr, w, h) => boneco(cr, w, h, quadroBoneco(1200)),
+            calor: (cr, w, h) => solArco(cr, w, h, {...quadroSolArco(2600), x: 0.5}, {base: h, icone: w * 0.62}),
+            frio: (cr, w, h) => pinguim(cr, w, h, {...quadroPinguim(1900), x: 0.4}, {base: h * 0.7, icone: w * 0.6}),
         };
         const opcoes = {
             cuco: linha => this._opcoesCuco(settings, linha),
@@ -502,6 +504,12 @@ export default class AtlasPrefs extends ExtensionPreferences {
             esqueleto: linha => this._opcoesSazonal(settings, linha, 'esqueleto', 'o esqueleto'),
             noel: linha => this._opcoesSazonal(settings, linha, 'noel', 'o Papai Noel'),
             boneco: linha => this._opcoesSazonal(settings, linha, 'boneco', 'o boneco de neve'),
+            calor: linha => this._opcoesClima(settings, linha, 'calor', [
+                ['picole', 'Picolé derretendo'], ['sol-arco', 'Sol atravessando'], ['sol-leque', 'Sol abanando'],
+            ], 'Temperatura mínima (°C)', 'Aparece quando a temperatura chega a este valor', 10, 50),
+            frio: linha => this._opcoesClima(settings, linha, 'frio', [
+                ['pinguim', 'Pinguim no tobogã'], ['neve', 'Neve acumulando'], ['pendurado', 'Pendurado tremendo'],
+            ], 'Temperatura máxima (°C)', 'Aparece quando a temperatura cai a este valor', -30, 35),
         };
 
         for (const [catId, titulo] of CATEGORIAS_MASCOTE) {
@@ -577,6 +585,33 @@ export default class AtlasPrefs extends ExtensionPreferences {
         botao.connect('clicked', () => settings.set_string('mascote-teste', `${id}:${GLib.get_monotonic_time()}`));
         testar.add_suffix(botao);
         testar.set_activatable_widget(botao);
+        linha.add_row(testar);
+    }
+
+    // Opções dos mascotes do clima (frio e calor): movimento, limite de temperatura, espera e janela de horas, e um
+    // botão de teste por movimento, para comparar. Dependem da cidade do widget Clima (aba Widgets).
+    _opcoesClima(settings, linha, id, movimentos, tituloLimiar, subLimiar, min, max) {
+        const cidade = new Adw.ActionRow({title: 'Cidade', use_markup: false});
+        const mostrar = () => {
+            cidade.subtitle = settings.get_string('clima-cidade') || 'Nenhuma: escolha na aba Widgets, em Clima';
+        };
+        const sinal = settings.connect('changed::clima-cidade', mostrar);
+        cidade.connect('destroy', () => settings.disconnect(sinal));
+        mostrar();
+        linha.add_row(cidade);
+        linha.add_row(this._combo(settings, `${id}-movimento`, 'Movimento', [['sortear', 'Sortear a cada vez'], ...movimentos]));
+        linha.add_row(this._spin(settings, `${id}-limiar`, tituloLimiar, subLimiar, min, max, 1, 0));
+        linha.add_row(this._spin(settings, `${id}-espera`, 'Minutos entre aparições', 'Enquanto a temperatura continuar no limite', 15, 1440, 15, 0));
+        linha.add_row(this._spin(settings, `${id}-das`, 'Primeira hora do dia', 'Antes disso não aparece', 0, 23, 1, 0));
+        linha.add_row(this._spin(settings, `${id}-ate`, 'Última hora do dia', 'Depois disso não aparece; se for menor que a primeira, a janela cruza a meia-noite', 0, 23, 1, 0));
+        const testar = new Adw.ActionRow({title: 'Testar agora', subtitle: 'Faz o movimento aparecer na hora, com qualquer temperatura'});
+        const caixa = new Gtk.Box({spacing: 6, valign: Gtk.Align.CENTER});
+        for (const [mov, nome] of movimentos) {
+            const b = new Gtk.Button({label: nome.split(' ')[0], tooltip_text: nome});
+            b.connect('clicked', () => settings.set_string('mascote-teste', `${id}=${mov}:${GLib.get_monotonic_time()}`));
+            caixa.append(b);
+        }
+        testar.add_suffix(caixa);
         linha.add_row(testar);
     }
 
