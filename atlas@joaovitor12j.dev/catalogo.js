@@ -25,6 +25,7 @@ export const WIDGETS = [
     ['contagem', 'Contagem regressiva', 'Quantos dias faltam para uma data; nome e data nas opções gerais'],
     ['clipboard', 'Área de transferência', 'Histórico do que você copiou (só texto, só na memória); os fixados ficam salvos'],
     ['slack', 'Slack', 'O ícone do Slack com um selo quando há mensagens não lidas; o clique abre o Slack'],
+    ['clima', 'Clima', 'Temperatura e o tempo agora (Open-Meteo); o clique abre as próximas horas e 5 dias. A cidade fica nas opções gerais', true],
     ['nota', 'Nota', 'Um recado fixo na doca; edite pelo clique ou nas opções gerais'],
 ];
 

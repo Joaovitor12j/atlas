@@ -157,6 +157,21 @@
       <default>""</default>
       <summary>Texto da nota fixa na doca</summary>
     </key>
+    <key name="clima-cidade" type="s">
+      <default>""</default>
+      <summary>Clima: nome da cidade</summary>
+      <description>Vazio = sem cidade escolhida (o widget não busca nada). Escolhida pela busca nas preferências.</description>
+    </key>
+    <key name="clima-latitude" type="d">
+      <range min="-90.0" max="90.0"/>
+      <default>0.0</default>
+      <summary>Clima: latitude da cidade</summary>
+    </key>
+    <key name="clima-longitude" type="d">
+      <range min="-180.0" max="180.0"/>
+      <default>0.0</default>
+      <summary>Clima: longitude da cidade</summary>
+    </key>
     <key name="clipboard-fixados" type="as">
       <default>[]</default>
       <summary>Área de transferência: textos fixados</summary>
