@@ -184,3 +184,15 @@ Primeiro mascote que não é de horário. Com ela ligada, um temporizador `masco
 ## Natal: Papai Noel e boneco de neve
 
 De 1 a 25 de dezembro, mesmo esquema do Halloween (`noel-*`, `boneco-*`; opções num bloco só em `prefs.js`). Noel: acena e a barriga sacode no "ho ho ho" (3,65 s). Boneco: balança, com cachecol e galhos ao vento (3,45 s).
+
+## Frio e calor (gatilho de clima)
+
+Primeiros mascotes com **movimentos diferentes** de subir da doca e com mais de uma animação cada. Usam a previsão do widget Clima (`clima.js`, Open-Meteo, a mesma cidade): o serviço saiu do `widgets.js` para funcionar mesmo sem o widget na doca.
+
+- **Gatilho:** temperatura de agora (a mesma do tile) maior ou igual a `calor-limiar` (padrão 25 °C) ou menor ou igual a `frio-limiar` (padrão 18 °C). Enquanto o tempo segue no limite, `<id>-espera` (padrão 120 min) espaça as aparições; também respeitam `<id>-das`/`<id>-ate` (padrão 8 h a 21 h). A previsão é conferida a cada 5 min e logo que chega uma nova; a busca continua a cada 30 min (`mascoteDoClima` em `logica.js`).
+- **Movimentos** (`<id>-movimento`, ou "sortear" a cada aparição):
+  - Calor: **picolé derretendo** (sobe, pinga pela borda da doca, vira poça e evapora), **sol atravessando** (nasce numa ponta, arco por cima, se põe na outra) e **sol de óculos abanando** (entra andando, para, se abana com o leque, enxuga a testa e sai).
+  - Frio: **pinguim no tobogã** (desliza de barriga de ponta a ponta e pula antes de sair), **neve acumulando** (flocos formam um monte; um boneco de gorro espia, bate o queixo e afunda) e **pendurado tremendo** (cai de cima, agarra a borda, balança, espirra e cai).
+- **Motor:** o actor pode descer sobre a doca (`tamanho.abaixo`, para os pingos e quem fica pendurado) e ocupar a largura toda dela (os que atravessam). O desenho recebe `ctx.base` (a linha do topo da doca dentro do actor) e `ctx.icone`. Os tamanhos ficam em `tamanhoMascoteClima` (`logica.js`), divididos com a prévia.
+- **Teste:** cada movimento tem o próprio botão nas preferências; `mascote-teste` aceita `id=movimento:marca`.
+- **Prévia:** `gjs -m tests/previa-mascotes-clima.js saida.png` (uma linha por movimento, com a doca desenhada).

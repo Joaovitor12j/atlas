@@ -10,15 +10,15 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
-import Soup from 'gi://Soup?version=3.0';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anel, barra, cor, grafico, iconeTempo, relogioAnalogico} from './desenho.js';
 import {agendar, agora, registrar} from './perf.js';
+import {CLIMA, buscarClima, localDoClima} from './clima.js';
 import {
-    DIAS_SEMANA, MESES, calcularProgresso, climaVencido, descreverTempo, diaCurto, diasAte, duracao, escalaGrafico,
-    formatarCrono, formatarFaixa, formatarTaxa, formatarTemp, lerClima, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo, urlClima,
+    DIAS_SEMANA, MESES, calcularProgresso, descreverTempo, diaCurto, diasAte, duracao, escalaGrafico,
+    formatarCrono, formatarFaixa, formatarTaxa, formatarTemp, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
 } from './logica.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
@@ -1910,64 +1910,9 @@ class Slack extends Widget {
 }
 
 // ----- Clima (Open-Meteo, sem conta nem chave) -----
-// A previsão é do módulo, como o histórico de CPU: a doca recria os widgets e o tempo não muda por isso.
-// Busca a cada 30 min (5 min depois de uma falha), só com uma cidade escolhida; só as coordenadas saem da máquina.
-// O relógio de parede (e não o monotônico) mede a validade, para os dados vencerem depois de uma suspensão.
-const CLIMA = {dados: null, buscadoEm: 0, erro: false, chave: '', cancelar: null, sessao: null, ouvintes: new Set()};
-
-function climaLocal() {
-    const nome = (CFG?.get_string('clima-cidade') ?? '').trim();
-    return nome ? {nome, lat: CFG.get_double('clima-latitude'), lon: CFG.get_double('clima-longitude')} : null;
-}
-
-function climaAvisar() {
-    for (const f of CLIMA.ouvintes)
-        f();
-}
-
-function climaBuscar(forcar = false) {
-    const local = climaLocal();
-    if (!local)
-        return;
-    const chave = `${local.lat},${local.lon}`;
-    if (chave !== CLIMA.chave) {
-        CLIMA.cancelar?.cancel();
-        Object.assign(CLIMA, {dados: null, buscadoEm: 0, erro: false, chave, cancelar: null});
-    }
-    const url = urlClima(local.lat, local.lon);
-    if (!url || CLIMA.cancelar || (!forcar && !climaVencido(Date.now(), CLIMA.buscadoEm, {erro: CLIMA.erro})))
-        return;
-    CLIMA.sessao ??= new Soup.Session({user_agent: 'ATLAS (extensão do GNOME Shell)', timeout: 20});
-    const msg = Soup.Message.new('GET', url);
-    const cancelar = CLIMA.cancelar = new Gio.Cancellable();
-    CLIMA.sessao.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, cancelar, (sessao, res) => {
-        let dados = null;
-        try {
-            const bytes = sessao.send_and_read_finish(res);
-            if (msg.get_status() === Soup.Status.OK)
-                dados = lerClima(JSON.parse(new TextDecoder().decode(bytes.get_data())));
-        } catch (e) {
-            if (!cancelar.is_cancelled())
-                console.warn(`[atlas] clima: ${e.message}`);
-        }
-        if (cancelar !== CLIMA.cancelar)
-            return; // cancelada (extensão desligada ou outra cidade)
-        CLIMA.cancelar = null;
-        CLIMA.buscadoEm = Date.now();
-        CLIMA.erro = !dados;
-        if (dados)
-            CLIMA.dados = dados;
-        climaAvisar();
-    });
-}
-
-// Cancela a busca e esquece a previsão (chamado ao desativar a extensão).
-export function pararClima() {
-    CLIMA.cancelar?.cancel();
-    CLIMA.sessao?.abort();
-    Object.assign(CLIMA, {dados: null, buscadoEm: 0, erro: false, chave: '', cancelar: null, sessao: null});
-    CLIMA.ouvintes.clear();
-}
+// A previsão é um serviço do módulo clima.js, dividido com os mascotes de frio e calor.
+const climaLocal = () => localDoClima(CFG);
+const climaBuscar = (forcar = false) => buscarClima(CFG, forcar);
 
 // Faixa de temperaturas com folga, para o gráfico (que vai de 0 a max) não colar nas bordas.
 function faixaTemp(temps) {
