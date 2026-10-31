@@ -11,3 +11,12 @@ export function abrirConfig() {
         `${PASTA_EXTENSAO}/schemas`, Gio.SettingsSchemaSource.get_default(), false);
     return new Gio.Settings({settings_schema: fonte.lookup(SCHEMA, true)});
 }
+
+export function lerVersao() {
+    try {
+        const [, bytes] = GLib.file_get_contents(`${PASTA_EXTENSAO}/metadata.json`);
+        return JSON.parse(new TextDecoder().decode(bytes))['version-name'] ?? '';
+    } catch (_e) {
+        return '';
+    }
+}

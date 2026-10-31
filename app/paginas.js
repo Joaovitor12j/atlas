@@ -16,11 +16,9 @@ const POSICOES = [
 ];
 
 export class Paginas {
-    preencher(window, settings) {
-        window.set_default_size(560, 700);
-
-        const page = new Adw.PreferencesPage({title: 'Geral', icon_name: 'preferences-desktop-appearance-symbolic'});
-        window.add(page);
+    // Devolve as páginas na ordem da barra lateral: [{id, titulo, icone, page}].
+    criar(window, settings) {
+        const page = new Adw.PreferencesPage();
 
         const aparencia = new Adw.PreferencesGroup({title: 'Aparência'});
         page.add(aparencia);
@@ -55,10 +53,6 @@ export class Paginas {
         posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
         posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
 
-        window.add(this._paginaAmbientes(settings, window));
-        window.add(this._paginaWidgets(settings));
-        window.add(this._paginaMascotes(settings));
-
         const rodape = new Adw.PreferencesGroup();
         page.add(rodape);
         const reset = new Gtk.Button({label: 'Restaurar padrões', halign: Gtk.Align.START, css_classes: ['destructive-action']});
@@ -67,6 +61,13 @@ export class Paginas {
                 settings.reset(key);
         });
         rodape.add(reset);
+
+        return [
+            {id: 'dock', titulo: 'Dock', icone: 'preferences-desktop-appearance-symbolic', page},
+            {id: 'ambientes', titulo: 'Ambientes', icone: 'view-grid-symbolic', page: this._paginaAmbientes(settings, window)},
+            {id: 'widgets', titulo: 'Widgets', icone: 'view-pin-symbolic', page: this._paginaWidgets(settings)},
+            {id: 'mascotes', titulo: 'Mascotes', icone: 'face-smile-symbolic', page: this._paginaMascotes(settings)},
+        ];
     }
 
     // Linha com lista de opções ligada a uma chave string.
