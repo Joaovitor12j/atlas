@@ -16,6 +16,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anel, barra, cor, grafico, iconeTempo, relogioAnalogico} from './desenho.js';
 import {agendar, agora, registrar} from './perf.js';
 import {CLIMA, buscarClima, localDoClima} from './clima.js';
+import {obterPonte} from './ponte.js';
 import {
     DIAS_SEMANA, MESES, calcularProgresso, descreverTempo, diaCurto, diasAte, duracao, escalaGrafico,
     formatarCrono, formatarFaixa, formatarTaxa, formatarTemp, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
@@ -426,6 +427,7 @@ class Relogio extends Widget {
     construir() {
         this._criarTexto();
         this._hms = [0, 0, 0];
+        obterPonte().usar('relogio');
         if (this._largo) {
             this._camada((cr, w, h) => barra(cr, 18, h - 11, w - 36, 3, this._hms[2] / 60, cor(COR.ambar)));
         } else {
@@ -435,9 +437,16 @@ class Relogio extends Widget {
         }
     }
 
+    destruir() {
+        obterPonte().soltar('relogio');
+        super.destruir();
+    }
+
     atualizar() {
         const d = GLib.DateTime.new_now_local();
-        this._hms = [d.get_hour(), d.get_minute(), d.get_second()];
+        // com o daemon no ar o valor vem dele (fase 0 do app nativo); sem ele, o cálculo local de sempre
+        const p = obterPonte().dado('relogio');
+        this._hms = p ? [p.h, p.m, p.s] : [d.get_hour(), d.get_minute(), d.get_second()];
         if (this._largo) {
             this._txt(this._topo, d.format('%a, %d %b').toUpperCase());
             this._txt(this._meio, d.format(CFG?.get_boolean('relogio-24h') ?? true ? '%H:%M' : '%I:%M'));

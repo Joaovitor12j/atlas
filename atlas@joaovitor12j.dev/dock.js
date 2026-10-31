@@ -15,6 +15,7 @@ import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget, pararClipboard} from './widgets.js';
+import {pararPonte} from './ponte.js';
 import {pararClima} from './clima.js';
 import {agendar, perfilar} from './perf.js';
 
@@ -1297,6 +1298,7 @@ export class Dock {
         this._mascotes = null;
         perfilar(false);
         pararClipboard();
+        pararPonte();
         pararClima();
         this._notif = null;
         this._dndMemoria = null;
