@@ -63,6 +63,23 @@ Cada fase é um PR que funciona sozinho; o dock nunca fica quebrado entre fases.
 4. **Sem extensions.gnome.org**: distribuição só local. Motivo: o shim depende de um app externo, o que a revisão do site costuma barrar, e o código é fechado. Não bloqueia nada.
 5. **Janela de cor fixa** (carta náutica de `site/DESIGN.md`), não varia com o tema do dock. O id do app passa a `dev.joaovitor12j.Atlas`.
 
+## Resultado da fase 0 (2026-10-31)
+
+Protótipo em `app/daemon.js` (nome `dev.joaovitor12j.Atlas`, só GLib/Gio) e `ponte.js` no shim; o Relógio lê a hora do daemon e cai no cálculo local se ele não existe. Medido nesta máquina (GNOME 46, gjs 1.80):
+
+| Processo | Memória (RSS) |
+|---|---|
+| gjs vazio | 26 MB |
+| daemon (D-Bus, 1 widget assinado) | 27 MB |
+| gjs com GTK4 + libadwaita iniciados, sem janela | 60 MB |
+| app com uma `Adw.ApplicationWindow` vazia | 176 MB, **não volta** ao fechar a janela |
+
+- **CPU do daemon** com 1 assinante a 1 Hz: ~0,1% de um núcleo (6 centésimos de segundo em 60 s, resolução de ±0,017%). Sem assinantes não há timer.
+- **Decisão: daemon e janela são processos separados.** O daemon fica residente sem GTK (~27 MB); a janela de configuração é outro processo (`app/main.js`), aberto sob demanda e encerrado ao fechar, devolvendo os ~150 MB. Isso muda a arquitetura acima: a "instância única" e o `--pagina` valem para a janela, e o `--daemon` vira o `app/daemon.js`.
+- **O Relógio não deve ir para o daemon.** Custa ~0,1% para entregar o que o shim calcula de graça. O daemon só vale para o que o shim não consegue ou não deveria fazer: serviços com rede/disco/processos (clima, Claude, Slack, CPU/RAM, rede, bateria, MPRIS) e estado compartilhado (ambientes, mascotes). O Relógio ficou só como cobaia do protocolo; sai na fase 4 (ou vira local de novo).
+- Protocolo v1: `Versao()`, `Assinar(id)`, `Soltar(id)`, sinal `Dado(id, json)`. Contagem de assinantes por id; dado com mais de 3 s é ignorado no shim.
+- Latência não medida no Shell (falta testar com o dock real; `ponte.js` é copiado pelo loader, sem relogin).
+
 ## Riscos
 
 - **Latência e desenho entre processos**: o shim pinta com dados recebidos; nunca enviar pixels. Mascotes e lente continuam locais no shim (animação não pode depender de D-Bus).
