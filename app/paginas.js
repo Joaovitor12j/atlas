@@ -16,11 +16,10 @@ const POSICOES = [
 ];
 
 export class Paginas {
-    // Páginas feitas com libadwaita (Ambientes, Widgets, Mascotes): [{id, titulo, icone, page}]. A Aparência fica em aparencia.js.
+    // Páginas feitas com libadwaita (Ambientes, Mascotes): [{id, titulo, icone, page}]. Aparência e Widgets ficam em aparencia.js e widgets.js.
     criar(window, settings) {
         return [
             {id: 'ambientes', titulo: 'Ambientes', icone: 'view-grid-symbolic', page: this._paginaAmbientes(settings, window)},
-            {id: 'widgets', titulo: 'Widgets', icone: 'view-pin-symbolic', page: this._paginaWidgets(settings)},
             {id: 'mascotes', titulo: 'Mascotes', icone: 'face-smile-symbolic', page: this._paginaMascotes(settings)},
         ];
     }
@@ -289,140 +288,6 @@ export class Paginas {
         render();
         settings.connect('changed::ambientes', () => {
             // mudanças vindas de fora (ex.: fixar app pelo menu da doca): redesenha a lista
-            if (!interno)
-                render();
-        });
-        return page;
-    }
-
-    // ----- Widgets -----
-
-    // Um grupo por ambiente, com um interruptor para cada widget. Fica numa aba própria
-    // porque os widgets são o que mais se liga e desliga.
-    _paginaWidgets(settings) {
-        const page = new Adw.PreferencesPage({title: 'Widgets', icon_name: 'view-pin-symbolic'});
-
-        const geral = new Adw.PreferencesGroup({
-            title: 'Opções gerais',
-            description: 'Valem para todos os ambientes.',
-        });
-        page.add(geral);
-        geral.add(this._spin(settings, 'pomodoro-foco', 'Pomodoro: foco', 'Minutos de foco', 1, 180, 1, 0));
-        geral.add(this._spin(settings, 'pomodoro-pausa', 'Pomodoro: pausa curta', 'Minutos', 1, 60, 1, 0));
-        geral.add(this._spin(settings, 'pomodoro-pausa-longa', 'Pomodoro: pausa longa', 'Minutos, a cada 4 focos', 1, 120, 1, 0));
-        geral.add(this._spin(settings, 'timer-minutos', 'Timer: duração', 'Minutos', 1, 600, 1, 0));
-        geral.add(this._combo(settings, 'widgets-posicao', 'Posição na doca', [
-            ['depois', 'Depois dos apps (no fim)'],
-            ['antes', 'Antes dos apps (logo após o seletor)'],
-        ]));
-        geral.add(this._texto(settings, 'contagem-nome', 'Contagem regressiva: nome', v => v.length <= 40));
-        geral.add(this._texto(settings, 'contagem-data', 'Contagem regressiva: data (AAAA-MM-DD)',
-            v => v === '' || diasAte({ano: 2000, mes: 1, dia: 1}, v) !== null));
-        geral.add(this._texto(settings, 'nota-texto', 'Nota', v => v.length <= 200));
-        geral.add(this._switch(settings, 'relogio-24h', 'Relógio em 24 horas', 'Desligado mostra 12 horas'));
-        page.add(this._grupoClima(settings));
-
-        const ler = () => {
-            try {
-                const v = JSON.parse(settings.get_string('ambientes'));
-                return Array.isArray(v) ? v : [];
-            } catch (_e) {
-                return [];
-            }
-        };
-        let interno = false; // as próprias gravações não redesenham a lista
-        const alterar = (id, fn) => {
-            const lista = ler();
-            const amb = lista.find(a => a.id === id);
-            if (!amb)
-                return;
-            fn(amb);
-            interno = true;
-            settings.set_string('ambientes', JSON.stringify(lista));
-            interno = false;
-        };
-
-        const largos = new Adw.PreferencesGroup({
-            title: 'Tiles largos',
-            description: 'O widget vira uma faixa com mais informação (música com título e progresso, relógio digital, gráfico de CPU e rede). Só vale com a doca embaixo.',
-        });
-        page.add(largos);
-        for (const [wid, nome] of WIDGETS.filter(w => w[3])) {
-            const sw = new Adw.SwitchRow({title: nome, active: settings.get_strv('widgets-largos').includes(wid)});
-            sw.connect('notify::active', () => {
-                const lista = settings.get_strv('widgets-largos').filter(x => x !== wid);
-                if (sw.active)
-                    lista.push(wid);
-                settings.set_strv('widgets-largos', lista);
-            });
-            largos.add(sw);
-        }
-
-        let grupos = [];
-        const render = () => {
-            for (const g of grupos)
-                page.remove(g);
-            grupos = [];
-            const lista = ler();
-
-            if (!lista.length) {
-                const vazio = new Adw.PreferencesGroup({
-                    title: 'Widgets',
-                    description: 'Widgets ficam dentro de um ambiente. Crie um na aba Ambientes para ligá-los.',
-                });
-                page.add(vazio);
-                grupos.push(vazio);
-                return;
-            }
-
-            for (const amb of lista) {
-                const grupo = new Adw.PreferencesGroup({
-                    title: amb.nome,
-                    description: grupos.length ? '' : 'Tiles vivos na doca; o clique abre um painel. Cada ambiente tem os seus, na ordem desta lista.',
-                });
-                // ligados primeiro, na ordem da doca; depois os desligados
-                const ativos = (amb.widgets ?? []).filter(id => WIDGETS.some(w => w[0] === id));
-                const ordem = [...ativos, ...WIDGETS.map(w => w[0]).filter(id => !ativos.includes(id))];
-                for (const wid of ordem) {
-                    const [, nome, desc] = WIDGETS.find(w => w[0] === wid);
-                    const idx = ativos.indexOf(wid);
-                    const sw = new Adw.SwitchRow({title: nome, subtitle: desc, active: idx >= 0});
-                    const mover = d => {
-                        alterar(amb.id, a => {
-                            const arr = a.widgets;
-                            const [x] = arr.splice(idx, 1);
-                            arr.splice(idx + d, 0, x);
-                        });
-                        render();
-                    };
-                    for (const [icone, dica, d, ok] of [
-                        ['go-up-symbolic', 'Subir', -1, idx > 0],
-                        ['go-down-symbolic', 'Descer', 1, idx >= 0 && idx < ativos.length - 1],
-                    ]) {
-                        const b = new Gtk.Button({icon_name: icone, tooltip_text: dica, valign: Gtk.Align.CENTER, css_classes: ['flat'], sensitive: ok});
-                        b.connect('clicked', () => mover(d));
-                        sw.add_prefix(b);
-                    }
-                    sw.connect('notify::active', () => {
-                        alterar(amb.id, a => {
-                            a.widgets = (a.widgets ?? []).filter(x => x !== wid);
-                            if (sw.active)
-                                a.widgets.push(wid);
-                        });
-                        // redesenha depois do sinal, para a linha subir/descer na lista
-                        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                            render();
-                            return GLib.SOURCE_REMOVE;
-                        });
-                    });
-                    grupo.add(sw);
-                }
-                page.add(grupo);
-                grupos.push(grupo);
-            }
-        };
-        render();
-        settings.connect('changed::ambientes', () => {
             if (!interno)
                 render();
         });
