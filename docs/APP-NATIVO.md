@@ -55,13 +55,13 @@ Cada fase é um PR que funciona sozinho; o dock nunca fica quebrado entre fases.
 | 6. Remoção | Apagar do shim lógica e serviços restantes; `extension.js` e `dock.js` enxutos; CLAUDE.md, README, CHANGELOG, `docs/DESEMPENHO.md` atualizados | Shim sem regra de produto; tag de versão |
 | 7. Distribuição | `.desktop`, ícones, fontes, `install.sh` único; avaliar Flatpak (precisa de portal/`--talk-name` para D-Bus e acesso a `~/.claude`) ou pacote `.deb` | Instalação em máquina limpa |
 
-## Pontos que dependem de decisão
+## Decisões (2026-10-31)
 
-1. **Flatpak ou instalação local?** Flatpak isola `~/.claude/.credentials.json` (widget Claude Code) e `/proc`; exige permissões explícitas. Recomendo começar local (`install.sh`) e só empacotar na fase 7.
-2. **Daemon sempre residente ou D-Bus-activated?** Activation sob demanda economiza memória, mas widgets com tempo (pomodoro, timer) precisam de estado vivo. Recomendo residente, mas só com serviços dos widgets ligados.
-3. **Quando o app está fechado, o que o dock mostra?** Recomendo manter o daemon no ar mesmo sem janela (esta é a semântica de "app"); sem daemon, dock degradado.
-4. **Distribuição na extensions.gnome.org** (já descartada em parte pelo código fechado): o shim precisaria declarar o app como dependência externa, o que a revisão costuma barrar. Hoje a distribuição é só local, então não bloqueia.
-5. Cor da janela fixa ou por tema e id do app (`dev.joaovitor12j.Atlas`): herdadas de `APP-CONFIGURACAO.md`.
+1. **Instalação local** (`install.sh`). Flatpak fica para depois da fase 7, se um dia houver distribuição.
+2. **Daemon residente**, com só os serviços dos widgets ligados.
+3. **Daemon no ar mesmo sem janela**; sem daemon, o dock fica degradado (favoritos e apps abertos, widgets com o último dado).
+4. **Sem extensions.gnome.org**: distribuição só local. Motivo: o shim depende de um app externo, o que a revisão do site costuma barrar, e o código é fechado. Não bloqueia nada.
+5. **Janela de cor fixa** (carta náutica de `site/DESIGN.md`), não varia com o tema do dock. O id do app passa a `dev.joaovitor12j.Atlas`.
 
 ## Riscos
 
