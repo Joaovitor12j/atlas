@@ -6,12 +6,24 @@ import Gtk from 'gi://Gtk';
 import {CORES_TEMA} from '../atlas@joaovitor12j.dev/catalogo.js';
 import {escalaLente} from '../atlas@joaovitor12j.dev/logica.js';
 
-const ALTURA = 190;
+const ALTURA = 218;
 const PADDING = 8;
 const GAP = 8;
-const MARGEM = 14;
-const ICONES = ['#E8604C', '#5B9BD5', '#8E6BBF', '#E8A33D', null, '#3FB8A8', '#D96BA0']; // null = separador
-const ABERTOS = new Set([0, 3, 5]);
+const MARGEM = 28;
+// Itens do palco (como no mockup): app com sigla e cor, separador, tile de relógio e seletor de ambiente.
+// `rel` = largura em múltiplos do ícone; `aberto` mostra o indicador de app aberto.
+const ITENS = [
+    {tipo: 'app', t: 'Fx', cor: '#ff7a3d', aberto: true},
+    {tipo: 'app', t: 'Cd', cor: '#4a6bff', aberto: true},
+    {tipo: 'app', t: 'Tm', cor: '#2f3a4d'},
+    {tipo: 'app', t: 'Sl', cor: '#2fb67c', aberto: true},
+    {tipo: 'sep'},
+    {tipo: 'app', t: 'Ob', cor: '#7c5cff'},
+    {tipo: 'app', t: 'Sp', cor: '#1db954'},
+    {tipo: 'sep'},
+    {tipo: 'relogio', t: '14:32', cor: '#0e1a21'},
+    {tipo: 'ambiente', t: 'T', cor: '#ff6b4a', rel: 0.62},
+];
 const CHAVES = ['tema', 'tamanho-icone', 'lente-forca', 'lente-largura', 'posicao', 'estilo-indicador', 'margem'];
 
 function cor(cr, css, alfa = 1) {
@@ -20,7 +32,7 @@ function cor(cr, css, alfa = 1) {
     cr.setSourceRGBA(c.red, c.green, c.blue, c.alpha * alfa);
 }
 
-function retanguloArredondado(cr, x, y, w, h, r) {
+export function retanguloArredondado(cr, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
     cr.newSubPath();
     cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
@@ -30,10 +42,39 @@ function retanguloArredondado(cr, x, y, w, h, r) {
     cr.closePath();
 }
 
+// Fundo do palco: degradê verde-água com riscas diagonais finas (como no mockup).
+export function desenharPapelDeParede(cr, w, h, raio) {
+    const g = new (imports.cairo.LinearGradient)(0, 0, w * 0.5, h);
+    g.addColorStopRGB(0, 0.17, 0.40, 0.44);
+    g.addColorStopRGB(1, 0.06, 0.16, 0.19);
+    cr.save();
+    retanguloArredondado(cr, 0, 0, w, h, raio);
+    cr.clip();
+    cr.setSource(g);
+    cr.paint();
+    cr.setSourceRGBA(1, 1, 1, 0.045);
+    cr.setLineWidth(1);
+    for (let x = -h; x < w; x += 46) {
+        cr.moveTo(x, h);
+        cr.lineTo(x + h * 0.45, 0);
+    }
+    cr.stroke();
+    cr.restore();
+}
+
+// Texto centrado em (x, y).
+function texto(cr, str, x, y, tamanho) {
+    cr.selectFontFace('Sora', 0, 1);
+    cr.setFontSize(tamanho);
+    const e = cr.textExtents(str);
+    cr.moveTo(x - e.width / 2 - e.xBearing, y - e.height / 2 - e.yBearing);
+    cr.showText(str);
+}
+
 export function criarPrevia(settings) {
     const area = new Gtk.DrawingArea({content_height: ALTURA, hexpand: true, css_classes: ['atlas-previa']});
     let ponteiro = null; // [x, y] em px do widget, ou null com o mouse fora
-    let escalas = ICONES.map(() => 1);
+    let escalas = ITENS.map(() => 1);
     let tick = 0;
 
     const lerConfig = () => ({
@@ -50,7 +91,7 @@ export function criarPrevia(settings) {
         const vertical = c.pos !== 'baixo';
         const ao = vertical ? h : w;
         const prof = vertical ? w : h;
-        const larguras = ICONES.map(i => i === null ? 1 : c.icone);
+        const larguras = ITENS.map(i => i.tipo === 'sep' ? 1 : c.icone * (i.rel ?? 1));
         const total = larguras.reduce((a, b) => a + b, 0) + GAP * (larguras.length - 1) + 2 * PADDING;
         const alto = c.icone * c.forca + PADDING;
         const k = Math.min(1, (ao - 2 * MARGEM) / total, (prof - 2 * MARGEM) / (c.icone + 2 * PADDING + (alto - c.icone)));
@@ -74,7 +115,7 @@ export function criarPrevia(settings) {
     };
 
     const alvos = (c, g) => {
-        const alvo = ICONES.map(() => 1);
+        const alvo = ITENS.map(() => 1);
         if (!ponteiro)
             return alvo;
         const [px, py] = paraLocal(c, g, area.get_width(), area.get_height(), ...ponteiro);
@@ -83,10 +124,10 @@ export function criarPrevia(settings) {
         if (!dentro)
             return alvo;
         let a = -g.total / 2 + PADDING;
-        ICONES.forEach((ic, i) => {
+        ITENS.forEach((it, i) => {
             const centro = a + g.larguras[i] / 2;
             a += g.larguras[i] + GAP;
-            if (ic !== null)
+            if (it.tipo !== 'sep')
                 alvo[i] = escalaLente(px - centro, c.forca, c.largura);
         });
         return alvo;
@@ -121,13 +162,7 @@ export function criarPrevia(settings) {
         const t = CORES_TEMA[c.tema] ?? CORES_TEMA.noite;
         const g = geometria(c, w, h);
 
-        // "papel de parede" para os temas translúcidos terem o que desfocar
-        const fundo = new (imports.cairo.LinearGradient)(0, 0, w, h);
-        fundo.addColorStopRGB(0, 0.13, 0.19, 0.30);
-        fundo.addColorStopRGB(1, 0.30, 0.38, 0.52);
-        cr.setSource(fundo);
-        retanguloArredondado(cr, 0, 0, w, h, 12);
-        cr.fill();
+        desenharPapelDeParede(cr, w, h, 16);
 
         cr.save();
         if (c.pos === 'baixo') {
@@ -151,23 +186,33 @@ export function criarPrevia(settings) {
         cr.stroke();
 
         let a = -g.total / 2 + PADDING;
-        ICONES.forEach((ic, i) => {
+        ITENS.forEach((it, i) => {
             const lar = g.larguras[i];
             const centro = a + lar / 2;
             a += lar + GAP;
-            if (ic === null) {
+            if (it.tipo === 'sep') {
                 cor(cr, t.sep);
                 cr.rectangle(centro - 0.5, -espessura + PADDING, 1, c.icone);
                 cr.fill();
                 return;
             }
             const s = escalas[i];
-            const lado = c.icone * s;
-            const base = -PADDING; // base dos ícones; crescem para fora (para cima no referencial local)
-            retanguloArredondado(cr, centro - lado / 2, base - lado, lado, lado, lado * 0.22);
-            cor(cr, ic);
-            cr.fill();
-            if (ABERTOS.has(i) && c.indicador !== 'nenhum') {
+            const lado = lar * s;
+            const alto = it.tipo === 'ambiente' ? lado : c.icone * s;
+            const base = -PADDING; // base dos itens; crescem para fora (para cima no referencial local)
+            const yTopo = base - alto - (it.tipo === 'ambiente' ? (c.icone * s - alto) / 2 : 0);
+            if (it.tipo === 'ambiente') {
+                cor(cr, it.cor);
+                cr.arc(centro, yTopo + alto / 2, lado / 2, 0, 2 * Math.PI);
+                cr.fill();
+            } else {
+                retanguloArredondado(cr, centro - lado / 2, yTopo, lado, alto, alto * 0.22);
+                cor(cr, it.cor);
+                cr.fill();
+            }
+            cor(cr, '#ffffff');
+            texto(cr, it.t, centro, yTopo + alto / 2, Math.max(9, Math.min(alto, lado) * (it.tipo === 'relogio' ? 0.27 : 0.32)));
+            if (it.aberto && c.indicador !== 'nenhum') {
                 cor(cr, t.ponto);
                 if (c.indicador === 'barra')
                     retanguloArredondado(cr, centro - 7, -4, 14, 3, 1.5);
@@ -195,4 +240,18 @@ export function criarPrevia(settings) {
         ids.forEach(id => settings.disconnect(id));
     });
     return area;
+}
+
+// Palco: a prévia com a etiqueta "Prévia ao vivo" e a dica por cima (rótulos não pegam o mouse).
+export function criarPalco(settings) {
+    const palco = new Gtk.Overlay({child: criarPrevia(settings), css_classes: ['atlas-palco']});
+    palco.add_overlay(new Gtk.Label({
+        use_markup: true, label: '<span foreground="#5fd6a8">●</span>  PRÉVIA AO VIVO', halign: Gtk.Align.START, valign: Gtk.Align.START,
+        can_target: false, css_classes: ['atlas-palco-rotulo'],
+    }));
+    palco.add_overlay(new Gtk.Label({
+        label: 'Passe o mouse na doca para ver a lente', halign: Gtk.Align.END, valign: Gtk.Align.START,
+        can_target: false, css_classes: ['atlas-palco-dica'],
+    }));
+    return palco;
 }
