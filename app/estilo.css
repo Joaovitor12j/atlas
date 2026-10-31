@@ -1,0 +1,47 @@
+/* Identidade do app: carta náutica noturna (site/DESIGN.md). libadwaita 1.5: cores nomeadas, sem variáveis CSS. */
+@define-color window_bg_color #0F1B28;
+@define-color window_fg_color #DCE7EE;
+@define-color view_bg_color #0F1B28;
+@define-color view_fg_color #DCE7EE;
+@define-color headerbar_bg_color #0F1B28;
+@define-color headerbar_fg_color #DCE7EE;
+@define-color headerbar_border_color alpha(#7899B8, 0.22);
+@define-color sidebar_bg_color #0B1520;
+@define-color sidebar_fg_color #DCE7EE;
+@define-color sidebar_border_color alpha(#7899B8, 0.22);
+@define-color card_bg_color #16283A;
+@define-color card_fg_color #DCE7EE;
+@define-color popover_bg_color #16283A;
+@define-color popover_fg_color #DCE7EE;
+@define-color dialog_bg_color #16283A;
+@define-color dialog_fg_color #DCE7EE;
+@define-color accent_bg_color #E8A33D;
+@define-color accent_fg_color #0F1B28;
+@define-color accent_color #E8A33D;
+
+window, .atlas-conteudo {
+    font-family: "Instrument Sans", "Cantarell", sans-serif;
+}
+
+/* Grade de coordenadas atrás do conteúdo: linhas finas de 24 px e mais marcadas a cada 120 px. */
+.atlas-conteudo {
+    background-color: @window_bg_color;
+    background-image:
+        linear-gradient(to right, alpha(#7899B8, 0.10) 1px, transparent 1px),
+        linear-gradient(to bottom, alpha(#7899B8, 0.10) 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px;
+}
+.atlas-conteudo preferencespage, .atlas-conteudo scrolledwindow { background: transparent; }
+
+.atlas-marca { padding: 18px 16px 10px 16px; }
+.atlas-marca-nome { font-family: "Bricolage Grotesque", "Cantarell", sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 3px; }
+.atlas-marca-versao { font-family: "Spline Sans Mono", monospace; font-size: 11px; opacity: 0.6; }
+
+.atlas-lateral list { background: transparent; }
+.atlas-lateral row { border-radius: 8px; margin: 1px 8px; }
+.atlas-lateral row:selected { background-color: alpha(#E8A33D, 0.16); color: #E8A33D; }
+
+.atlas-titulo-pagina { font-family: "Bricolage Grotesque", "Cantarell", sans-serif; font-weight: 700; }
+
+/* Traço: bordas de 1 px, cantos de 12 px nos cartões, sem sombra. */
+preferencesgroup > box > box > list, .boxed-list { border: 1px solid alpha(#7899B8, 0.22); border-radius: 12px; box-shadow: none; }
