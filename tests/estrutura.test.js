@@ -9,7 +9,8 @@ const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gs
 const css = readFileSync(new URL('temas.css', raiz), 'utf8');
 const widgetsJs = readFileSync(new URL('widgets.js', raiz), 'utf8');
 const mascotesJs = readFileSync(new URL('mascotes.js', raiz), 'utf8');
-const paginasJs = readFileSync(new URL('../app/paginas.js', import.meta.url), 'utf8');
+const ARQUIVOS_APP = ['paginas', 'aparencia', 'widgets', 'ambientes', 'mascotes', 'janela', 'previa'].map(n => `../app/${n}.js`);
+const paginasJs = ARQUIVOS_APP.map(a => readFileSync(new URL(a, import.meta.url), 'utf8')).join('\n');
 
 test('todo tema do catálogo está no schema e tem CSS', () => {
     for (const [id] of TEMAS) {
@@ -34,7 +35,7 @@ test('as chaves que o código lê existem no schema', () => {
     // de schemas do GNOME, não do ATLAS: favoritos (prefs) e Não perturbe (dock)
     for (const externa of ['favorite-apps', 'show-banners'])
         chaves.add(externa);
-    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', '../app/paginas.js']) {
+    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', ...ARQUIVOS_APP]) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
             assert.ok(chaves.has(m[1]), `${arq} usa a chave ${m[1]}, que não está no schema`);
