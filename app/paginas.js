@@ -6,7 +6,6 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
-import {criarPrevia} from './previa.js';
 import {boneco, chama, cuco, esqueleto, fantasma, noel, pinguim, solArco} from '../atlas@joaovitor12j.dev/desenho.js';
 import {diasAte, lerLocais, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../atlas@joaovitor12j.dev/logica.js';
 
@@ -17,58 +16,9 @@ const POSICOES = [
 ];
 
 export class Paginas {
-    // Devolve as páginas na ordem da barra lateral: [{id, titulo, icone, page}].
+    // Páginas feitas com libadwaita (Ambientes, Widgets, Mascotes): [{id, titulo, icone, page}]. A Aparência fica em aparencia.js.
     criar(window, settings) {
-        const page = new Adw.PreferencesPage();
-
-        const previa = new Adw.PreferencesGroup({title: 'Prévia', description: 'Passe o mouse para ver a lente. Reflete o que o dock está usando.'});
-        page.add(previa);
-        previa.add(criarPrevia(settings));
-
-        const aparencia = new Adw.PreferencesGroup({title: 'Aparência'});
-        page.add(aparencia);
-        aparencia.add(this._combo(settings, 'tema', 'Tema', TEMAS.map(([v, n, d]) => [v, `${n}: ${d}`])));
-        aparencia.add(this._combo(settings, 'efeito-hover', 'Efeito ao passar o mouse', [
-            ['nenhum', 'Só a lente'], ['brilho', 'Brilho no fundo do ícone'], ['elevar', 'Ícone sobe'],
-        ]));
-        aparencia.add(this._combo(settings, 'estilo-indicador', 'Indicador de app aberto', [
-            ['ponto', 'Ponto'], ['barra', 'Barra'], ['nenhum', 'Nenhum'],
-        ]));
-        aparencia.add(this._combo(settings, 'animacao-abertura', 'Animação de abertura', [
-            ['nenhuma', 'Nenhuma'], ['deslizar', 'Deslizar da borda'], ['surgir', 'Surgir (fade)'],
-        ]));
-        aparencia.add(this._spin(settings, 'tamanho-icone', 'Tamanho dos ícones', 'Em pixels', 32, 96, 2, 0));
-
-        const lente = new Adw.PreferencesGroup({
-            title: 'Lente de ampliação',
-            description: 'Força 1,00 desliga a lente.',
-        });
-        page.add(lente);
-        lente.add(this._spin(settings, 'lente-forca', 'Força', 'Quanto o ícone sob o ponteiro cresce', 1, 2.5, 0.05, 2));
-        lente.add(this._spin(settings, 'lente-largura', 'Largura', 'Quantos vizinhos a lente alcança, em pixels', 30, 160, 5, 0));
-
-        const posicao = new Adw.PreferencesGroup({title: 'Posição'});
-        page.add(posicao);
-        posicao.add(this._combo(settings, 'posicao', 'Borda da tela', POSICOES));
-        posicao.add(this._spin(settings, 'margem', 'Margem da borda', 'Em pixels', 0, 60, 1, 0));
-        aparencia.add(this._switch(settings, 'no-overview', 'ATLAS na tela de aplicativos', 'Mantém a doca visível ao abrir todos os aplicativos e esconde o dock original do GNOME'));
-        aparencia.add(this._switch(settings, 'mostrar-icone-painel', 'Ícone no painel superior', 'Menu do ATLAS na barra de cima; também dá para ocultar pelo próprio menu'));
-        aparencia.add(this._switch(settings, 'previa-janelas', 'Prévia de janelas', 'Miniaturas das janelas ao parar o mouse num app aberto'));
-        posicao.add(this._switch(settings, 'reservar-espaco', 'Reservar espaço', 'Janelas maximizadas terminam acima da doca (não vale com auto-ocultar)'));
-        posicao.add(this._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'));
-        posicao.add(this._combo(settings, 'monitores', 'Telas', this._opcoesTelas()));
-
-        const rodape = new Adw.PreferencesGroup();
-        page.add(rodape);
-        const reset = new Gtk.Button({label: 'Restaurar padrões', halign: Gtk.Align.START, css_classes: ['destructive-action']});
-        reset.connect('clicked', () => {
-            for (const key of settings.settings_schema.list_keys())
-                settings.reset(key);
-        });
-        rodape.add(reset);
-
         return [
-            {id: 'dock', titulo: 'Dock', icone: 'preferences-desktop-appearance-symbolic', page},
             {id: 'ambientes', titulo: 'Ambientes', icone: 'view-grid-symbolic', page: this._paginaAmbientes(settings, window)},
             {id: 'widgets', titulo: 'Widgets', icone: 'view-pin-symbolic', page: this._paginaWidgets(settings)},
             {id: 'mascotes', titulo: 'Mascotes', icone: 'face-smile-symbolic', page: this._paginaMascotes(settings)},

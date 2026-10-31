@@ -1,84 +1,118 @@
-// Casca da janela: barra lateral com a marca e as seções, conteúdo à direita (Adw.NavigationSplitView).
+// Janela "Palco": cabeçalho, prévia ao vivo fixa no topo, abas com busca e o conteúdo da aba.
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
+import {criarAparencia} from './aparencia.js';
 import {Paginas} from './paginas.js';
-import {lerVersao} from './config.js';
+import {criarPalco} from './previa.js';
 
-const SITE = 'https://atlas-dock-sage.vercel.app';
+const PRESERVAR_AO_RESTAURAR = ['ambientes', 'ambiente-atual'];
 
-export function criarJanela(app, settings, paginaInicial) {
-    const win = new Adw.ApplicationWindow({application: app, title: 'ATLAS', default_width: 980, default_height: 720});
-    const secoes = [...new Paginas().criar(win, settings), secaoSobre()];
-
-    const split = new Adw.NavigationSplitView({min_sidebar_width: 200, max_sidebar_width: 240});
-    const conteudo = new Adw.NavigationPage({title: 'ATLAS', tag: 'conteudo'});
-    const tituloConteudo = new Adw.WindowTitle({title: ''});
-    const pilha = new Gtk.Stack({transition_type: Gtk.StackTransitionType.CROSSFADE, css_classes: ['atlas-conteudo']});
-    for (const s of secoes)
-        pilha.add_named(s.page, s.id);
-
-    const barraConteudo = new Adw.HeaderBar({title_widget: tituloConteudo, show_title: true});
-    const vistaConteudo = new Adw.ToolbarView({content: pilha});
-    vistaConteudo.add_top_bar(barraConteudo);
-    conteudo.child = vistaConteudo;
-    split.content = conteudo;
-
-    const lista = new Gtk.ListBox({selection_mode: Gtk.SelectionMode.SINGLE, css_classes: ['navigation-sidebar']});
-    for (const s of secoes) {
-        const linha = new Adw.ActionRow({title: s.titulo, activatable: true});
-        linha.add_prefix(new Gtk.Image({icon_name: s.icone}));
-        linha._id = s.id;
-        lista.append(linha);
+// Mostra só o que casa com `q` (texto minúsculo) e devolve quantas linhas/cartões ficaram visíveis.
+function filtrar(w, q, forcar = false) {
+    let n = 0;
+    if (w instanceof Adw.PreferencesGroup) {
+        const proprio = `${w.title} ${w.description}`.toLowerCase().includes(q);
+        for (let f = w.get_first_child(); f; f = f.get_next_sibling())
+            n += filtrar(f, q, forcar || proprio);
+        w.visible = !q || proprio || n > 0;
+        return q && proprio && n === 0 ? 1 : n;
     }
-    const ir = id => {
-        const s = secoes.find(x => x.id === id) ?? secoes[0];
-        pilha.visible_child_name = s.id;
-        tituloConteudo.title = s.titulo;
-        let i = 0;
-        for (let l = lista.get_row_at_index(i); l; l = lista.get_row_at_index(++i))
-            if (l._id === s.id)
-                lista.select_row(l);
-        split.show_content = true;
-    };
-    lista.connect('row-selected', (_l, linha) => {
-        if (linha)
-            ir(linha._id);
-    });
-
-    const marca = new Gtk.Box({orientation: Gtk.Orientation.HORIZONTAL, spacing: 10, css_classes: ['atlas-marca']});
-    marca.append(new Gtk.Image({icon_name: 'dev.joaovitor12j.Atlas', pixel_size: 36}));
-    const nomes = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, valign: Gtk.Align.CENTER});
-    nomes.append(new Gtk.Label({label: 'ATLAS', xalign: 0, css_classes: ['atlas-marca-nome']}));
-    nomes.append(new Gtk.Label({label: `v${lerVersao()}`, xalign: 0, css_classes: ['atlas-marca-versao']}));
-    marca.append(nomes);
-
-    const lateral = new Adw.NavigationPage({title: 'ATLAS', tag: 'lateral'});
-    const caixa = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, css_classes: ['atlas-lateral']});
-    caixa.append(marca);
-    caixa.append(new Gtk.ScrolledWindow({child: lista, vexpand: true, hscrollbar_policy: Gtk.PolicyType.NEVER}));
-    lateral.child = caixa;
-    split.sidebar = lateral;
-
-    // Abaixo de ~640 px a barra lateral recolhe e vira uma página à parte.
-    const bp = new Adw.Breakpoint({condition: Adw.BreakpointCondition.parse('max-width: 640sp')});
-    bp.add_setter(split, 'collapsed', true);
-    win.add_breakpoint(bp);
-    win.set_size_request(360, 400);
-    win.content = split;
-
-    ir(paginaInicial ?? secoes[0].id);
-    return {win, ir};
+    if (w instanceof Adw.PreferencesRow) {
+        const texto = `${w.title} ${w.subtitle ?? ''}`.toLowerCase();
+        w.visible = !q || forcar || texto.includes(q);
+        return w.visible ? 1 : 0;
+    }
+    for (let f = w.get_first_child(); f; f = f.get_next_sibling())
+        n += filtrar(f, q, forcar);
+    return n;
 }
 
-function secaoSobre() {
-    const page = new Adw.PreferencesPage();
-    const g = new Adw.PreferencesGroup({title: 'ATLAS', description: 'Ambientes, Tarefas, Lançadores, Aplicativos e Sistema.'});
-    page.add(g);
-    g.add(new Adw.ActionRow({title: 'Versão', subtitle: lerVersao()}));
-    g.add(new Adw.ActionRow({title: 'Compatibilidade', subtitle: 'Testado só no GNOME Shell 46'}));
-    const site = new Adw.ActionRow({title: 'Página do projeto', subtitle: SITE, activatable: true});
-    site.add_suffix(new Gtk.Image({icon_name: 'adw-external-link-symbolic'}));
-    site.connect('activated', () => Gtk.show_uri(null, SITE, 0));
-    g.add(site);
-    return {id: 'sobre', titulo: 'Sobre', icone: 'help-about-symbolic', page};
+export function criarJanela(app, settings, paginaInicial) {
+    const win = new Adw.ApplicationWindow({application: app, title: 'ATLAS', default_width: 1120, default_height: 860});
+    win.set_size_request(760, 600);
+    const p = new Paginas();
+    const abas = [
+        {id: 'aparencia', titulo: 'Aparência', icone: 'weather-clear-symbolic', page: criarAparencia(settings, p)},
+        ...p.criar(win, settings).map(s => ({...s, icone: {ambientes: 'view-grid-symbolic', widgets: 'list-add-symbolic', mascotes: 'face-smile-symbolic'}[s.id]})),
+    ];
+
+    // Cabeçalho
+    const marca = new Gtk.Box({spacing: 10, valign: Gtk.Align.CENTER});
+    marca.append(new Gtk.Label({label: 'A', halign: Gtk.Align.CENTER, valign: Gtk.Align.CENTER, css_classes: ['atlas-marca-icone'], width_request: 20, height_request: 20}));
+    marca.append(new Gtk.Label({label: 'ATLAS', css_classes: ['atlas-marca']}));
+    const cabecalho = new Adw.HeaderBar({title_widget: marca});
+    const restaurar = new Gtk.Button({label: 'Restaurar padrões', css_classes: ['atlas-fantasma']});
+    cabecalho.pack_end(restaurar);
+    restaurar.connect('clicked', () => {
+        const d = new Adw.AlertDialog({heading: 'Restaurar padrões?', body: 'As opções visuais e de comportamento voltam ao original. Seus ambientes são mantidos.'});
+        d.add_response('cancelar', 'Cancelar');
+        d.add_response('restaurar', 'Restaurar');
+        d.set_response_appearance('restaurar', Adw.ResponseAppearance.DESTRUCTIVE);
+        d.connect('response', (_d, r) => {
+            if (r !== 'restaurar')
+                return;
+            for (const key of settings.settings_schema.list_keys())
+                if (!PRESERVAR_AO_RESTAURAR.includes(key))
+                    settings.reset(key);
+        });
+        d.present(win);
+    });
+
+    // Conteúdo da aba (com a mensagem de busca vazia)
+    const pilha = new Gtk.Stack({transition_type: Gtk.StackTransitionType.CROSSFADE, vexpand: true});
+    for (const a of abas)
+        pilha.add_named(a.page, a.id);
+    const vazio = new Gtk.Label({css_classes: ['atlas-vazio'], visible: false, valign: Gtk.Align.START});
+    const conteudo = new Gtk.Overlay({child: pilha});
+    conteudo.add_overlay(vazio);
+
+    // Abas e busca
+    const barra = new Gtk.Box({spacing: 4, css_classes: ['atlas-abas']});
+    const botoes = abas.map(a => {
+        const b = new Gtk.ToggleButton({css_classes: ['atlas-aba']});
+        const c = new Gtk.Box({spacing: 8});
+        c.append(new Gtk.Image({icon_name: a.icone}));
+        c.append(new Gtk.Label({label: a.titulo}));
+        b.child = c;
+        barra.append(b);
+        return b;
+    });
+    botoes.slice(1).forEach(b => b.set_group(botoes[0]));
+    barra.append(new Gtk.Box({hexpand: true}));
+    const busca = new Gtk.SearchEntry({placeholder_text: 'Buscar opção', css_classes: ['atlas-busca'], valign: Gtk.Align.CENTER});
+    barra.append(busca);
+
+    let atual = abas[0];
+    const aplicarBusca = () => {
+        const q = busca.text.trim().toLowerCase();
+        const n = atual._filtrar ? atual.page._filtrar(q) : filtrar(atual.page, q);
+        vazio.visible = q.length > 0 && n === 0;
+        vazio.label = `Nada encontrado para “${busca.text.trim()}”. Tente outro termo.`;
+    };
+    const ir = id => {
+        const alvo = abas.find(a => a.id === (id === 'dock' ? 'aparencia' : id)) ?? abas[0];
+        atual = alvo;
+        atual._filtrar = typeof alvo.page._filtrar === 'function';
+        pilha.visible_child_name = alvo.id;
+        const b = botoes[abas.indexOf(alvo)];
+        if (!b.active)
+            b.active = true;
+        aplicarBusca();
+    };
+    botoes.forEach((b, i) => b.connect('toggled', () => {
+        if (b.active)
+            ir(abas[i].id);
+    }));
+    busca.connect('search-changed', aplicarBusca);
+
+    const corpo = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL});
+    corpo.append(criarPalco(settings));
+    corpo.append(barra);
+    corpo.append(conteudo);
+    const vista = new Adw.ToolbarView({content: corpo});
+    vista.add_top_bar(cabecalho);
+    win.content = vista;
+
+    ir(paginaInicial ?? abas[0].id);
+    return {win, ir};
 }

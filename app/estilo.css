@@ -1,49 +1,79 @@
-/* Identidade do app: carta náutica noturna (site/DESIGN.md). libadwaita 1.5: cores nomeadas, sem variáveis CSS. */
-@define-color window_bg_color #0F1B28;
-@define-color window_fg_color #DCE7EE;
-@define-color view_bg_color #0F1B28;
-@define-color view_fg_color #DCE7EE;
-@define-color headerbar_bg_color #0F1B28;
-@define-color headerbar_fg_color #DCE7EE;
-@define-color headerbar_border_color alpha(#7899B8, 0.22);
-@define-color sidebar_bg_color #0B1520;
-@define-color sidebar_fg_color #DCE7EE;
-@define-color sidebar_border_color alpha(#7899B8, 0.22);
-@define-color card_bg_color #16283A;
-@define-color card_fg_color #DCE7EE;
-@define-color popover_bg_color #16283A;
-@define-color popover_fg_color #DCE7EE;
-@define-color dialog_bg_color #16283A;
-@define-color dialog_fg_color #DCE7EE;
-@define-color accent_bg_color #E8A33D;
-@define-color accent_fg_color #0F1B28;
-@define-color accent_color #E8A33D;
+/* Identidade "Palco" (docs/design/app-configuracao/ESPECIFICACAO.md). libadwaita 1.5: cores nomeadas. */
+@define-color window_bg_color #0c1a1f;
+@define-color window_fg_color #e9f3f1;
+@define-color view_bg_color #0c1a1f;
+@define-color view_fg_color #e9f3f1;
+@define-color headerbar_bg_color #0c1a1f;
+@define-color headerbar_fg_color #e9f3f1;
+@define-color headerbar_border_color transparent;
+@define-color headerbar_backdrop_color #0c1a1f;
+@define-color card_bg_color #13262d;
+@define-color card_fg_color #e9f3f1;
+@define-color popover_bg_color #1a323a;
+@define-color popover_fg_color #e9f3f1;
+@define-color dialog_bg_color #13262d;
+@define-color dialog_fg_color #e9f3f1;
+@define-color accent_bg_color #ff6b4a;
+@define-color accent_fg_color #2a0d06;
+@define-color accent_color #ff6b4a;
+@define-color success_color #5fd6a8;
 
-window, .atlas-conteudo {
-    font-family: "Instrument Sans", "Cantarell", sans-serif;
-}
+window { font-family: "Hanken Grotesk", "Cantarell", sans-serif; }
+headerbar { box-shadow: none; min-height: 48px; }
 
-/* Grade de coordenadas atrás do conteúdo: linhas finas de 24 px e mais marcadas a cada 120 px. */
-.atlas-conteudo {
-    background-color: @window_bg_color;
-    background-image:
-        linear-gradient(to right, alpha(#7899B8, 0.10) 1px, transparent 1px),
-        linear-gradient(to bottom, alpha(#7899B8, 0.10) 1px, transparent 1px);
-    background-size: 120px 120px, 120px 120px;
-}
-.atlas-conteudo preferencespage, .atlas-conteudo scrolledwindow { background: transparent; }
+/* Cabeçalho */
+.atlas-marca { font-family: "Sora", "Cantarell", sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 4px; }
+.atlas-marca-icone { background: #ff6b4a; color: #2a0d06; border-radius: 6px; min-width: 20px; min-height: 20px; font-weight: 800; font-size: 11px; letter-spacing: 0; }
+.atlas-fantasma { background: none; border: 1px solid #25424b; color: #9bb7b6; border-radius: 9px; padding: 5px 12px; font-size: 12px; box-shadow: none; }
+.atlas-fantasma:hover { border-color: #31565f; color: #e9f3f1; }
 
-.atlas-marca { padding: 18px 16px 10px 16px; }
-.atlas-marca-nome { font-family: "Bricolage Grotesque", "Cantarell", sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 3px; }
-.atlas-marca-versao { font-family: "Spline Sans Mono", monospace; font-size: 11px; opacity: 0.6; }
+/* Palco */
+.atlas-palco { border-radius: 16px; margin: 0 16px; }
+.atlas-previa { border-radius: 16px; }
+.atlas-palco-rotulo { font-family: "Sora", "Cantarell", sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 2px; color: #9bb7b6; margin: 14px 18px; }
+.atlas-palco-dica { font-size: 12px; color: #9bb7b6; margin: 14px 18px; }
 
-.atlas-lateral list { background: transparent; }
-.atlas-lateral row { border-radius: 8px; margin: 1px 8px; }
-.atlas-lateral row:selected { background-color: alpha(#E8A33D, 0.16); color: #E8A33D; }
+/* Abas e busca */
+.atlas-abas { margin: 14px 16px 0 16px; border-bottom: 1px solid #25424b; }
+.atlas-aba { background: none; box-shadow: none; border: none; border-radius: 10px 10px 0 0; padding: 8px 14px; color: #9bb7b6; font-weight: 600; border-bottom: 2px solid transparent; }
+.atlas-aba:hover { color: #e9f3f1; }
+.atlas-aba:checked { background: #13262d; color: #e9f3f1; border-bottom-color: #ff6b4a; }
+.atlas-busca { background: #13262d; border: 1px solid #25424b; border-radius: 12px; color: #e9f3f1; min-width: 240px; margin-bottom: 6px; }
 
-.atlas-titulo-pagina { font-family: "Bricolage Grotesque", "Cantarell", sans-serif; font-weight: 700; }
+/* Cartões */
+.atlas-corpo { padding: 16px; }
+.atlas-cartao { background: #13262d; border: 1px solid #25424b; border-radius: 14px; padding: 18px 18px 16px 18px; }
+.atlas-cartao-titulo { font-family: "Sora", "Cantarell", sans-serif; font-weight: 700; font-size: 14px; }
+.atlas-cartao-sub { font-size: 12px; color: #9bb7b6; margin-bottom: 8px; }
+.atlas-rotulo { font-weight: 700; font-size: 13px; }
+.atlas-valor { font-weight: 700; font-size: 13px; min-width: 56px; }
+.atlas-vazio { color: #9bb7b6; padding: 40px; }
 
-/* Traço: bordas de 1 px, cantos de 12 px nos cartões, sem sombra. */
-preferencesgroup > box > box > list, .boxed-list { border: 1px solid alpha(#7899B8, 0.22); border-radius: 12px; box-shadow: none; }
+/* Seletor visual de tema */
+.atlas-tema { background: #1a323a; border: 2px solid transparent; border-radius: 12px; padding: 8px; box-shadow: none; color: #e9f3f1; }
+.atlas-tema:hover { background: #20404a; }
+.atlas-tema:checked { border-color: #ff6b4a; background: alpha(#ff6b4a, 0.16); }
+.atlas-tema-nome { font-weight: 700; font-size: 13px; }
+.atlas-tema-desc { font-size: 11.5px; color: #9bb7b6; }
 
-.atlas-previa { border: 1px solid alpha(#7899B8, 0.22); border-radius: 12px; }
+/* Segmentado */
+.atlas-seg { background: #0c1a1f; border: 1px solid #31565f; border-radius: 10px; padding: 3px; }
+.atlas-seg button { background: none; box-shadow: none; border: none; border-radius: 8px; color: #e9f3f1; font-weight: 600; padding: 6px 14px; min-height: 0; }
+.atlas-seg button:checked { background: #ff6b4a; color: #2a0d06; }
+.atlas-seg button:hover:not(:checked) { background: #1a323a; }
+
+scale trough { background: #31565f; min-height: 4px; }
+scale trough highlight { background: #ff6b4a; }
+scale slider { background: #ff6b4a; border: 2px solid #2a0d06; min-width: 14px; min-height: 14px; }
+
+.atlas-mini-tela { border-radius: 12px; }
+
+/* Listas e linhas dentro dos cartões (páginas feitas com libadwaita) */
+.atlas-cartao list, .atlas-cartao .boxed-list { background: transparent; border: none; box-shadow: none; }
+.atlas-cartao row { background: transparent; border-top: 1px solid #25424b; }
+.atlas-cartao row:first-child { border-top: none; }
+preferencesgroup > box > box > list, .boxed-list { border: 1px solid #25424b; border-radius: 14px; box-shadow: none; }
+preferencespage { background: transparent; }
+preferencesgroup > box > label.heading, preferencesgroup > box > box > label.heading { font-family: "Sora", "Cantarell", sans-serif; font-weight: 700; }
+switch:checked { background: #ff6b4a; }
+switch:checked slider { background: #2a0d06; }

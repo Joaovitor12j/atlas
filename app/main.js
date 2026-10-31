@@ -1,6 +1,6 @@
 #!/usr/bin/env -S gjs -m
 // App de configuração do ATLAS (dev.joaovitor12j.Atlas). Instância única: abrir de novo traz a janela existente.
-// Uso: main.js [--pagina=dock|ambientes|widgets|mascotes|sobre]
+// Uso: main.js [--pagina=aparencia|ambientes|widgets|mascotes]
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
