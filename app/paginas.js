@@ -5,24 +5,10 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
-import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 import {boneco, chama, cuco, esqueleto, fantasma, noel, pinguim, solArco} from '../atlas@joaovitor12j.dev/desenho.js';
-import {diasAte, lerLocais, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../atlas@joaovitor12j.dev/logica.js';
-
-const POSICOES = [
-    ['baixo', 'Embaixo'],
-    ['esquerda', 'Esquerda'],
-    ['direita', 'Direita'],
-];
+import {lerLocais, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../atlas@joaovitor12j.dev/logica.js';
 
 export class Paginas {
-    // Páginas feitas com libadwaita (Mascotes): [{id, titulo, icone, page}]. As outras abas ficam em aparencia.js, ambientes.js e widgets.js.
-    criar(window, settings) {
-        return [
-            {id: 'mascotes', titulo: 'Mascotes', icone: 'face-smile-symbolic', page: this._paginaMascotes(settings)},
-        ];
-    }
-
     // Linha com lista de opções ligada a uma chave string.
     _combo(settings, key, title, opcoes) {
         const row = new Adw.ComboRow({title, model: Gtk.StringList.new(opcoes.map(o => o[1]))});
@@ -39,16 +25,10 @@ export class Paginas {
     }
 
     // ----- Mascotes -----
-    // A aba cresce com o catálogo: um grupo por categoria (só os que têm mascote) e uma linha por mascote, com a
-    // miniatura, o interruptor no cabeçalho e as opções dentro da linha, que só abre quando você quer mexer.
+    // Dados da aba Mascotes (app/mascotes.js): o desenho parado de cada mascote e as linhas de opções que ele tem
+    // (cada função recebe algo com `add_row`).
 
-    _paginaMascotes(settings) {
-        const page = new Adw.PreferencesPage({title: 'Mascotes', icon_name: 'face-smile-symbolic'});
-        const intro = new Adw.PreferencesGroup({
-            description: 'Aparecem em cima da doca, fazem o que têm de fazer e somem. Todos começam desligados; ligado e parado, o custo é quase zero. Não aparecem com a doca escondida, no Overview nem com o Não perturbe ligado.',
-        });
-        page.add(intro);
-
+    _mascotesDados(settings) {
         // miniatura de cada mascote (o desenho de verdade, num quadro parado) e as opções que ele tem
         const miniaturas = {
             cuco: (cr, w, h) => cuco(cr, w, h, quadroCuco(900, 1)),
@@ -75,38 +55,7 @@ export class Paginas {
             ], 'Temperatura máxima (°C)', 'Aparece quando a temperatura cai a este valor', -30, 35),
         };
 
-        for (const [catId, titulo] of CATEGORIAS_MASCOTE) {
-            const daCategoria = MASCOTES.filter(m => m[3] === catId);
-            if (!daCategoria.length)
-                continue;
-            const grupo = new Adw.PreferencesGroup({title: titulo});
-            page.add(grupo);
-            for (const [id, nome, desc] of daCategoria) {
-                const ligado = settings.get_strv('mascotes-ativos').includes(id);
-                const mudar = ativo => {
-                    const lista = settings.get_strv('mascotes-ativos').filter(x => x !== id);
-                    if (ativo)
-                        lista.push(id);
-                    settings.set_strv('mascotes-ativos', lista);
-                };
-                let linha;
-                if (opcoes[id]) {
-                    linha = new Adw.ExpanderRow({title: nome, subtitle: desc, show_enable_switch: true, enable_expansion: ligado});
-                    linha.connect('notify::enable-expansion', () => mudar(linha.enable_expansion));
-                    opcoes[id](linha);
-                } else {
-                    linha = new Adw.SwitchRow({title: nome, subtitle: desc, active: ligado});
-                    linha.connect('notify::active', () => mudar(linha.active));
-                }
-                if (miniaturas[id]) {
-                    const area = new Gtk.DrawingArea({content_width: 40, content_height: 50, valign: Gtk.Align.CENTER, margin_top: 4, margin_bottom: 4});
-                    area.set_draw_func((_a, cr, w, h) => miniaturas[id](cr, w, h));
-                    linha.add_prefix(area);
-                }
-                grupo.add(linha);
-            }
-        }
-        return page;
+        return {miniaturas, opcoes};
     }
 
     _opcoesCuco(settings, linha) {
@@ -170,7 +119,7 @@ export class Paginas {
         const testar = new Adw.ActionRow({title: 'Testar agora', subtitle: 'Faz o movimento aparecer na hora, com qualquer temperatura'});
         const caixa = new Gtk.Box({spacing: 6, valign: Gtk.Align.CENTER});
         for (const [mov, nome] of movimentos) {
-            const b = new Gtk.Button({label: nome.split(' ')[0], tooltip_text: nome});
+            const b = new Gtk.Button({label: nome, tooltip_text: nome});
             b.connect('clicked', () => settings.set_string('mascote-teste', `${id}=${mov}:${GLib.get_monotonic_time()}`));
             caixa.append(b);
         }
