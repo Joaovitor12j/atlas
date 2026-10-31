@@ -1,6 +1,7 @@
 // Janela "Palco": cabeçalho, prévia ao vivo fixa no topo, abas com busca e o conteúdo da aba.
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
+import {criarAmbientes} from './ambientes.js';
 import {criarAparencia} from './aparencia.js';
 import {criarWidgets} from './widgets.js';
 import {Paginas} from './paginas.js';
@@ -35,7 +36,7 @@ export function criarJanela(app, settings, paginaInicial) {
     const feitas = Object.fromEntries(p.criar(win, settings).map(s => [s.id, s.page]));
     const abas = [
         {id: 'aparencia', titulo: 'Aparência', icone: 'weather-clear-symbolic', page: criarAparencia(settings, p)},
-        {id: 'ambientes', titulo: 'Ambientes', icone: 'view-grid-symbolic', page: feitas.ambientes},
+        {id: 'ambientes', titulo: 'Ambientes', icone: 'view-grid-symbolic', page: criarAmbientes(settings, p, win)},
         {id: 'widgets', titulo: 'Widgets', icone: 'list-add-symbolic', page: criarWidgets(settings, p)},
         {id: 'mascotes', titulo: 'Mascotes', icone: 'face-smile-symbolic', page: feitas.mascotes},
     ];
