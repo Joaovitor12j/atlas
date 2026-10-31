@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 // Tudo o que o dock importa; extension.js e os arquivos das preferências ficam de fora.
-const FORA = new Set(['extension.js', 'prefs.js', 'abrir-prefs.js']);
+const FORA = new Set(['extension.js', 'prefs.js']);
 
 function apagarPasta(pasta) {
     try {
