@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from './logica.js';
+import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escalaLente, escolherAmbiente, normalizarAmbientes} from './logica.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {pararPonte} from './ponte.js';
 import {pararClima} from './clima.js';
@@ -1166,7 +1166,7 @@ class DockView {
                 if (it.sep)
                     return;
                 const d = along - center;
-                const target = inside ? 1 + (c.maxScale - 1) * Math.exp(-(d * d) / (2 * sigma * sigma)) : 1;
+                const target = inside ? escalaLente(d, c.maxScale, sigma) : 1;
                 const diff = target - it.s;
                 if (Math.abs(diff) > 0.003) {
                     it.s += diff * c.smoothing;

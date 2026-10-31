@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {CORES_TEMA, MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
@@ -59,5 +59,17 @@ test('todo mascote de horário sazonal tem as três chaves no schema', () => {
     for (const id of ['fantasma', 'esqueleto', 'noel', 'boneco']) {
         for (const sufixo of ['intervalo', 'das', 'ate'])
             assert.ok(schema.includes(`<key name="${id}-${sufixo}"`), `schema sem ${id}-${sufixo}`);
+    }
+});
+
+test('as cores de tema do catálogo (prévia) batem com temas.css', () => {
+    assert.deepEqual(Object.keys(CORES_TEMA).sort(), TEMAS.map(t => t[0]).sort());
+    for (const [id, c] of Object.entries(CORES_TEMA)) {
+        const bloco = re => css.match(new RegExp(`\\.atlas-${id} \\.atlas-${re} \\{([^}]*)\\}`))?.[1] ?? '';
+        const bg = bloco('bg');
+        assert.ok(bg.includes(`background-color: ${c.fundo};`), `fundo de ${id}`);
+        assert.ok(bg.includes(c.borda), `borda de ${id}`);
+        assert.ok(bloco('dot').includes(c.ponto), `ponto de ${id}`);
+        assert.ok(bloco('sep').includes(c.sep), `separador de ${id}`);
     }
 });

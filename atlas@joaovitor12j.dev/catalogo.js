@@ -11,6 +11,16 @@ export const TEMAS = [
     ['natal', 'Natal', 'Vinho e verde-pinheiro'],
 ];
 
+// Cores do fundo do dock por tema (as mesmas de temas.css; tests/estrutura.test.js confere). Usadas na prévia das prefs.
+export const CORES_TEMA = {
+    noite: {fundo: 'rgba(28, 34, 48, 0.92)', borda: 'rgba(255, 255, 255, 0.12)', ponto: '#3fb8a8', sep: 'rgba(255, 255, 255, 0.18)'},
+    papel: {fundo: '#f6f1e5', borda: '#bdb298', ponto: '#b8741a', sep: '#bdb298'},
+    cristal: {fundo: 'rgba(255, 255, 255, 0.18)', borda: 'rgba(255, 255, 255, 0.5)', ponto: '#ffffff', sep: 'rgba(255, 255, 255, 0.45)'},
+    neon: {fundo: 'rgba(8, 6, 18, 0.94)', borda: '#19e6ff', ponto: '#ff2bd6', sep: 'rgba(25, 230, 255, 0.55)'},
+    halloween: {fundo: 'rgba(36, 18, 52, 0.94)', borda: '#ff7a1a', ponto: '#ff7a1a', sep: 'rgba(255, 122, 26, 0.5)'},
+    natal: {fundo: 'rgba(70, 16, 28, 0.94)', borda: '#2f8f4e', ponto: '#f4d35e', sep: 'rgba(47, 143, 78, 0.8)'},
+};
+
 // [id, nome, descrição, tem versão larga?]
 export const WIDGETS = [
     ['relogio', 'Relógio', 'De ponteiros, ou digital na versão larga; o clique abre o calendário do mês', true],
