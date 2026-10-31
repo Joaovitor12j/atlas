@@ -8,7 +8,7 @@ mkdir -p "$(dirname "$DEST")"
 ln -sfn "$SRC" "$DEST"
 glib-compile-schemas "$SRC/schemas"
 # Ícone e lançador do app de preferências (menu de aplicativos, Alt+Tab, barra de tarefas)
-APP_ID="dev.joaovitor12j.AtlasPrefs"
+APP_ID="dev.joaovitor12j.Atlas"
 ICONS="$HOME/.local/share/icons/hicolor"
 mkdir -p "$ICONS/scalable/apps" "$HOME/.local/share/applications"
 cp "$SRC/icons/atlas.svg" "$ICONS/scalable/apps/$APP_ID.svg"
@@ -16,7 +16,7 @@ cat > "$HOME/.local/share/applications/$APP_ID.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=ATLAS
-Comment=Preferências da dock ATLAS
+Comment=Configuração da dock ATLAS
 Exec=$(dirname "$SRC")/prefs.sh
 Icon=$APP_ID
 Terminal=false

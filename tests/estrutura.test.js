@@ -9,6 +9,7 @@ const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gs
 const css = readFileSync(new URL('temas.css', raiz), 'utf8');
 const widgetsJs = readFileSync(new URL('widgets.js', raiz), 'utf8');
 const mascotesJs = readFileSync(new URL('mascotes.js', raiz), 'utf8');
+const paginasJs = readFileSync(new URL('../app/paginas.js', import.meta.url), 'utf8');
 
 test('todo tema do catálogo está no schema e tem CSS', () => {
     for (const [id] of TEMAS) {
@@ -33,7 +34,7 @@ test('as chaves que o código lê existem no schema', () => {
     // de schemas do GNOME, não do ATLAS: favoritos (prefs) e Não perturbe (dock)
     for (const externa of ['favorite-apps', 'show-banners'])
         chaves.add(externa);
-    for (const arq of ['dock.js', 'widgets.js', 'prefs.js', 'mascotes.js']) {
+    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', '../app/paginas.js']) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
             assert.ok(chaves.has(m[1]), `${arq} usa a chave ${m[1]}, que não está no schema`);
@@ -47,8 +48,7 @@ test('todo mascote do catálogo tem implementação em mascotes.js', () => {
 });
 
 test('as chaves de mascotes lidas pelo prefs e pelo motor existem no schema', () => {
-    const prefsJs = readFileSync(new URL('prefs.js', raiz), 'utf8');
-    const chaves = [...(mascotesJs + prefsJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|calor|frio|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
+    const chaves = [...(mascotesJs + paginasJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|calor|frio|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
     assert.ok(chaves.length > 0);
     const rotulos = new Set(['mascote-quadro', 'mascote-memoria', 'mascote-clima']); // nomes de linha do perf.js, não chaves
     for (const chave of new Set(chaves).difference(rotulos))

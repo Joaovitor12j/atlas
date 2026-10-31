@@ -1478,25 +1478,19 @@ export class Dock {
     }
 
     // Abre as preferências: pelo Shell quando ele já conhece o prefs.js; senão, pelo prefs.sh do projeto.
+    // Abre o app de configuração (app/main.js, ao lado da pasta da extensão; segue o symlink do install.sh).
     _openPrefs() {
-        const uuid = this._dir().get_basename();
-        try {
-            if (Main.extensionManager.lookup(uuid)?.hasPrefs) {
-                Main.extensionManager.openExtensionPrefs(uuid, '', {});
-                return;
-            }
-        } catch (e) {
-            console.error(`[atlas] openExtensionPrefs falhou: ${e}`);
-        }
         try {
             const dir = this._dir();
             const info = dir.query_info('standard::symlink-target', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
             const alvo = info.get_symlink_target() ?? dir.get_path();
-            const sh = Gio.File.new_for_path(alvo).get_parent().get_child('prefs.sh');
-            if (sh.query_exists(null))
-                Gio.Subprocess.new([sh.get_path()], Gio.SubprocessFlags.NONE);
+            const main = Gio.File.new_for_path(alvo).get_parent().get_child('app').get_child('main.js');
+            if (main.query_exists(null))
+                Gio.Subprocess.new(['gjs', '-m', main.get_path()], Gio.SubprocessFlags.NONE);
+            else if (Main.extensionManager.lookup(dir.get_basename())?.hasPrefs)
+                Main.extensionManager.openExtensionPrefs(dir.get_basename(), '', {});
             else
-                Main.notify('ATLAS', 'Reinicie a sessão para abrir as configurações pelo menu de extensões.');
+                Main.notify('ATLAS', 'App de configuração não encontrado.');
         } catch (e) {
             console.error(`[atlas] não consegui abrir as preferências: ${e}`);
         }
