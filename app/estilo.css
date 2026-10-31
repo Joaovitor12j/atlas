@@ -45,3 +45,5 @@ window, .atlas-conteudo {
 
 /* Traço: bordas de 1 px, cantos de 12 px nos cartões, sem sombra. */
 preferencesgroup > box > box > list, .boxed-list { border: 1px solid alpha(#7899B8, 0.22); border-radius: 12px; box-shadow: none; }
+
+.atlas-previa { border: 1px solid alpha(#7899B8, 0.22); border-radius: 12px; }

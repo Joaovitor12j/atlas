@@ -6,6 +6,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {CATEGORIAS_MASCOTE, MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {criarPrevia} from './previa.js';
 import {boneco, chama, cuco, esqueleto, fantasma, noel, pinguim, solArco} from '../atlas@joaovitor12j.dev/desenho.js';
 import {diasAte, lerLocais, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../atlas@joaovitor12j.dev/logica.js';
 
@@ -19,6 +20,10 @@ export class Paginas {
     // Devolve as páginas na ordem da barra lateral: [{id, titulo, icone, page}].
     criar(window, settings) {
         const page = new Adw.PreferencesPage();
+
+        const previa = new Adw.PreferencesGroup({title: 'Prévia', description: 'Passe o mouse para ver a lente. Reflete o que o dock está usando.'});
+        page.add(previa);
+        previa.add(criarPrevia(settings));
 
         const aparencia = new Adw.PreferencesGroup({title: 'Aparência'});
         page.add(aparencia);
