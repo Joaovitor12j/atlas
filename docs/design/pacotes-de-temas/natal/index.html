@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATLAS · Pacote Natal</title>
+<style>
+:root{--bg:#14121c;--card:#1d1a29;--card2:#272337;--ink:#f4efe6;--mut:#b7b0c6;--acc:#ffb454;--line:#38324b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Hanken Grotesk",system-ui,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:40px 20px 90px}
+h1{font:700 34px/1.15 "Sora","Hanken Grotesk",system-ui,sans-serif;margin:0 0 8px;letter-spacing:-.01em}
+h2{font:700 24px/1.2 "Sora","Hanken Grotesk",system-ui,sans-serif;margin:56px 0 6px}
+h3{font-size:17px;margin:0 0 4px}
+p{margin:0 0 12px;color:var(--mut);max-width:70ch}.lead{font-size:18px;color:var(--ink)}
+.tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+button{font:inherit;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;min-height:40px}
+button:hover{border-color:var(--acc)}button[aria-pressed="true"]{background:var(--acc);color:#2a1a10;border-color:var(--acc);font-weight:700}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+dl{margin:12px 0 0;display:grid;grid-template-columns:110px 1fr;gap:4px 12px;font-size:14px}dt{color:var(--acc);font-weight:700}dd{margin:0;color:var(--mut)}
+.chips{display:flex;gap:6px;margin-top:10px}.chip{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.3)}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}th{color:var(--acc)}td{color:var(--mut)}
+ul{color:var(--mut);padding-left:20px}
+
+/* ===== docas ===== */
+.cena{position:relative;border-radius:14px;overflow:hidden;padding:130px 24px 34px;margin-top:12px}
+.dockw{position:relative;max-width:820px;margin:0 auto}
+.dock{position:relative;display:flex;align-items:center;gap:14px;padding:14px 18px;width:100%}
+.dock>*{position:relative;z-index:2}
+.fx{position:absolute;inset:0;overflow:hidden;z-index:1;pointer-events:none;border-radius:inherit}
+.passeio{position:absolute;left:0;bottom:calc(100% - 8px);width:112px;z-index:3;animation:passa 16s linear infinite;will-change:left}
+.passeio.parado{animation:none;left:62%}
+.passeio .gato{width:112px}
+@keyframes passa{0%{left:2%;transform:scaleX(1)}49.5%{left:calc(100% - 118px);transform:scaleX(1)}50%{left:calc(100% - 118px);transform:scaleX(-1)}99.5%{left:2%;transform:scaleX(-1)}100%{left:2%;transform:scaleX(1)}}
+.tile{width:58px;height:58px;display:grid;place-items:center;flex:none;position:relative}
+.tile svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sep{width:1px;align-self:stretch;margin:6px 2px}
+.w{height:58px;border-radius:14px;display:flex;align-items:center;gap:10px;padding:0 12px;flex:none}
+.w svg.rel{width:38px;height:38px}
+.w b{font:700 20px/1 "Sora",system-ui,sans-serif;display:block}
+.w small{font-size:11px;opacity:.75;display:block;margin-top:2px}
+.sp{flex:1}
+.tema h3 span{font-weight:400;color:var(--mut);font-size:14px}
+
+
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+.stage{background:#0f0c17;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;justify-content:center;padding:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.grid3 .card{margin-top:0}
+.palcoM{position:relative;height:230px;border-radius:12px;overflow:hidden;display:flex;justify-content:center;align-items:flex-end;background:radial-gradient(120% 90% at 50% 0%,var(--p1),var(--p2) 60%,var(--p3))}
+.palcoM .m{width:190px;position:relative;z-index:2;margin-bottom:34px}
+.palcoM .chao{position:absolute;left:0;right:0;bottom:30px;height:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.28) 0 50px,transparent 50px 180px);border-radius:2px}
+.palcoM .base{position:absolute;left:0;right:0;bottom:0;height:30px;background:rgba(0,0,0,.28)}
+.palcoM .chao.r1{animation:rola 2s linear infinite}.palcoM .chao.r2{animation:rola 1.2s linear infinite}
+@keyframes rola{to{background-position-x:-180px}}
+.passeio.ar{bottom:calc(100% + 4px)}.passeio .m{width:100%}
+.m{display:block;overflow:visible}.m *{transform-box:fill-box}.m [transform]{transform-box:view-box;transform-origin:0 0}
+@keyframes pisca{0%,93%,100%{scale:1 1}96%{scale:1 .1}}
+.m .zz{opacity:0;font:700 12px "Sora",sans-serif;fill:#cfe3ff}
+.m.sleep .zz{animation:zz 3.2s ease-in infinite}.m.sleep .zz:nth-of-type(2){animation-delay:1.1s}
+@keyframes zz{0%{opacity:0;translate:0 8px}25%{opacity:1}100%{opacity:0;translate:10px -18px}}
+.pausa *,.pausa *::before,.pausa *::after{animation-play-state:paused!important}
+.sem-efeitos .fx *,.sem-efeitos .fx::before,.sem-efeitos .fx::after,.sem-efeitos .cena::before,.sem-efeitos .cena::after{display:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}}
+.sheet{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sheet figure{margin:0;text-align:center;font-size:12px;color:var(--mut)}.sheet canvas{background:#0f0c17;border-radius:6px;border:1px solid var(--line)}
+details{margin-top:10px}summary{cursor:pointer;color:var(--acc);font-weight:700;min-height:32px}
+/* ===== rena ===== */
+.rn .todoR{animation:rnResp 3s ease-in-out infinite}@keyframes rnResp{0%,100%{translate:0 0}50%{translate:0 1px}}
+.rn .cabR{transform-box:view-box;transform-origin:88px 48px;animation:rnCab 3.6s ease-in-out infinite}@keyframes rnCab{0%,100%{rotate:0deg}50%{rotate:-3deg}}
+.rn .rabo{transform-origin:50% 50%;animation:rnRabo 2.4s ease-in-out infinite}@keyframes rnRabo{0%,100%{rotate:-8deg}50%{rotate:10deg}}
+.rn .olhoR{transform-origin:50% 50%;animation:pisca 5s infinite}
+.rn .orelhaR{transform-origin:50% 100%;animation:rnOr 6s infinite}@keyframes rnOr{0%,90%,100%{rotate:0deg}94%{rotate:-12deg}97%{rotate:5deg}}
+.rn .cachecol{transform-origin:0% 0%;animation:rnCach 2.2s ease-in-out infinite}@keyframes rnCach{0%,100%{rotate:-3deg}50%{rotate:6deg}}
+.rn .perna{transform-origin:50% 4%}
+.rn.walk .perna{animation:rnPerna .8s linear infinite}.rn.walk .perna.B{animation-delay:-.4s}
+@keyframes rnPerna{0%{rotate:-24deg;scale:1 1}50%{rotate:24deg;scale:1 1}75%{rotate:0deg;scale:1 .82}100%{rotate:-24deg;scale:1 1}}
+.rn.walk .todoR{animation:rnPulo .4s ease-in-out infinite}@keyframes rnPulo{0%,100%{translate:0 0}50%{translate:0 -2.4px}}
+.rn.walk .cabR{animation:rnCabW .8s ease-in-out infinite}@keyframes rnCabW{0%,100%{rotate:2deg}50%{rotate:-4deg}}
+.rn.walk .cachecol{animation-duration:.8s}
+.rn .sinoR{transform-origin:50% 0%}.rn .nota{opacity:0;font:700 14px sans-serif;fill:#ffd23f}
+.rn.sino .todoR{animation:rnFesta .9s ease-in-out infinite}@keyframes rnFesta{0%,100%{translate:0 0}40%{translate:0 -10px}}
+.rn.sino .cabR{animation:rnBal .45s ease-in-out infinite alternate}@keyframes rnBal{from{rotate:-14deg}to{rotate:12deg}}
+.rn.sino .sinoR{animation:rnSino .22s ease-in-out infinite alternate}@keyframes rnSino{from{rotate:-30deg}to{rotate:30deg}}
+.rn.sino .nota{animation:rnNota 1.2s ease-out infinite}.rn.sino .nota:nth-of-type(2){animation-delay:.5s}
+@keyframes rnNota{0%{opacity:0;translate:0 6px}30%{opacity:1}100%{opacity:0;translate:8px -22px}}
+.rn.sleep .perna{display:none}.rn.sleep .todoR{animation:none;translate:0 20px}.rn.sleep .corpoR{transform-box:view-box;transform-origin:62px 66px;scale:1 .8}
+.rn.sleep .cabR{animation:none;rotate:24deg;translate:-2px 8px}.rn.sleep .olhoR{animation:none;scale:1 .1}
+/* ===== papai noel ===== */
+.nl .todoN{animation:nlResp 3s ease-in-out infinite}@keyframes nlResp{0%,100%{scale:1 1}50%{scale:1.015 1.02}}
+.nl .todoN{transform-origin:50% 100%}
+.nl .cabN{transform-box:view-box;transform-origin:60px 56px;animation:nlCab 4s ease-in-out infinite}@keyframes nlCab{0%,100%{rotate:-2deg}50%{rotate:2deg}}
+.nl .braco{transform-origin:50% 8%}
+.nl.idle .braco.D,.nl:not(.walk):not(.ho):not(.sleep) .braco.D{animation:nlAcena 1s ease-in-out infinite alternate}
+@keyframes nlAcena{from{rotate:-130deg}to{rotate:-165deg}}
+.nl .perna{transform-origin:50% 5%}
+.nl .prancha,.nl .bolha,.nl .fechados{display:none}
+.nl.walk .prancha{display:block}
+.nl.walk .perna{animation:nlPerna .9s linear infinite}.nl.walk .perna.B{animation-delay:-.45s}
+@keyframes nlPerna{0%{rotate:-20deg;scale:1 1}50%{rotate:20deg;scale:1 1}75%{rotate:0deg;scale:1 .86}100%{rotate:-20deg;scale:1 1}}
+.nl.walk .braco.E{animation:nlBr .9s ease-in-out infinite alternate}@keyframes nlBr{from{rotate:14deg}to{rotate:-14deg}}
+.nl.walk .braco.D{animation:nlBr .9s ease-in-out infinite alternate-reverse}
+.nl.walk .todoN{animation:nlGinga .9s ease-in-out infinite}@keyframes nlGinga{0%,100%{translate:-2px 0;rotate:-2.5deg}50%{translate:2px -3px;rotate:2.5deg}}
+.nl.ho .braco.E{rotate:-38deg}.nl.ho .braco.D{rotate:38deg}.nl.ho .cabN{animation:nlHo .45s ease-in-out infinite alternate}@keyframes nlHo{from{rotate:-9deg}to{rotate:-2deg}}
+.nl.ho .corpo{animation:nlBarriga .3s ease-in-out infinite alternate}@keyframes nlBarriga{from{scale:1 1}to{scale:1.07 .95}}
+.nl.ho .bolha{display:block;animation:nlBolha 1.4s ease-in-out infinite}@keyframes nlBolha{0%,100%{scale:1;opacity:1}50%{scale:1.08}}
+.nl.sleep .oculos{display:none}.nl.sleep .fechados{display:block}
+.nl.sleep .cabN{animation:none;rotate:14deg;translate:2px 6px}.nl.sleep .braco{rotate:0deg}.nl.sleep .todoN{animation:nlResp 4.5s ease-in-out infinite}
+/* ===== temas de Natal (materiais) ===== */
+.t-vitrine .cena{background:radial-gradient(40% 50% at 15% 30%,rgba(255,200,90,.35),transparent),radial-gradient(35% 45% at 85% 25%,rgba(255,150,90,.3),transparent),#3a0f18}
+.t-vitrine .dock{border-radius:16px;background:radial-gradient(circle at 10px 10px,rgba(255,255,255,.28) 2.2px,transparent 2.7px) 0 0/22px 22px,radial-gradient(circle at 21px 21px,rgba(255,226,122,.3) 1.6px,transparent 2.1px) 0 0/22px 22px,linear-gradient(180deg,#d62839,#a31423);box-shadow:0 22px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25)}
+.t-vitrine .fita{position:absolute;top:0;bottom:0;left:calc(50% - 15px);width:30px;background:linear-gradient(90deg,#b8841a,#ffe27a 35%,#ffd23f 55%,#b8841a);box-shadow:0 0 0 1px rgba(0,0,0,.15);z-index:1}
+.t-vitrine .laco{position:absolute!important;left:calc(50% - 38px);top:-30px;width:76px;height:44px;z-index:3;filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))}
+.t-vitrine .brilho{position:absolute;width:12px;height:12px;background:radial-gradient(closest-side,#fff,rgba(255,226,122,.9) 35%,transparent 70%);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);animation:brilha 3s ease-in-out infinite;scale:1.8}
+@keyframes brilha{0%,100%{opacity:.15;rotate:0deg}50%{opacity:1;rotate:45deg}}
+.t-vitrine .tile{border-radius:8px;color:var(--c);background:linear-gradient(160deg,var(--c1),var(--c2));box-shadow:0 8px 14px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.4)}
+.t-vitrine .tile::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 5px);height:10px;background:linear-gradient(180deg,#ffe27a,#c9971f)}
+.t-vitrine .tile::after{content:"";position:absolute;top:0;bottom:0;left:calc(50% - 5px);width:10px;background:linear-gradient(90deg,#c9971f,#ffe27a,#c9971f)}
+.t-vitrine .tile svg{position:relative;z-index:2;width:34px;height:34px;padding:5px;border-radius:50%;background:#fff6e0;box-shadow:0 1px 3px rgba(0,0,0,.35);stroke-width:2}
+.t-vitrine .etq{display:none;position:absolute;left:50%;bottom:-17px;width:14px;height:18px;margin-left:-7px;background:#fff6e0;clip-path:polygon(50% 0,100% 22%,100% 100%,0 100%,0 22%);z-index:3}
+.t-vitrine .tile.ativo .etq{display:block}
+.t-vitrine .tile.ativo .etq::after{content:"";position:absolute;left:50%;top:5px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:#a31423}
+.t-vitrine .sep{display:none}
+.t-vitrine .w{background:#fff4dc;border:1px solid #c9971f;color:#7a1220;box-shadow:0 5px 10px rgba(0,0,0,.3);z-index:2}
+.t-vitrine .passeio .m{filter:drop-shadow(0 0 6px rgba(255,226,122,.55))}
+.t-brasil .cena{background:linear-gradient(180deg,#2b1a5c 0%,#9e3a8c 38%,#ff7a5a 66%,#ffc36b 86%,#ffe3a0 100%);padding-bottom:70px}
+.t-brasil .cena::before{content:"";position:absolute;inset:0;z-index:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 220'%3E%3Cpath d='M60 220C58 150 62 90 66 40' stroke='%231b1038' stroke-width='7' fill='none'/%3E%3Cg fill='%231b1038'%3E%3Cpath d='M66 40C40 22 14 30 4 52 26 40 48 42 66 40Z'/%3E%3Cpath d='M66 40C92 18 118 30 118 54 98 40 84 40 66 40Z'/%3E%3Cpath d='M66 40C56 14 34 6 18 12 40 18 54 28 66 40Z'/%3E%3Cpath d='M66 40C78 12 100 4 114 12 94 16 80 26 66 40Z'/%3E%3Cpath d='M66 40C50 40 34 56 30 78 46 58 56 50 66 40Z'/%3E%3Cpath d='M66 40C82 40 98 58 102 80 88 60 76 50 66 40Z'/%3E%3C/g%3E%3C/svg%3E") left 8px bottom -10px/120px 220px no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 220'%3E%3Cpath d='M60 220C62 150 58 90 54 40' stroke='%231b1038' stroke-width='7' fill='none'/%3E%3Cg fill='%231b1038'%3E%3Cpath d='M54 40C28 18 2 30 2 54 22 40 36 40 54 40Z'/%3E%3Cpath d='M54 40C80 22 106 30 116 52 94 40 72 42 54 40Z'/%3E%3Cpath d='M54 40C64 14 86 6 102 12 80 18 66 28 54 40Z'/%3E%3Cpath d='M54 40C42 12 20 4 6 12 26 16 40 26 54 40Z'/%3E%3C/g%3E%3C/svg%3E") right 8px bottom -10px/110px 200px no-repeat}
+.t-brasil .cena::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48px;z-index:1;background:linear-gradient(180deg,rgba(60,170,190,.0),#2fb4c4 30%,#1b7f9c);animation:mar 6s ease-in-out infinite alternate}
+@keyframes mar{to{height:56px}}
+.t-brasil .dockw{z-index:2}
+.t-brasil .dock{border-radius:24px;background:linear-gradient(180deg,rgba(255,236,205,.5),rgba(255,206,160,.34));backdrop-filter:blur(14px) saturate(1.5);border:1px solid rgba(255,255,255,.6);box-shadow:0 20px 36px rgba(60,10,50,.4),inset 0 1px 0 #fff}
+.t-brasil .fx::before{content:"";position:absolute;left:0;right:0;top:-3px;height:18px;background:radial-gradient(circle at 10px 6px,#2f8f4e 8px,transparent 8.5px) 0 0/20px 18px repeat-x,radial-gradient(circle at 20px 5px,#46b36a 7px,transparent 7.5px) 0 0/20px 18px repeat-x,radial-gradient(circle at 0 9px,#276f3d 6px,transparent 6.5px) 0 0/20px 18px repeat-x}
+.t-brasil .luz{position:absolute;top:5px;width:6px;height:6px;border-radius:50%;background:var(--lc);box-shadow:0 0 8px 2px var(--lc);animation:luz 2.6s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes luz{0%,100%{opacity:.45}50%{opacity:1}}
+.t-brasil .bola{position:absolute;top:12px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--bc) 40%,rgba(0,0,0,.35));box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.t-brasil .tile{border-radius:18px;color:#5b2a22;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,235,205,.7));box-shadow:0 6px 12px rgba(80,20,40,.3),inset 0 1px 0 #fff}
+.t-brasil .tile.ativo::before{content:"";position:absolute;bottom:-12px;left:50%;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e5333f 45%,#8c1420);box-shadow:0 0 10px 2px rgba(255,80,90,.7)}
+.t-brasil .sep{background:rgba(90,40,50,.3)}
+.t-brasil .w{color:#5b2a22;background:rgba(255,248,235,.75);border:1px solid rgba(255,255,255,.8)}
+.t-brasil .passeio .m{filter:drop-shadow(0 0 5px rgba(255,200,120,.7))}
+
+.sem-efeitos .neveCena{display:none!important}
+.palcoM .nl{width:150px}.palcoM .bn{width:150px}
+/* ===== boneco de neve ilustrado ===== */
+.bn .todoB{transform-origin:50% 100%;animation:bnResp 3.4s ease-in-out infinite}@keyframes bnResp{0%,100%{scale:1 1}50%{scale:1.02 .985}}
+.bn .cabB{transform-box:view-box;transform-origin:60px 62px;animation:bnCab 4s ease-in-out infinite}@keyframes bnCab{0%,100%{rotate:-2deg}50%{rotate:3deg}}
+.bn .olhoB{transform-origin:50% 50%;animation:pisca 5s infinite}
+.bn .cachecolB{transform-box:view-box;transform-origin:70px 66px;animation:bnCach 2.6s ease-in-out infinite}@keyframes bnCach{0%,100%{rotate:-3deg}50%{rotate:5deg}}
+.bn .braco.E{transform-origin:100% 30%;animation:bnBr 4s ease-in-out infinite}.bn .braco.D{transform-origin:0% 30%;animation:bnBr 4s ease-in-out infinite reverse}
+@keyframes bnBr{0%,100%{rotate:0deg}50%{rotate:5deg}}
+.bn .fechados{display:none}
+.bn.wave .braco.D{animation:bnAcena .5s ease-in-out infinite alternate}@keyframes bnAcena{from{rotate:-10deg}to{rotate:-62deg}}
+.bn.walk .todoB{animation:bnPasso .7s ease-in-out infinite}@keyframes bnPasso{0%,100%{translate:-2px 0;rotate:-4deg}25%,75%{translate:0 -7px;rotate:0deg}50%{translate:2px 0;rotate:4deg}}
+.bn.walk .braco.E{animation:bnBr2 .7s ease-in-out infinite alternate}.bn.walk .braco.D{animation:bnBr2 .7s ease-in-out infinite alternate-reverse}
+@keyframes bnBr2{from{rotate:-14deg}to{rotate:14deg}}
+.bn.walk .cachecolB{animation-duration:.7s}
+.bn.sleep .olhoB{display:none}.bn.sleep .fechados{display:block}
+.bn.sleep .cabB{animation:none;rotate:18deg;translate:-4px 8px}.bn.sleep .braco{animation:none}.bn.sleep .cachecolB{animation:none}
+.bn.sleep .todoB{animation:bnResp 5s ease-in-out infinite}
+/* ===== Noite de neve (materiais) ===== */
+.t-neve2 .cena{background:radial-gradient(60% 50% at 82% 8%,rgba(150,190,255,.38),transparent),linear-gradient(180deg,#09173a,#17356c 62%,#2d5a9a)}
+.t-neve2 .dock{border-radius:22px;background:linear-gradient(180deg,rgba(220,238,255,.26),rgba(160,200,255,.1));backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.5);box-shadow:0 22px 40px rgba(0,10,40,.55),inset 0 1px 0 rgba(255,255,255,.8),inset 0 -1px 0 rgba(255,255,255,.12)}
+.t-neve2 .fx::before{content:"";position:absolute;left:-2px;right:-2px;top:-3px;height:16px;background:radial-gradient(circle at 12px 5px,#fff 9px,transparent 9.5px) 0 0/26px 16px repeat-x,radial-gradient(circle at 25px 6px,#e6f1ff 7px,transparent 7.5px) 0 0/26px 16px repeat-x}
+.t-neve2 .fx::after{content:"";position:absolute;left:0;right:0;top:10px;height:14px;opacity:.8;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='14'%3E%3Cpath d='M0 0H46L40 3 35 14 30 3Z' fill='%23dcecff'/%3E%3Cpath d='M0 0H10L7 2 4 9 1 2Z' fill='%23dcecff'/%3E%3C/svg%3E") repeat-x}
+.t-neve2 .luz2{position:absolute;top:8px;width:6px;height:9px;border-radius:50% 50% 50% 50%/40% 40% 60% 60%;background:var(--lc);box-shadow:0 0 9px 2px var(--lc);animation:luz 3s ease-in-out infinite;animation-delay:var(--d);z-index:2}
+.t-neve2 .luz2::before{content:"";position:absolute;left:2px;top:-4px;width:2px;height:4px;background:#1b2a4a}
+.t-neve2 .tile{border-radius:16px;color:var(--n);background:linear-gradient(160deg,rgba(255,255,255,.28),rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.45);box-shadow:0 8px 16px rgba(0,10,40,.4),inset 0 1px 0 rgba(255,255,255,.6)}
+.t-neve2 .tile svg{filter:drop-shadow(0 0 4px var(--n))}
+.t-neve2 .tile.ativo::before{content:"❄";position:absolute;bottom:-19px;left:50%;translate:-50% 0;font-size:14px;color:#fff;text-shadow:0 0 8px #bfe0ff,0 0 14px #7fb6ff}
+.t-neve2 .sep{background:rgba(255,255,255,.35)}
+.t-neve2 .w{color:#eaf4ff;background:rgba(10,30,80,.45);border:1px solid rgba(255,255,255,.35)}
+.t-neve2 .passeio .m{filter:drop-shadow(0 0 6px rgba(160,210,255,.6))}
+.neveCena{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.floco{position:absolute;top:-10px;left:var(--x);width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:.85;filter:blur(.4px);animation:cai2 var(--v) linear infinite;animation-delay:var(--d)}
+@keyframes cai2{0%{translate:0 0}50%{translate:14px 140px}100%{translate:-6px 290px}}
+.dock canvas{display:none}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-globo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 9l3 3-3 3M12.5 15H17"/></symbol>
+  <symbol id="i-musica" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></symbol>
+  <symbol id="relogio" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20V10M20 20l7 4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/><circle cx="20" cy="20" r="1.8" fill="currentColor"/></symbol>
+</svg>
+
+<main>
+<span class="tag">ATLAS · pacote de temas 3</span>
+<h1>Pacote Natal</h1>
+<p class="lead">Quatro temas de Natal que não deixam dúvida: luzinhas, neve, presentes e um Natal brasileiro de calor. Mascotes novos, com efeitos de época ligados por padrão.</p>
+<div class="row"><button id="pausa" aria-pressed="false">Pausar animações</button><button id="fxb" aria-pressed="true">Efeitos de época: ligados</button></div>
+
+<h2>1. Mascotes</h2>
+<p>Boneco de neve em pixel art e em ilustração; rena e Papai Noel ilustrados. Cada um tem 4 estados. A rena não tem nariz vermelho de propósito, para não lembrar personagem de terceiros.</p>
+<div class="grid3" id="mascotes"></div>
+
+<h2>2. Temas</h2>
+<p>Efeitos (neve, luzes, brilhos) ligam sozinhos com o tema e podem ser desligados no botão do topo. Nenhuma luz pisca mais que 1 vez por segundo.</p>
+<div id="temas">
+<section class="card" id="neve"><h3>Noite de neve (pixel) <span style="font-weight:400;color:var(--mut);font-size:14px">· neve acumulando, fio de luzinhas, boneco de neve</span></h3>
+ <div class="stage" style="padding:0;background:none;border:0"><canvas id="cNeve" width="210" height="86" style="width:100%;height:auto;border-radius:10px" aria-label="Doca Noite de neve com boneco de neve"></canvas></div>
+ <div class="row" id="rNeve" role="group" aria-label="Estado do boneco de neve"></div>
+ <dl><dt>Material</dt><dd>Céu azul-noite pontilhado, borda branca de neve com sincelos e uma camada de neve acumulada em cima.</dd><dt>Efeito</dt><dd>Neve caindo e fio de luzinhas coloridas que piscam devagar, cada uma em um ritmo.</dd><dt>Ativo</dt><dd>Floco de neve branco sob o app.</dd><dt>Widgets</dt><dd>Cartão azul-profundo com borda de gelo.</dd><dt>Mascote</dt><dd>Boneco de neve de gorro e cachecol.</dd></dl>
+ <div class="chips"><span class="chip" style="background:#10234a"></span><span class="chip" style="background:#f4f8ff"></span><span class="chip" style="background:#d7263d"></span><span class="chip" style="background:#2f9e57"></span><span class="chip" style="background:#ffd23f"></span></div></section>
+
+<section class="tema t-neve2 card" data-m="boneco"><h3>Noite de neve <span>· materiais · gelo, luzinhas e neve de verdade</span></h3>
+ <div class="cena"><div class="dockw"><div class="dock">
+  <div class="fx"><i class="luz2" style="left:6%;--lc:#ff4d4d;--d:-0.0s"></i><i class="luz2" style="left:17%;--lc:#ffd23f;--d:-0.6s"></i><i class="luz2" style="left:28%;--lc:#4dd96b;--d:-1.2s"></i><i class="luz2" style="left:39%;--lc:#4db5ff;--d:-1.8s"></i><i class="luz2" style="left:50%;--lc:#ff4d4d;--d:-2.4s"></i><i class="luz2" style="left:61%;--lc:#ffd23f;--d:-0.3s"></i><i class="luz2" style="left:72%;--lc:#4dd96b;--d:-0.9s"></i><i class="luz2" style="left:83%;--lc:#4db5ff;--d:-1.5s"></i><i class="luz2" style="left:94%;--lc:#ff4d4d;--d:-2.1s"></i></div>
+  <div class="passeio"><div class="host"></div></div>
+  <div class="tile ativo" style="--n:#ff9a9a"><svg><use href="#i-pasta"/></svg></div><div class="tile" style="--n:#ffe27a"><svg><use href="#i-globo"/></svg></div><div class="tile" style="--n:#8affb4"><svg><use href="#i-term"/></svg></div><div class="tile" style="--n:#9fd4ff"><svg><use href="#i-musica"/></svg></div><div class="tile" style="--n:#ffc0e8"><svg><use href="#i-chat"/></svg></div>
+  <div class="sep"></div><div class="sp"></div>
+  <div class="w"><svg class="rel"><use href="#relogio"/></svg><div><b>22:10</b><small>24 dez</small></div></div>
+  <div class="w"><div><b>-3°</b><small>Nevando</small></div></div>
+ </div></div><div class="neveCena"><i class="floco" style="--x:4%;--s:3px;--v:9s;--d:-0s"></i><i class="floco" style="--x:11%;--s:4px;--v:12s;--d:-4s"></i><i class="floco" style="--x:19%;--s:3px;--v:10s;--d:-7s"></i><i class="floco" style="--x:27%;--s:5px;--v:13s;--d:-2s"></i><i class="floco" style="--x:35%;--s:3px;--v:9s;--d:-5s"></i><i class="floco" style="--x:43%;--s:4px;--v:11s;--d:-8s"></i><i class="floco" style="--x:51%;--s:3px;--v:10s;--d:-1s"></i><i class="floco" style="--x:58%;--s:5px;--v:14s;--d:-6s"></i><i class="floco" style="--x:66%;--s:3px;--v:9s;--d:-3s"></i><i class="floco" style="--x:73%;--s:4px;--v:12s;--d:-9s"></i><i class="floco" style="--x:80%;--s:3px;--v:10s;--d:-5s"></i><i class="floco" style="--x:87%;--s:5px;--v:13s;--d:-0s"></i><i class="floco" style="--x:93%;--s:3px;--v:9s;--d:-7s"></i><i class="floco" style="--x:97%;--s:4px;--v:11s;--d:-2s"></i><i class="floco" style="--x:23%;--s:3px;--v:15s;--d:-10s"></i><i class="floco" style="--x:62%;--s:3px;--v:12s;--d:-11s"></i></div></div>
+ <div class="row botoes" role="group" aria-label="Estado do mascote"></div>
+ <dl><dt>Material</dt><dd>Vidro de gelo fosco com borda de luz, neve acumulada em cima e sincelos pendurados.</dd><dt>Efeito</dt><dd>Neve caindo na cena toda e fio de luzinhas coloridas que piscam devagar.</dd><dt>Ativo</dt><dd>Floco de neve brilhando sob o app.</dd><dt>Widgets</dt><dd>Cartão azul-profundo translúcido com borda de gelo.</dd><dt>Mascote</dt><dd>Boneco de neve ilustrado, versão macia do boneco pixel.</dd></dl>
+ <div class="chips"><span class="chip" style="background:#09173a"></span><span class="chip" style="background:#2d5a9a"></span><span class="chip" style="background:#f4f8ff"></span><span class="chip" style="background:#d7263d"></span><span class="chip" style="background:#2f9e57"></span></div></section>
+
+<section class="tema t-vitrine card" data-m="rena"><h3>Vitrine <span>· materiais · tudo embrulhado para presente</span></h3>
+ <div class="cena"><div class="dockw"><div class="dock">
+  <div class="fx"><div class="fita"></div><i class="brilho" style="left:7%;top:22%"></i><i class="brilho" style="left:23%;top:70%;animation-delay:-1s"></i><i class="brilho" style="left:41%;top:18%;animation-delay:-2s"></i><i class="brilho" style="left:63%;top:72%;animation-delay:-.6s"></i><i class="brilho" style="left:79%;top:20%;animation-delay:-1.6s"></i><i class="brilho" style="left:93%;top:64%;animation-delay:-2.4s"></i></div>
+  <svg class="laco" viewBox="0 0 76 44"><path d="M38 26C28 4 4 0 4 14 4 28 24 28 38 26Z" fill="#ffd23f"/><path d="M38 26C48 4 72 0 72 14 72 28 52 28 38 26Z" fill="#ffd23f"/><path d="M38 26C28 8 12 6 10 14" fill="none" stroke="#b8841a" stroke-width="1.5"/><path d="M38 26C48 8 64 6 66 14" fill="none" stroke="#b8841a" stroke-width="1.5"/><path d="M34 28L22 44h10l6-14ZM42 28l12 16H44l-6-14Z" fill="#e0b020"/><circle cx="38" cy="26" r="6" fill="#ffe27a"/></svg>
+  <div class="passeio"><div class="host"></div></div>
+  <div class="tile ativo" style="--c:#1e8449;--c1:#2ecc71;--c2:#1e8449"><svg><use href="#i-pasta"/></svg><span class="etq"></span></div>
+  <div class="tile" style="--c:#1f5fae;--c1:#4aa3ff;--c2:#1f5fae"><svg><use href="#i-globo"/></svg><span class="etq"></span></div>
+  <div class="tile" style="--c:#8e44ad;--c1:#b97ae0;--c2:#8e44ad"><svg><use href="#i-term"/></svg><span class="etq"></span></div>
+  <div class="tile" style="--c:#c0392b;--c1:#ff8a7a;--c2:#c0392b"><svg><use href="#i-musica"/></svg><span class="etq"></span></div>
+  <div class="tile" style="--c:#16a085;--c1:#5fe0c4;--c2:#16a085"><svg><use href="#i-chat"/></svg><span class="etq"></span></div>
+  <div class="sp"></div>
+  <div class="w"><svg class="rel"><use href="#relogio"/></svg><div><b>10:10</b><small>24 dez</small></div></div>
+  <div class="w"><div><b>-2°</b><small>Nevando</small></div></div>
+ </div></div></div>
+ <div class="row botoes" role="group" aria-label="Estado do mascote"></div>
+ <dl><dt>Material</dt><dd>Papel de presente vermelho com bolinhas brancas e douradas; fita dourada atravessando e laço no topo.</dd><dt>Efeito</dt><dd>Brilhos dourados que acendem e apagam em ritmos diferentes.</dd><dt>Ativo</dt><dd>Etiqueta de presente pendurada sob o app.</dd><dt>Tiles</dt><dd>Cada app é uma caixinha de presente com fita em cruz e o ícone num selo central.</dd><dt>Mascote</dt><dd>Rena de cachecol e sininho.</dd></dl>
+ <div class="chips"><span class="chip" style="background:#d62839"></span><span class="chip" style="background:#ffd23f"></span><span class="chip" style="background:#fff6e0"></span><span class="chip" style="background:#2ecc71"></span></div></section>
+
+<section class="tema t-brasil card" data-m="noel"><h3>Natal brasileiro <span>· materiais · calor, praia e pisca-pisca</span></h3>
+ <div class="cena"><div class="dockw"><div class="dock">
+  <div class="fx"><i class="luz" style="left:5%;--lc:#ff4d4d;--d:0s"></i><i class="luz" style="left:16%;--lc:#ffd23f;--d:-.5s"></i><i class="luz" style="left:27%;--lc:#4dd96b;--d:-1s"></i><i class="luz" style="left:38%;--lc:#4db5ff;--d:-1.5s"></i><i class="luz" style="left:49%;--lc:#ff4d4d;--d:-2s"></i><i class="luz" style="left:60%;--lc:#ffd23f;--d:-.3s"></i><i class="luz" style="left:71%;--lc:#4dd96b;--d:-.8s"></i><i class="luz" style="left:82%;--lc:#4db5ff;--d:-1.3s"></i><i class="luz" style="left:93%;--lc:#ff4d4d;--d:-1.8s"></i>
+   <i class="bola" style="left:10%;--bc:#e5333f"></i><i class="bola" style="left:33%;--bc:#ffd23f"></i><i class="bola" style="left:55%;--bc:#3a8bff"></i><i class="bola" style="left:77%;--bc:#e5333f"></i><i class="bola" style="left:96%;--bc:#ffd23f"></i></div>
+  <div class="passeio"><div class="host"></div></div>
+  <div class="tile ativo"><svg><use href="#i-pasta"/></svg></div><div class="tile"><svg><use href="#i-globo"/></svg></div><div class="tile"><svg><use href="#i-term"/></svg></div><div class="tile"><svg><use href="#i-musica"/></svg></div><div class="tile"><svg><use href="#i-chat"/></svg></div>
+  <div class="sep"></div><div class="sp"></div>
+  <div class="w"><svg class="rel"><use href="#relogio"/></svg><div><b>17:40</b><small>24 dez</small></div></div>
+  <div class="w"><div><b>31°</b><small>Natal na praia</small></div></div>
+ </div></div></div>
+ <div class="row botoes" role="group" aria-label="Estado do mascote"></div>
+ <dl><dt>Material</dt><dd>Vidro cor de areia quente sobre um pôr do sol de verão, com palmeiras e o mar ao fundo.</dd><dt>Efeito</dt><dd>Guirlanda de pinheiro com bolas e pisca-pisca colorido; o mar sobe e desce devagar.</dd><dt>Ativo</dt><dd>Bola de Natal vermelha brilhando sob o app.</dd><dt>Mascote</dt><dd>Papai Noel de camisa havaiana, bermuda e chinelo.</dd></dl>
+ <div class="chips"><span class="chip" style="background:#2b1a5c"></span><span class="chip" style="background:#ff7a5a"></span><span class="chip" style="background:#ffc36b"></span><span class="chip" style="background:#2f8f4e"></span><span class="chip" style="background:#e5333f"></span></div></section>
+</div>
+
+<h2>3. Critérios de aceitação</h2>
+<div class="card"><ul>
+<li>Reconhecível como Natal em 3 segundos, sem ler o nome.</li>
+<li>Efeitos de época ligados por padrão, com chave para desligar; pausam com a doca escondida e com "reduzir movimento".</li>
+<li>Nenhum elemento pisca mais de 3 vezes por segundo (aqui, no máximo 1).</li>
+<li>Contraste de texto dos widgets de pelo menos 4,5:1 em todos os temas.</li>
+<li>Mascotes com 4 estados, pés sem deslizar nos que andam.</li>
+<li>Custo medido com <code>perf.js</code> e não maior que o do pacote Materiais.</li>
+</ul></div>
+</main>
+<script>
+'use strict';
+/* ====== Motor de pixel (grade com contorno automático) ====== */
+const PAL={o:'#3b2540',f:'#ee8a3c',F:'#f7b866',s:'#b9582a',c:'#fde6bd',n:'#f49aae',e:'#2a1a2e',w:'#ffffff',i:'#e8788c',z:'#cfe3ff'};
+class G{
+  constructor(w,h){this.w=w;this.h=h;this.a=Array.from({length:h},()=>new Array(w).fill(null));}
+  in(x,y){return x>=0&&y>=0&&x<this.w&&y<this.h}
+  set(x,y,c){x=Math.round(x);y=Math.round(y);if(this.in(x,y))this.a[y][x]=c}
+  get(x,y){return this.in(x,y)?this.a[y][x]:null}
+  rect(x,y,w,h,c){for(let j=0;j<h;j++)for(let i=0;i<w;i++)this.set(x+i,y+j,c)}
+  ell(cx,cy,rx,ry,c,only){
+    for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){
+      const dx=(x-cx)/rx,dy=(y-cy)/ry;
+      if(dx*dx+dy*dy<=1&&(!only||only.includes(this.get(x,y))))this.set(x,y,c);
+    }}
+  line(x0,y0,x1,y1,c,w=2){
+    x0=Math.round(x0);y0=Math.round(y0);x1=Math.round(x1);y1=Math.round(y1);
+    const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let er=dx-dy;
+    for(;;){this.rect(x0,y0,w,1,c);if(x0===x1&&y0===y1)break;const e2=2*er;if(e2>-dy){er-=dy;x0+=sx}if(e2<dx){er+=dx;y0+=sy}}}
+  outline(){
+    const b=this.a.map(r=>r.slice());
+    for(let y=0;y<this.h;y++)for(let x=0;x<this.w;x++){
+      if(b[y][x]!==null)continue;
+      if((y>0&&b[y-1][x])||(y<this.h-1&&b[y+1][x])||(x>0&&b[y][x-1])||(x<this.w-1&&b[y][x+1]))this.a[y][x]='o';
+    }}
+  draw(ctx,ox,oy,flip,pal=PAL){
+    for(let y=0;y<this.h;y++)for(let x=0;x<this.w;x++){
+      const c=this.a[y][x];if(!c)continue;
+      ctx.fillStyle=pal[c]||c;
+      ctx.fillRect(ox+(flip?this.w-1-x:x),oy+y,1,1);
+    }}
+}
+
+
+const PSN={o:'#1f2a4a',w:'#f4f8ff',s:'#c9d8f0',k:'#ff8a2a',r:'#d7263d',g:'#2f9e57',e:'#1b1b2b',b:'#7a5236',p:'#ff9fb2',z:'#cfe3ff'};
+function zz(g,x,y,s){g.rect(x,y,s,1,'z');g.rect(x,y+s-1,s,1,'z');for(let i=1;i<s-1;i++)g.set(x+s-1-i,y+i,'z')}
+function zzN(g,n,x0,y0){if(n>=1)zz(g,x0,y0,3);if(n>=2)zz(g,x0+2,y0-4,3);if(n>=3)zz(g,x0-1,y0-9,4)}
+function buildSnow(p){
+  const g=new G(36,26),cx=18+(p.ox||0),b=p.bob||0,sq=p.sq||0,hx=p.hx||0,hy=p.hy||0,H=cx+hx;
+  const wv=[18,14,9,14][p.wave||0];
+  g.line(cx-7,16+b,cx-13,p.sleep?19:17+b,'b',1);g.set(cx-13,(p.sleep?19:17+b)-1,'b');
+  g.line(cx+7,16+b,cx+13,p.wave?wv:18+b,'b',1);g.set(cx+13,(p.wave?wv:18+b)-1,'b');
+  g.ell(cx,17.4+b+(sq>0?.5:0),7.6+(sq>0?.8:0),5.9-(sq>0?.5:0),'w');
+  g.ell(cx+3,19.6+b,4.6,2,'s',['w']);
+  g.rect(cx-1,15+b,2,2,'e');g.rect(cx-1,19+b,2,2,'e');
+  g.ell(H,8.6+b+hy,5.6,5,'w');g.ell(H+3,10+b+hy,2.4,3,'s',['w']);
+  g.rect(cx-6,14+b,12,2,'g');[-3,1,5].forEach(x=>g.set(cx+x,14+b,'r'));
+  g.rect(cx+4+(p.sw||0),16+b,2,5,'g');g.set(cx+4+(p.sw||0),18+b,'r');
+  g.ell(H,4.6+b+hy,5.2,2.8,'r');g.rect(H-5,6+b+hy,10,2,'w');g.ell(H+(p.tilt||0),1.6+b+hy,1.8,1.8,'w');
+  const ey=8+b+hy;
+  if(p.sleep||p.blink){g.rect(H-3,ey+1,2,1,'e');g.rect(H+1,ey+1,2,1,'e')}else{g.rect(H-3,ey,2,2,'e');g.rect(H+1,ey,2,2,'e');g.set(H-3,ey,'w');g.set(H+1,ey,'w')}
+  g.rect(H-1,10+b+hy,2,1,'k');g.set(H,11+b+hy,'k');
+  g.rect(H-5,10+b+hy,2,1,'p');g.rect(H+3,10+b+hy,2,1,'p');
+  [[-2,11],[-1,12],[0,12],[1,11]].forEach(([x,y])=>g.set(H+x,y+b+hy,'e'));
+  if(p.z)zzN(g,p.z,27,10);
+  g.outline();return g;
+}
+const snow={
+  idle:t=>{const ft=Math.floor(t*10);return buildSnow({sq:Math.floor(ft/9)%2,blink:(ft%42)<2,sw:[0,1,0,-1][Math.floor(ft/6)%4]})},
+  walk:t=>{const f=Math.floor(t*8)%4;return buildSnow({ox:[-1,0,1,0][f],bob:[0,-1,0,-1][f],sw:[1,0,-1,0][f],tilt:[-1,0,1,0][f]})},
+  wave:t=>{const f=Math.floor(t*6)%4;return buildSnow({wave:f,tilt:f%2?1:0,blink:Math.floor(t*6)%12===5})},
+  sleep:t=>{const ft=Math.floor(t*10);return buildSnow({sleep:true,hx:-2,hy:1,tilt:-2,z:Math.floor(ft/9)%4})}
+};
+const MP={nome:'Boneco de neve',pal:PSN,frontal:true,fala:'Gentil e meio atrapalhado. Pula de lado a lado, acena para quem passa e cochila de gorro caído.',
+ estados:[{id:'idle',nome:'Parado',fn:snow.idle,v:0,ts:[0,.9,1.8,3]},{id:'walk',nome:'Andando',fn:snow.walk,v:12,fps:8,n:4},{id:'wave',nome:'Acenando',fn:snow.wave,v:0,fps:6,n:4},{id:'sleep',nome:'Dormindo',fn:snow.sleep,v:0,ts:[0,.9,1.8,2.7]}],
+ roteiro:[['idle',3],['wave',2.5],['walk',4],['idle',1.5],['sleep',5],['idle',1]]};
+/* ====== Temas ====== */
+const rng=s=>()=>((s=Math.imul(s^s>>>15,s|1),s^=s+Math.imul(s^s>>>7,s|61),((s^s>>>14)>>>0)/4294967296));
+const DW=210,DH=86,DX=6,DY=44,DWD=198,DHT=36;
+const inDock=(x,y)=>{
+  const lx=x-DX,ly=y-DY;if(lx<0||ly<0||lx>=DWD||ly>=DHT)return false;
+  const cx=Math.min(lx,DWD-1-lx),cy=Math.min(ly,DHT-1-ly);return !(cx+cy<2);
+};
+const GLIFOS={
+  pasta:["........ ","XXXX.....","XaaaXXXXX","XaaaaaaaX","XaaaaaaaX","XaaaaaaaX","XaaaaaaaX","XXXXXXXXX","........."],
+  globo:["..XXXXX..",".XaaXaaX.","XaaaXaaaX","XXXXXXXXX","XaaaXaaaX","XXXXXXXXX","XaaaXaaaX",".XaaXaaX.","..XXXXX.."],
+  term:["XXXXXXXXX","X.......X","X.a.....X","X..a....X","X.a.....X","X.......X","X...aaa.X","X.......X","XXXXXXXXX"],
+  nota:["....XXXX.","....XaaX.","....X..X.","....X....","....X....","..XXX....",".XaaX....",".XaaX....","..XX....."],
+  chat:[".XXXXXXX.","XaaaaaaaX","XaXaXaXaX","XaaaaaaaX","XaaaaaaaX",".XXXXXXXX","...XaaX..","....XX...","........."]
+};
+const IND={
+  coracao:[".r.r.","rrrrr","rrrrr",".rrr.","..r.."],
+  folha:["..g..",".ggg.","ggGgg",".gGg.","..G.."],
+  estrela:["..y..","..y..","yyyyy",".yyy.",".y.y."],
+  estrela_mar:["..o..","o.o.o",".ooo.","ooooo","o...o"]
+};
+function glifo(ctx,x,y,m,ink,acc){for(let j=0;j<m.length;j++)for(let i=0;i<m[j].length;i++){const c=m[j][i];if(c==='X'){ctx.fillStyle=ink;ctx.fillRect(x+i,y+j,1,1)}else if(c==='a'){ctx.fillStyle=acc;ctx.fillRect(x+i,y+j,1,1)}}}
+function ind(ctx,x,y,m,cols){for(let j=0;j<m.length;j++)for(let i=0;i<m[j].length;i++){const c=cols[m[j][i]];if(c){ctx.fillStyle=c;ctx.fillRect(x+i,y+j,1,1)}}}
+function tile(ctx,x,y,w,h,fill,border){
+  ctx.fillStyle=border;ctx.fillRect(x+1,y,w-2,1);ctx.fillRect(x+1,y+h-1,w-2,1);ctx.fillRect(x,y+1,1,h-2);ctx.fillRect(x+w-1,y+1,1,h-2);
+  ctx.fillStyle=fill;ctx.fillRect(x+1,y+1,w-2,h-2);
+}
+function relogio(ctx,cx,cy,ink,face,acc,t){
+  ctx.fillStyle=face;
+  for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++){const d=x*x+y*y;if(d<=49)ctx.fillRect(cx+x,cy+y,1,1)}
+  ctx.fillStyle=ink;
+  for(let a=0;a<64;a++){const r=a/64*Math.PI*2;ctx.fillRect(Math.round(cx+Math.cos(r)*7.2),Math.round(cy+Math.sin(r)*7.2),1,1)}
+  const d=new Date(2026,0,1,10,10);const m=d.getMinutes()+((t||0)/60),h=(d.getHours()%12)+m/60;
+  const hand=(ang,len,c)=>{ctx.fillStyle=c;for(let i=0;i<=len;i++)ctx.fillRect(Math.round(cx+Math.sin(ang)*i),Math.round(cy-Math.cos(ang)*i),1,1)};
+  hand(h/12*Math.PI*2,3.5,ink);hand(m/60*Math.PI*2,5.5,acc);
+  ctx.fillStyle=ink;ctx.fillRect(cx,cy,1,1);
+}
+function iconesBase(ctx,P,t){
+  const nomes=['pasta','globo','term','nota','chat'];
+  nomes.forEach((n,i)=>{
+    const x=DX+10+i*25,y=DY+8;
+    tile(ctx,x,y,20,20,P.tile,P.tileB);
+    glifo(ctx,x+5,y+5,GLIFOS[n],P.ink,P.acc[i]);
+  });
+  ctx.fillStyle=P.sep;ctx.fillRect(DX+138,DY+8,1,22);
+  tile(ctx,DX+148,DY+8,44,20,P.wTile,P.wBord);
+  relogio(ctx,DX+160,DY+18,P.wInk,P.wFace,P.acc[0],t);
+  ctx.fillStyle=P.wInk;
+  // "10:10" em pixels 3x5
+  const dig={'1':["010","110","010","010","111"],'0':["111","101","101","101","111"],':':["0","1","0","1","0"]};
+  let px=DX+172;"10:10".split('').forEach(ch=>{const m=dig[ch];m.forEach((r,j)=>[...r].forEach((v,i)=>{if(v==='1')ctx.fillRect(px+i,DY+15+j,1,1)}));px+=m[0].length+1});
+}
+
+let EFEITOS=true;
+const SNOW=Array.from({length:34},(_,i)=>({x:(i*47+13)%210,y0:(i*29)%86,v:5+(i%5)*2.4,s:.8+(i%4)*.4,p:i*1.7}));
+function desenhaNeve(ctx,t){
+  const r=rng(11);
+  for(let y=DY;y<DY+DHT;y++)for(let x=DX;x<DX+DWD;x++){
+    if(!inDock(x,y))continue;
+    const f=(y-DY)/DHT,c=f<.35?'#10234a':f<.7?'#15305f':'#1c3a73';
+    ctx.fillStyle=(x===DX||x===DX+DWD-1||y===DY+DHT-1)?'#8fb4e8':((f>.3&&(x+y)%2===0&&f<.42)?'#15305f':c);ctx.fillRect(x,y,1,1);
+  }
+  for(let i=0;i<14;i++){const x=DX+4+Math.floor(r()*(DWD-8)),y=DY+10+Math.floor(r()*(DHT-14));const tw=Math.sin(t*1.6+i*2)>.3;ctx.fillStyle=tw?'#ffffff':'#7f9bcf';ctx.fillRect(x,y,1,1)}
+  // neve acumulada e sincelos
+  const r2=rng(4);
+  for(let x=DX;x<DX+DWD;x++){
+    const h=2+Math.round(1.1*(Math.sin(x*.35)+Math.sin(x*.11+1)+2)/2*1.4);
+    for(let k=0;k<h;k++){if(!inDock(x,DY+k)&&k===0&&(x<DX+2||x>DX+DWD-3))continue;ctx.fillStyle=k===h-1?'#cfe0f7':'#f4f8ff';ctx.fillRect(x,DY-1+k,1,1)}
+    if(r2()<.1){const L=2+Math.floor(r2()*3);for(let k=0;k<L;k++){ctx.fillStyle=k===L-1?'#a9c4ea':'#e4efff';ctx.fillRect(x,DY-1+h+k,1,1)}}
+  }
+  iconesBase(ctx,{tile:'#1c3a73',tileB:'#8fb4e8',ink:'#f4f8ff',acc:['#ff6b6b','#ffd23f','#6be39a','#7fd0ff','#ffa6d5'],sep:'#8fb4e8',wTile:'#0f1f44',wBord:'#8fb4e8',wInk:'#f4f8ff',wFace:'#1c3a73'},t);
+  const fl=[[3,0],[2,1],[4,1],[3,2],[1,1]];const fx=DX+10+25+9,fy=DY+DHT-8;
+  [[2,0],[0,2],[2,2],[4,2],[2,4],[1,1],[3,1],[1,3],[3,3]].forEach(([a,b])=>{ctx.fillStyle='#fff';ctx.fillRect(fx+a,fy+b,1,1)});
+  // fio de luzinhas
+  const cols=['#ff4d4d','#ffd23f','#4dd96b','#4db5ff'];
+  for(let x=DX+4;x<DX+DWD-4;x++){const seg=(x-DX-4)/66,sag=Math.round(2.2*Math.abs(Math.sin(Math.PI*seg)));ctx.fillStyle='#0a1530';ctx.fillRect(x,DY+4+sag,1,1)}
+  if(EFEITOS)for(let i=0,x=DX+9;x<DX+DWD-6;i++,x+=11){
+    const seg=(x-DX-4)/66,sag=Math.round(2.2*Math.abs(Math.sin(Math.PI*seg))),b=.5+.5*Math.sin(t*1.4+i*1.9),c=cols[i%4];
+    ctx.globalAlpha=.4+.6*b;ctx.fillStyle=c;ctx.fillRect(x,DY+5+sag,2,2);ctx.globalAlpha=1;
+    if(b>.85){ctx.globalAlpha=.3;ctx.fillRect(x-1,DY+5+sag,4,2);ctx.fillRect(x,DY+4+sag,2,4);ctx.globalAlpha=1}
+  }
+}
+function floco(ctx,t){
+  if(!EFEITOS)return;
+  SNOW.forEach((f,i)=>{const y=(f.y0+t*f.v)%(DH+4)-2,x=f.x+Math.sin(t*f.s+f.p)*3;ctx.globalAlpha=.85;ctx.fillStyle='#fff';ctx.fillRect(Math.round(x),Math.round(y),1,1);if(i%5===0){ctx.fillRect(Math.round(x)-1,Math.round(y),3,1);ctx.fillRect(Math.round(x),Math.round(y)-1,1,3)}ctx.globalAlpha=1});
+}
+const velo=(s,t)=>typeof s.v==='function'?s.v(t):s.v;
+function quadro(m,s,t){const r=s.fn(t);return r.g?r:{g:r,dy:0}}
+function simula(m,t,forcado){
+  const L=DW-48,get=id=>m.estados.find(s=>s.id===id);
+  if(forcado){const s=get(forcado),v=velo(s,0)||0,p=(v*t)%(2*L);return {s,st:t,x:p<L?24+p:24+2*L-p,dir:p<L?1:-1}}
+  const tot=m.roteiro.reduce((a,r)=>a+r[1],0);t=t%tot;let x=40,dir=1,acc=0;
+  const passo=(s,k)=>{const nx=x+dir*(velo(s,k/60)||0)/60;if(nx<24||nx>DW-24)dir*=-1;else x=nx};
+  for(const [id,dur] of m.roteiro){const s=get(id);if(t<acc+dur){const n=Math.round((t-acc)*60);for(let k=0;k<n;k++)passo(s,k);return {s,st:t-acc,x,dir}}for(let k=0,n=Math.round(dur*60);k<n;k++)passo(s,k);acc+=dur}
+}
+// cartão do boneco
+const cart=document.getElementById('mascotes');
+const cardP=document.createElement('div');cardP.className='card';
+cardP.innerHTML='<h3>Boneco de neve <span style="font-weight:400;color:var(--mut);font-size:14px">· pixel · Noite de neve</span></h3><p style="margin:4px 0 10px">'+MP.fala+'</p><div class="stage"><canvas width="64" height="44" style="width:256px;max-width:100%;height:auto" aria-label="Boneco de neve em pixel art"></canvas></div><div class="row"></div><details><summary>Folha de sprites</summary><div class="fol"></div></details>';
+cart.appendChild(cardP);
+const sCv=cardP.querySelector('canvas'),sCtx=sCv.getContext('2d');let sEst='idle',sT0=performance.now();
+const sBs={};MP.estados.forEach(s=>{const b=document.createElement('button');b.textContent=s.nome;b.setAttribute('aria-pressed',s.id===sEst);b.onclick=()=>{sEst=s.id;sT0=performance.now();for(const k in sBs)sBs[k].setAttribute('aria-pressed',k===s.id)};sBs[s.id]=b;cardP.querySelector('.row').appendChild(b)});
+const bd=document.createElement('button');bd.textContent='Baixar folha PNG';cardP.querySelector('.row').appendChild(bd);
+function amostras(s){return s.ts||Array.from({length:s.n},(_,i)=>i/s.fps+.001)}
+bd.onclick=()=>{const cols=Math.max(...MP.estados.map(s=>amostras(s).length)),c=document.createElement('canvas');c.width=36*cols;c.height=26*MP.estados.length;const x=c.getContext('2d');MP.estados.forEach((s,r)=>amostras(s).forEach((t,i)=>quadro(MP,s,t).g.draw(x,i*36,r*26,false,MP.pal)));const a=document.createElement('a');a.download='atlas-boneco-de-neve-folha.png';a.href=c.toDataURL('image/png');a.click()};
+MP.estados.forEach(s=>{const w=document.createElement('div');const ts=amostras(s);w.innerHTML='<h4 style="margin:10px 0 4px;font-size:14px">'+s.nome+' <span style="color:var(--mut);font-weight:400">· '+ts.length+' quadros'+(s.fps?' · '+s.fps+' fps':'')+(s.v?' · '+s.v+' px/s':'')+'</span></h4>';const sh=document.createElement('div');sh.className='sheet';ts.forEach((t,i)=>{const f=document.createElement('figure'),c=document.createElement('canvas');c.width=36;c.height=26;c.style.width='108px';c.style.height='78px';quadro(MP,s,t).g.draw(c.getContext('2d'),0,0,false,MP.pal);f.appendChild(c);f.insertAdjacentHTML('beforeend',String(i+1));sh.appendChild(f)});w.appendChild(sh);cardP.querySelector('.fol').appendChild(w)});
+function palcoPix(T){
+  const t=T-sT0/1000,s=MP.estados.find(q=>q.id===sEst);sCtx.clearRect(0,0,64,44);sCtx.fillStyle='#16284f';sCtx.fillRect(0,0,64,44);sCtx.fillStyle='#e8f1ff';sCtx.fillRect(0,34,64,10);sCtx.fillStyle='#cfe0f7';sCtx.fillRect(0,34,64,1);
+  const v=velo(s,t)||0,off=Math.floor(t*v);for(let x=-(off%12)-12;x<64;x+=12){sCtx.fillStyle='#b5cbe8';sCtx.fillRect(x,38,5,1);sCtx.fillRect(x+4,41,3,1)}
+  const r=quadro(MP,s,t);r.g.draw(sCtx,14,34-23-1+r.dy,false,MP.pal);
+}
+// doca pixel
+const cN=document.getElementById('cNeve').getContext('2d');let nForc=null,nT0=performance.now();
+const rN=document.getElementById('rNeve'),nBs={};
+[['auto','Roteiro automático'],...MP.estados.map(s=>[s.id,s.nome])].forEach(([id,n])=>{const b=document.createElement('button');b.textContent=n;b.setAttribute('aria-pressed',id==='auto');b.onclick=()=>{nForc=id==='auto'?null:id;nT0=performance.now();for(const k in nBs)nBs[k].setAttribute('aria-pressed',k===id)};nBs[id]=b;rN.appendChild(b)});
+// mascotes ilustrados
+const RENA=`<svg class="m rn %E%" viewBox="0 -12 140 114" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rena ilustrada de cachecol">
+<ellipse cx="64" cy="96" rx="36" ry="3.4" fill="#000" opacity=".25"/>
+<g class="todoR">
+ <g class="rabo"><ellipse cx="30" cy="46" rx="6.5" ry="5.5" fill="#f1d7b0"/></g>
+ <g class="perna B"><rect x="46" y="56" width="7" height="36" rx="3.5" fill="#8a5530"/><ellipse cx="49.5" cy="91" rx="5" ry="3" fill="#3a2a22"/></g>
+ <g class="perna B"><rect x="72" y="56" width="7" height="36" rx="3.5" fill="#8a5530"/><ellipse cx="75.5" cy="91" rx="5" ry="3" fill="#3a2a22"/></g>
+ <g class="corpoR"><ellipse cx="62" cy="50" rx="31" ry="16" fill="#b9794a"/><ellipse cx="64" cy="58" rx="21" ry="7" fill="#f1d7b0"/>
+  <circle cx="46" cy="42" r="2.2" fill="#fff" opacity=".6"/><circle cx="56" cy="38" r="2" fill="#fff" opacity=".6"/><circle cx="68" cy="39" r="2.4" fill="#fff" opacity=".6"/><circle cx="78" cy="43" r="1.8" fill="#fff" opacity=".6"/></g>
+ <g class="perna A"><rect x="36" y="56" width="7" height="36" rx="3.5" fill="#b9794a"/><ellipse cx="39.5" cy="91" rx="5" ry="3" fill="#4a3022"/></g>
+ <g class="perna A"><rect x="82" y="56" width="7" height="36" rx="3.5" fill="#b9794a"/><ellipse cx="85.5" cy="91" rx="5" ry="3" fill="#4a3022"/></g>
+ <g class="cabR">
+  <g fill="none" stroke-linecap="round"><g stroke="#6b4023" stroke-width="3.5"><path d="M97 26Q90 10 96-4M93 14Q84 10 82 2M94 8Q100 6 102-2"/></g>
+   <g stroke="#8b5a35" stroke-width="4" transform="translate(9 2)"><path d="M97 26Q90 10 96-4M93 14Q84 10 82 2M94 8Q100 6 102-2"/></g></g>
+  <g class="orelhaR"><ellipse cx="92" cy="28" rx="4.5" ry="9" transform="rotate(-32 92 28)" fill="#a56a40"/><ellipse cx="92" cy="28" rx="2.2" ry="5.5" transform="rotate(-32 92 28)" fill="#f49aae"/></g>
+  <ellipse cx="100" cy="36" rx="13" ry="12" fill="#b9794a"/>
+  <g class="orelhaR"><ellipse cx="108" cy="27" rx="4.5" ry="9" transform="rotate(30 108 27)" fill="#b9794a"/><ellipse cx="108" cy="27" rx="2.2" ry="5.5" transform="rotate(30 108 27)" fill="#f49aae"/></g>
+  <ellipse cx="113" cy="42" rx="10" ry="7.5" fill="#f1d7b0"/><ellipse cx="121" cy="39" rx="3.6" ry="2.8" fill="#3a2a2a"/><circle cx="122" cy="38" r="1" fill="#fff"/>
+  <g class="olhoR"><ellipse cx="105" cy="32" rx="2.6" ry="3.6" fill="#2b1d2e"/><circle cx="106" cy="30.4" r="1.1" fill="#fff"/></g>
+  <ellipse cx="106" cy="43" rx="4" ry="2.5" fill="#ff8aa3" opacity=".5"/><path d="M113 46q4 3 8 0" stroke="#7a4a3a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+ </g>
+ <g class="cachecol"><path d="M80 44Q91 56 102 46L102 58Q91 66 80 56Z" fill="#d7263d"/><path d="M86 48v14M94 50v13" stroke="#fff" stroke-width="2.6" opacity=".9"/>
+  <path d="M82 56q-4 12 0 22l9-2q-3-9 1-18Z" fill="#d7263d"/><path d="M82 66l9-2M82 72l8-2" stroke="#fff" stroke-width="2.4"/></g>
+ <g class="sinoR"><circle cx="97" cy="64" r="4.6" fill="#ffd23f"/><circle cx="95.6" cy="62.6" r="1.4" fill="#fff" opacity=".8"/><path d="M95 69h4" stroke="#b8841a" stroke-width="1.6"/></g>
+ <text class="nota" x="104" y="60">♪</text><text class="nota" x="112" y="52">♫</text>
+</g>
+<text class="zz" x="112" y="20">z</text><text class="zz" x="122" y="8">Z</text></svg>`,NOEL=`<svg class="m nl %E%" viewBox="0 -8 120 148" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Papai Noel ilustrado de bermuda e chinelo">
+<ellipse cx="60" cy="133" rx="32" ry="4" fill="#000" opacity=".25"/>
+<g class="prancha"><path d="M106 44C114 72 112 112 102 132 94 112 96 72 106 44Z" fill="#2ec4b6"/><path d="M105 58V122" stroke="#fff" stroke-width="2" opacity=".85"/></g>
+<g class="todoN">
+ <g class="perna A"><rect x="42" y="92" width="17" height="22" rx="7.5" fill="#d7263d"/><rect x="46.5" y="108" width="8" height="17" rx="4" fill="#f6cfa8"/><ellipse cx="50.5" cy="128" rx="11" ry="4" fill="#ffd23f"/><path d="M44.5 127q6-6 12 0" stroke="#2f9e57" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+ <g class="perna B"><rect x="61" y="92" width="17" height="22" rx="7.5" fill="#d7263d"/><rect x="65.5" y="108" width="8" height="17" rx="4" fill="#f6cfa8"/><ellipse cx="69.5" cy="128" rx="11" ry="4" fill="#ffd23f"/><path d="M63.5 127q6-6 12 0" stroke="#2f9e57" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+ <g class="corpo"><ellipse cx="60" cy="74" rx="31" ry="28" fill="#d7263d"/><ellipse cx="60" cy="96" rx="24" ry="5" fill="#b01c30"/>
+  <g fill="#ffd23f"><circle cx="43" cy="66" r="2.6"/><circle cx="72" cy="58" r="2.4"/><circle cx="50" cy="86" r="2.4"/><circle cx="76" cy="80" r="2.6"/><circle cx="60" cy="72" r="2.2"/></g>
+  <g fill="#fff" opacity=".85"><circle cx="43" cy="66" r=".9"/><circle cx="72" cy="58" r=".9"/><circle cx="50" cy="86" r=".9"/><circle cx="76" cy="80" r=".9"/><circle cx="60" cy="72" r=".9"/></g></g>
+ <g class="braco E"><rect x="20" y="56" width="14" height="28" rx="7" fill="#d7263d"/><circle cx="27" cy="86" r="6.5" fill="#f6cfa8"/></g>
+ <g class="braco D"><rect x="86" y="56" width="14" height="28" rx="7" fill="#d7263d"/><circle cx="93" cy="86" r="6.5" fill="#f6cfa8"/></g>
+ <g class="cabN">
+  <ellipse cx="60" cy="38" rx="17" ry="15" fill="#f6cfa8"/>
+  <path d="M42 38C42 62 50 74 60 74S78 62 78 38C72 48 66 50 60 50S48 48 42 38Z" fill="#fff"/>
+  <ellipse cx="53.5" cy="47" rx="7" ry="4.6" fill="#fff"/><ellipse cx="66.5" cy="47" rx="7" ry="4.6" fill="#fff"/>
+  <circle cx="60" cy="43" r="4.2" fill="#f0a08a"/><circle cx="46.5" cy="43" r="3.4" fill="#ff8aa3" opacity=".55"/><circle cx="73.5" cy="43" r="3.4" fill="#ff8aa3" opacity=".55"/>
+  <g class="oculos"><rect x="46" y="33" width="12" height="8.5" rx="3.8" fill="#1f2740"/><rect x="62" y="33" width="12" height="8.5" rx="3.8" fill="#1f2740"/><path d="M58 36.5h4" stroke="#1f2740" stroke-width="2"/><path d="M49 35.5l3-1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/><path d="M65 35.5l3-1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g>
+  <g class="fechados" fill="none" stroke="#3a2a2a" stroke-width="2" stroke-linecap="round"><path d="M48 37q4 3 9 0"/><path d="M63 37q4 3 9 0"/></g>
+  <path d="M54 55q6 5 12 0" stroke="#8c2a2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M39 30C39 8 56-2 74 3 88 7 92 20 90 32 80 24 58 24 39 30Z" fill="#d7263d"/><ellipse cx="60" cy="29" rx="22" ry="5.5" fill="#fff"/><circle cx="91" cy="38" r="6.5" fill="#fff"/>
+ </g>
+ <g class="bolha"><rect x="76" y="-6" width="40" height="22" rx="9" fill="#fff"/><path d="M82 16l-6 8 14-8Z" fill="#fff"/><text x="96" y="9.5" text-anchor="middle" font-family="Sora,sans-serif" font-weight="800" font-size="10" fill="#d7263d">Ho! Ho!</text></g>
+</g>
+<text class="zz" x="86" y="22">z</text><text class="zz" x="98" y="10">Z</text></svg>`;
+const BONECO=`<svg class="m bn %E%" viewBox="0 -8 120 138" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Boneco de neve ilustrado de gorro e cachecol">
+<defs><radialGradient id="bnG" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#e6f0ff"/><stop offset="1" stop-color="#b9d0f0"/></radialGradient></defs>
+<ellipse cx="60" cy="122" rx="34" ry="4" fill="#000" opacity=".25"/>
+<g class="todoB">
+ <g class="braco E"><path d="M38 82L12 94M20 90L14 82M18 92L10 98" stroke="#7a5236" stroke-width="3.4" fill="none" stroke-linecap="round"/></g>
+ <g class="braco D"><path d="M82 82L108 94M100 90L106 82M102 92L110 98" stroke="#7a5236" stroke-width="3.4" fill="none" stroke-linecap="round"/></g>
+ <ellipse cx="60" cy="94" rx="31" ry="28" fill="url(#bnG)"/>
+ <g fill="#2b2b3a"><circle cx="60" cy="86" r="3"/><circle cx="60" cy="99" r="3"/><circle cx="60" cy="112" r="3"/></g>
+ <g class="cabB">
+  <ellipse cx="60" cy="47" rx="23" ry="21" fill="url(#bnG)"/>
+  <g class="olhoB"><circle cx="51" cy="49" r="3.2" fill="#22222e"/><circle cx="52" cy="48" r="1" fill="#fff"/></g><g class="olhoB"><circle cx="69" cy="49" r="3.2" fill="#22222e"/><circle cx="70" cy="48" r="1" fill="#fff"/></g>
+  <g class="fechados" fill="none" stroke="#22222e" stroke-width="2" stroke-linecap="round"><path d="M47 50q4 3 8 0"/><path d="M65 50q4 3 8 0"/></g>
+  <path d="M60 53l17 3-17 4Z" fill="#ff8a2a"/><path d="M60 56h17" stroke="#d96a12" stroke-width="1"/>
+  <circle cx="45" cy="57" r="3.6" fill="#ff8aa3" opacity=".5"/><circle cx="75" cy="57" r="3.6" fill="#ff8aa3" opacity=".5"/>
+  <g fill="#22222e"><circle cx="51" cy="62" r="1.5"/><circle cx="55" cy="64.5" r="1.5"/><circle cx="60" cy="65.5" r="1.5"/><circle cx="65" cy="64.5" r="1.5"/><circle cx="69" cy="62" r="1.5"/></g>
+  <path d="M37 38C37 14 50 4 62 4S84 14 83 38C74 32 46 32 37 38Z" fill="#d7263d"/><rect x="35" y="34" width="50" height="9" rx="4.5" fill="#fff"/><path d="M42 36v5M50 36v5M58 36v5M66 36v5M74 36v5" stroke="#dbe7f7" stroke-width="1.4"/><circle cx="60" cy="3" r="6.5" fill="#fff"/>
+ </g>
+ <g class="cachecolB"><path d="M36 68Q60 80 84 68L84 78Q60 90 36 78Z" fill="#2f9e57"/><path d="M47 72v12M59 75v12M71 73v12" stroke="#d7263d" stroke-width="3"/><path d="M74 80q9 10 5 26l10-2q2-16-6-26Z" fill="#2f9e57"/><path d="M76 92l10-2M77 98l9-2" stroke="#d7263d" stroke-width="2.6"/></g>
+</g>
+<text class="zz" x="86" y="24">z</text><text class="zz" x="98" y="12">Z</text></svg>`;
+const MI={
+ boneco:{nome:'Boneco de neve',tema:'Noite de neve (materiais)',svg:BONECO,larg:100,fala:'Mesmo bonachão do pixel, agora macio e brilhante. Passa saltitando, acena e cochila de gorro torto.',cor:['#3a6aa8','#17356c','#09173a'],est:[['idle','Parado'],['walk','Saltitando',1,'r1'],['wave','Acenando'],['sleep','Dormindo']]},
+ rena:{nome:'Rena',tema:'Vitrine',svg:RENA,larg:124,fala:'Elegante e festeira. Trota de cachecol, balança o sininho e cochila de pé.',cor:['#4a5a8a','#2a3158','#161a35'],est:[['idle','Parada'],['walk','Trotando',1,'r1'],['sino','Sininho'],['sleep','Dormindo']]},
+ noel:{nome:'Papai Noel',tema:'Natal brasileiro',svg:NOEL,larg:100,fala:'Veio de bermuda. Acena de óculos escuros, passeia com a prancha, ri alto e tira uma soneca.',cor:['#ff9a5a','#c4408a','#2b1a5c'],est:[['idle','Acenando'],['walk','Passeando',1,'r2'],['ho','Rindo'],['sleep','Dormindo']]}
+};
+const render=(h,id,e)=>{h.innerHTML=MI[id].svg.replace('%E%',e)};
+Object.entries(MI).forEach(([id,m])=>{
+  const el=document.createElement('div');el.className='card';
+  el.innerHTML='<h3>'+m.nome+' <span style="font-weight:400;color:var(--mut);font-size:14px">· tema '+m.tema+'</span></h3><p style="margin:4px 0 10px">'+m.fala+'</p><div class="palcoM" style="--p1:'+m.cor[0]+';--p2:'+m.cor[1]+';--p3:'+m.cor[2]+'"><div class="chao"></div><div class="base"></div><div class="host" style="position:relative;z-index:2;display:flex"></div></div><div class="row"></div>';
+  cart.appendChild(el);
+  const host=el.querySelector('.host'),chao=el.querySelector('.chao'),row=el.querySelector('.row');
+  const set=(e,rol)=>{render(host,id,e);chao.className='chao '+(rol||'');row.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.e===e))};
+  m.est.forEach(([e,n,v,rol])=>{const b=document.createElement('button');b.textContent=n;b.dataset.e=e;b.onclick=()=>set(e,rol);row.appendChild(b)});
+  set(m.est[0][0]);
+});
+document.querySelectorAll('.tema').forEach(sec=>{
+  const id=sec.dataset.m,m=MI[id],host=sec.querySelector('.host'),pas=sec.querySelector('.passeio'),row=sec.querySelector('.botoes');
+  pas.style.width=m.larg+'px';
+  const set=e=>{const d=m.est.find(q=>q[0]===e);render(host,id,e);pas.classList.toggle('parado',!d[2]);row.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.e===e))};
+  m.est.forEach(([e,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.e=e;b.onclick=()=>set(e);row.appendChild(b)});
+  set(m.est[1][0]);
+});
+// loop
+const qs=new URLSearchParams(location.search),fixo=qs.has('t')?parseFloat(qs.get('t')):null;
+let pausado=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function tudo(now){
+  const T=fixo!==null?fixo:now/1000;
+  palcoPix(T);
+  const tt=fixo!==null?fixo:(now-nT0)/1000,sm=simula(MP,tt,nForc),r=quadro(MP,sm.s,sm.st);
+  cN.clearRect(0,0,DW,DH);desenhaNeve(cN,T);r.g.draw(cN,Math.round(sm.x)-18,DY-23+r.dy,false,MP.pal);floco(cN,T);
+}
+function loop(now){if(!pausado)tudo(now);requestAnimationFrame(loop)}
+const bp=document.getElementById('pausa');bp.onclick=()=>{pausado=!pausado;document.body.classList.toggle('pausa',pausado);bp.setAttribute('aria-pressed',pausado);bp.textContent=pausado?'Retomar animações':'Pausar animações'};
+const bf=document.getElementById('fxb');bf.onclick=()=>{EFEITOS=!EFEITOS;document.body.classList.toggle('sem-efeitos',!EFEITOS);bf.setAttribute('aria-pressed',EFEITOS);bf.textContent='Efeitos de época: '+(EFEITOS?'ligados':'desligados')};
+if(fixo!==null){tudo(0)}else{tudo(performance.now());requestAnimationFrame(loop)}
+</script>
+</body>
+</html>
