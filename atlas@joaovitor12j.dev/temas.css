@@ -244,49 +244,229 @@
 .atlas-onix .atlas-apps-icon { color: #ededed; }
 .atlas-onix .atlas-item-hover { background-color: rgba(255, 255, 255, 0.12); }
 
-/* Tema Halloween: roxo escuro e laranja */
-.atlas-halloween .atlas-bg {
-    background-color: rgba(36, 18, 52, 0.94);
-    border: 1px solid #ff7a1a;
-    box-shadow: inset 0 1px 0 rgba(255, 179, 107, 0.18), 0 8px 28px rgba(0, 0, 0, 0.55), 0 0 12px rgba(255, 122, 26, 0.35);
-}
-.atlas-halloween .atlas-dot { background-color: #ff7a1a; }
-.atlas-halloween .atlas-sep { background-color: rgba(255, 122, 26, 0.5); }
-.atlas-halloween .atlas-widget { border-color: rgba(255, 122, 26, 0.5); }
-.atlas-halloween .atlas-widget-txt { color: #ffb36b; }
-.atlas-halloween .atlas-widget-sub { color: rgba(255, 179, 107, 0.75); }
-.atlas-tooltip.atlas-halloween {
-    background-color: rgba(36, 18, 52, 0.96);
-    color: #ffb36b;
-    border: 1px solid #ff7a1a;
-}
-.atlas-preview.atlas-halloween {
-    background-color: rgba(36, 18, 52, 0.96);
-    border: 1px solid #ff7a1a;
-}
-.atlas-halloween .atlas-preview-title, .atlas-halloween .atlas-preview-close { color: #ffb36b; }
+/* Pacote Pixel: madeira/pedra/céu/areia, bordas e indicadores do mockup docs/design/pacotes-de-temas/pixel/ */
 
-/* Tema Natal: vinho e verde-pinheiro */
-.atlas-natal .atlas-bg {
-    background-color: rgba(70, 16, 28, 0.94);
-    border: 2px solid #2f8f4e;
-    box-shadow: inset 0 1px 0 rgba(251, 238, 208, 0.14), 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 12px rgba(47, 143, 78, 0.3);
+/* Tema Vila: madeira clara e grama, coração como indicador */
+.atlas-vila .atlas-bg {
+    background-color: #3a2512;
+    border: 2px solid #5f9a4e;
+    box-shadow: inset 0 1px 0 rgba(246, 234, 208, 0.12), 0 8px 28px rgba(0, 0, 0, 0.5);
 }
-.atlas-natal .atlas-dot { background-color: #f4d35e; }
-.atlas-natal .atlas-sep { background-color: rgba(47, 143, 78, 0.8); }
-.atlas-natal .atlas-widget { border-color: rgba(47, 143, 78, 0.7); }
-.atlas-natal .atlas-widget-txt { color: #fbeed0; }
-.atlas-natal .atlas-widget-sub { color: rgba(251, 238, 208, 0.75); }
-.atlas-tooltip.atlas-natal {
-    background-color: rgba(70, 16, 28, 0.96);
-    color: #fbeed0;
-    border: 1px solid #2f8f4e;
+.atlas-vila .atlas-dot { background-color: #e8607a; }
+.atlas-vila .atlas-sep { background-color: rgba(95, 154, 78, 0.55); }
+.atlas-vila .atlas-widget { border-color: rgba(95, 154, 78, 0.5); background-gradient-start: rgba(246, 234, 208, 0.18); background-gradient-end: rgba(246, 234, 208, 0.06); }
+.atlas-vila .atlas-widget-txt { color: #f6ead0; }
+.atlas-vila .atlas-widget-sub { color: rgba(246, 234, 208, 0.7); }
+.atlas-tooltip.atlas-vila { background-color: #3a2512; color: #f6ead0; border: 1px solid #5f9a4e; }
+.atlas-preview.atlas-vila { background-color: #3a2512; border: 2px solid #5f9a4e; }
+.atlas-vila .atlas-preview-title, .atlas-vila .atlas-preview-close { color: #f6ead0; }
+.atlas-vila .atlas-apps { background-color: rgba(95, 154, 78, 0.22); }
+.atlas-vila .atlas-apps-icon { color: #f6ead0; }
+.atlas-vila .atlas-item-hover { background-color: rgba(95, 154, 78, 0.28); }
+
+/* Tema Floresta: pedra com musgo e vagalumes, folha como indicador */
+.atlas-floresta .atlas-bg {
+    background-color: #1e2a22;
+    border: 1px solid #4f9a45;
+    box-shadow: inset 0 1px 0 rgba(227, 242, 218, 0.1), 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 12px rgba(79, 154, 69, 0.25);
 }
-.atlas-preview.atlas-natal {
-    background-color: rgba(70, 16, 28, 0.96);
-    border: 2px solid #2f8f4e;
+.atlas-floresta .atlas-dot { background-color: #8fd96a; }
+.atlas-floresta .atlas-sep { background-color: rgba(79, 154, 69, 0.5); }
+.atlas-floresta .atlas-widget { border-color: rgba(79, 154, 69, 0.5); background-gradient-start: rgba(227, 242, 218, 0.15); background-gradient-end: rgba(227, 242, 218, 0.05); }
+.atlas-floresta .atlas-widget-txt { color: #e3f2da; }
+.atlas-floresta .atlas-widget-sub { color: rgba(227, 242, 218, 0.7); }
+.atlas-tooltip.atlas-floresta { background-color: #1e2a22; color: #e3f2da; border: 1px solid #4f9a45; }
+.atlas-preview.atlas-floresta { background-color: #1e2a22; border: 1px solid #4f9a45; }
+.atlas-floresta .atlas-preview-title, .atlas-floresta .atlas-preview-close { color: #e3f2da; }
+.atlas-floresta .atlas-apps { background-color: rgba(79, 154, 69, 0.2); }
+.atlas-floresta .atlas-apps-icon { color: #e3f2da; }
+.atlas-floresta .atlas-item-hover { background-color: rgba(79, 154, 69, 0.26); }
+
+/* Tema Noite de lua: céu pontilhado de estrelas sobre telhados, estrela como indicador */
+.atlas-lua .atlas-bg {
+    background-color: #141a3a;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.55);
 }
-.atlas-natal .atlas-preview-title, .atlas-natal .atlas-preview-close { color: #fbeed0; }
+.atlas-lua .atlas-dot { background-color: #ffe39a; }
+.atlas-lua .atlas-sep { background-color: rgba(255, 255, 255, 0.2); }
+.atlas-lua .atlas-widget { border-color: rgba(255, 227, 154, 0.4); background-gradient-start: rgba(255, 255, 255, 0.15); background-gradient-end: rgba(255, 255, 255, 0.05); }
+.atlas-lua .atlas-widget-txt { color: #eef0ff; }
+.atlas-lua .atlas-widget-sub { color: rgba(238, 240, 255, 0.7); }
+.atlas-tooltip.atlas-lua { background-color: #141a3a; color: #eef0ff; border: 1px solid rgba(255, 255, 255, 0.18); }
+.atlas-preview.atlas-lua { background-color: #141a3a; border: 1px solid rgba(255, 255, 255, 0.18); }
+.atlas-lua .atlas-preview-title, .atlas-lua .atlas-preview-close { color: #eef0ff; }
+.atlas-lua .atlas-apps { background-color: rgba(255, 255, 255, 0.12); }
+.atlas-lua .atlas-apps-icon { color: #eef0ff; }
+.atlas-lua .atlas-item-hover { background-color: rgba(255, 255, 255, 0.16); }
+
+/* Tema Praia: areia e mar com ondas, estrela-do-mar como indicador */
+.atlas-praia .atlas-bg {
+    background-color: #eadfc0;
+    border: 1px solid #2f7fc1;
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 6px 20px rgba(47, 127, 193, 0.28);
+}
+.atlas-praia .atlas-dot { background-color: #ff8a4a; }
+.atlas-praia .atlas-sep { background-color: #cdbd92; }
+.atlas-praia .atlas-widget { border-color: rgba(47, 127, 193, 0.28); background-gradient-start: rgba(47, 127, 193, 0.1); background-gradient-end: rgba(47, 127, 193, 0.03); }
+.atlas-praia .atlas-widget-txt { color: #2f2f2a; }
+.atlas-praia .atlas-widget-sub { color: rgba(47, 47, 42, 0.7); }
+.atlas-tooltip.atlas-praia { background-color: #eadfc0; color: #2f2f2a; border: 1px solid #2f7fc1; }
+.atlas-preview.atlas-praia { background-color: #eadfc0; border: 1px solid #2f7fc1; }
+.atlas-praia .atlas-preview-title, .atlas-praia .atlas-preview-close { color: #2f2f2a; }
+.atlas-praia .atlas-apps { background-color: rgba(47, 127, 193, 0.14); }
+.atlas-praia .atlas-apps-icon { color: #2f2f2a; }
+.atlas-praia .atlas-item-hover { background-color: rgba(47, 127, 193, 0.14); }
+
+/* Pacote Materiais: vidro, luz e efeito ambiente do mockup docs/design/pacotes-de-temas/materiais/ */
+
+/* Tema Aurora: vidro líquido com blur forte, ponto de luz como indicador */
+.atlas-aurora .atlas-bg {
+    background-color: rgba(18, 22, 40, 0.4);
+    border: 1px solid rgba(140, 230, 210, 0.5);
+    box-shadow: inset 0 1px 0 rgba(234, 252, 255, 0.16), 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 16px rgba(140, 230, 210, 0.2);
+}
+.atlas-aurora .atlas-dot { background-color: #eafcff; }
+.atlas-aurora .atlas-sep { background-color: rgba(140, 230, 210, 0.35); }
+.atlas-aurora .atlas-widget { border-color: rgba(140, 230, 210, 0.4); background-gradient-start: rgba(140, 230, 210, 0.2); background-gradient-end: rgba(140, 230, 210, 0.06); }
+.atlas-aurora .atlas-widget-txt { color: #eafcff; }
+.atlas-aurora .atlas-widget-sub { color: rgba(234, 252, 255, 0.72); }
+.atlas-tooltip.atlas-aurora { background-color: rgba(18, 22, 40, 0.85); color: #eafcff; border: 1px solid rgba(140, 230, 210, 0.5); }
+.atlas-preview.atlas-aurora { background-color: rgba(18, 22, 40, 0.85); border: 1px solid rgba(140, 230, 210, 0.5); }
+.atlas-aurora .atlas-preview-title, .atlas-aurora .atlas-preview-close { color: #eafcff; }
+.atlas-aurora .atlas-apps { background-color: rgba(140, 230, 210, 0.14); }
+.atlas-aurora .atlas-apps-icon { color: #eafcff; }
+.atlas-aurora .atlas-item-hover { background-color: rgba(140, 230, 210, 0.18); }
+
+/* Tema Carta: papel creme com moldura de tinta, carimbo vermelho como indicador */
+.atlas-carta .atlas-bg {
+    background-color: #f3ead2;
+    border: 1px solid #8a6d4a;
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 6px 18px rgba(60, 50, 30, 0.26);
+}
+.atlas-carta .atlas-dot { background-color: #c23b3b; }
+.atlas-carta .atlas-sep { background-color: #8a6d4a; }
+.atlas-carta .atlas-widget { border-color: rgba(194, 59, 59, 0.4); background-gradient-start: rgba(138, 109, 74, 0.1); background-gradient-end: rgba(138, 109, 74, 0.03); }
+.atlas-carta .atlas-widget-txt { color: #3a2c1a; }
+.atlas-carta .atlas-widget-sub { color: rgba(58, 44, 26, 0.7); }
+.atlas-tooltip.atlas-carta { background-color: #f3ead2; color: #3a2c1a; border: 1px solid #8a6d4a; }
+.atlas-preview.atlas-carta { background-color: #f3ead2; border: 1px solid #8a6d4a; }
+.atlas-carta .atlas-preview-title, .atlas-carta .atlas-preview-close { color: #3a2c1a; }
+.atlas-carta .atlas-apps { background-color: rgba(138, 109, 74, 0.14); }
+.atlas-carta .atlas-apps-icon { color: #3a2c1a; }
+.atlas-carta .atlas-item-hover { background-color: rgba(138, 109, 74, 0.12); }
+
+/* Tema Jardim: vidro damasco com sol e pétalas, folha como indicador */
+.atlas-jardim .atlas-bg {
+    background-color: rgba(90, 55, 20, 0.4);
+    border: 1px solid #e0a24a;
+    box-shadow: inset 0 1px 0 rgba(251, 240, 217, 0.16), 0 8px 28px rgba(0, 0, 0, 0.4), 0 0 14px rgba(224, 162, 74, 0.22);
+}
+.atlas-jardim .atlas-dot { background-color: #5fae4e; }
+.atlas-jardim .atlas-sep { background-color: rgba(224, 162, 74, 0.45); }
+.atlas-jardim .atlas-widget { border-color: rgba(224, 162, 74, 0.45); background-gradient-start: rgba(251, 240, 217, 0.16); background-gradient-end: rgba(251, 240, 217, 0.05); }
+.atlas-jardim .atlas-widget-txt { color: #fbf0d9; }
+.atlas-jardim .atlas-widget-sub { color: rgba(251, 240, 217, 0.72); }
+.atlas-tooltip.atlas-jardim { background-color: rgba(90, 55, 20, 0.85); color: #fbf0d9; border: 1px solid #e0a24a; }
+.atlas-preview.atlas-jardim { background-color: rgba(90, 55, 20, 0.85); border: 1px solid #e0a24a; }
+.atlas-jardim .atlas-preview-title, .atlas-jardim .atlas-preview-close { color: #fbf0d9; }
+.atlas-jardim .atlas-apps { background-color: rgba(224, 162, 74, 0.2); }
+.atlas-jardim .atlas-apps-icon { color: #fbf0d9; }
+.atlas-jardim .atlas-item-hover { background-color: rgba(224, 162, 74, 0.24); }
+
+/* Tema Chuva: vidro escuro com bokeh, traço neon como indicador */
+.atlas-chuva .atlas-bg {
+    background-color: rgba(10, 10, 20, 0.85);
+    border: 1px solid #39e0ff;
+    box-shadow: inset 0 1px 0 rgba(216, 246, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 14px rgba(57, 224, 255, 0.3);
+}
+.atlas-chuva .atlas-dot { background-color: #ff6ec7; }
+.atlas-chuva .atlas-sep { background-color: rgba(57, 224, 255, 0.4); }
+.atlas-chuva .atlas-widget { border-color: rgba(57, 224, 255, 0.4); background-gradient-start: rgba(255, 110, 199, 0.16); background-gradient-end: rgba(57, 224, 255, 0.08); }
+.atlas-chuva .atlas-widget-txt { color: #d8f6ff; }
+.atlas-chuva .atlas-widget-sub { color: rgba(216, 246, 255, 0.72); }
+.atlas-tooltip.atlas-chuva { background-color: rgba(10, 10, 20, 0.92); color: #d8f6ff; border: 1px solid #39e0ff; }
+.atlas-preview.atlas-chuva { background-color: rgba(10, 10, 20, 0.92); border: 1px solid #39e0ff; }
+.atlas-chuva .atlas-preview-title, .atlas-chuva .atlas-preview-close { color: #d8f6ff; }
+.atlas-chuva .atlas-apps { background-color: rgba(57, 224, 255, 0.14); }
+.atlas-chuva .atlas-apps-icon { color: #d8f6ff; }
+.atlas-chuva .atlas-item-hover { background-color: rgba(57, 224, 255, 0.18); }
+
+/* Pacote Natal: pacotes/natal/ESPECIFICACAO.md */
+
+/* Tema Noite de neve (pixel): céu azul-noite com neve e sincelos, floco como indicador */
+.atlas-nevepixel .atlas-bg {
+    background-color: #16233f;
+    border: 2px solid #eaf6ff;
+    box-shadow: inset 0 1px 0 rgba(234, 246, 255, 0.14), 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+.atlas-nevepixel .atlas-dot { background-color: #bfe9ff; }
+.atlas-nevepixel .atlas-sep { background-color: rgba(234, 246, 255, 0.3); }
+.atlas-nevepixel .atlas-widget { border-color: rgba(234, 246, 255, 0.35); background-gradient-start: rgba(234, 246, 255, 0.15); background-gradient-end: rgba(234, 246, 255, 0.05); }
+.atlas-nevepixel .atlas-widget-txt { color: #eaf6ff; }
+.atlas-nevepixel .atlas-widget-sub { color: rgba(234, 246, 255, 0.72); }
+.atlas-tooltip.atlas-nevepixel { background-color: #16233f; color: #eaf6ff; border: 1px solid #eaf6ff; }
+.atlas-preview.atlas-nevepixel { background-color: #16233f; border: 2px solid #eaf6ff; }
+.atlas-nevepixel .atlas-preview-title, .atlas-nevepixel .atlas-preview-close { color: #eaf6ff; }
+.atlas-nevepixel .atlas-apps { background-color: rgba(234, 246, 255, 0.12); }
+.atlas-nevepixel .atlas-apps-icon { color: #eaf6ff; }
+.atlas-nevepixel .atlas-item-hover { background-color: rgba(234, 246, 255, 0.16); }
+
+/* Tema Noite de neve (materiais): vidro de gelo fosco com neve acumulada, floco como indicador */
+.atlas-nevemat .atlas-bg {
+    background-color: rgba(200, 225, 240, 0.38);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 28px rgba(15, 45, 70, 0.3);
+}
+.atlas-nevemat .atlas-dot { background-color: #0f2d45; }
+.atlas-nevemat .atlas-sep { background-color: rgba(255, 255, 255, 0.45); }
+.atlas-nevemat .atlas-widget { border-color: rgba(255, 255, 255, 0.5); background-gradient-start: rgba(255, 255, 255, 0.3); background-gradient-end: rgba(255, 255, 255, 0.1); }
+.atlas-nevemat .atlas-widget-txt { color: #0f2d45; }
+.atlas-nevemat .atlas-widget-sub { color: rgba(15, 45, 69, 0.75); }
+.atlas-tooltip.atlas-nevemat { background-color: rgba(200, 225, 240, 0.85); color: #0f2d45; border: 1px solid rgba(255, 255, 255, 0.65); }
+.atlas-preview.atlas-nevemat { background-color: rgba(200, 225, 240, 0.85); border: 1px solid rgba(255, 255, 255, 0.65); }
+.atlas-nevemat .atlas-preview-title, .atlas-nevemat .atlas-preview-close { color: #0f2d45; }
+.atlas-nevemat .atlas-apps { background-color: rgba(255, 255, 255, 0.3); }
+.atlas-nevemat .atlas-apps-icon { color: #0f2d45; }
+.atlas-nevemat .atlas-item-hover { background-color: rgba(255, 255, 255, 0.3); }
+
+/* Tema Vitrine: papel de presente vermelho com fita dourada, etiqueta como indicador */
+.atlas-vitrine .atlas-bg {
+    background-color: #7a1f2b;
+    border: 2px solid #d4af37;
+    box-shadow: inset 0 1px 0 rgba(251, 238, 208, 0.16), 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 12px rgba(212, 175, 55, 0.3);
+}
+.atlas-vitrine .atlas-dot { background-color: #fff2d0; }
+.atlas-vitrine .atlas-sep { background-color: rgba(212, 175, 55, 0.6); }
+.atlas-vitrine .atlas-widget { border-color: rgba(212, 175, 55, 0.6); background-gradient-start: rgba(255, 255, 255, 0.15); background-gradient-end: rgba(255, 255, 255, 0.05); }
+.atlas-vitrine .atlas-widget-txt { color: #fbeed0; }
+.atlas-vitrine .atlas-widget-sub { color: rgba(251, 238, 208, 0.75); }
+.atlas-tooltip.atlas-vitrine { background-color: #7a1f2b; color: #fbeed0; border: 1px solid #d4af37; }
+.atlas-preview.atlas-vitrine { background-color: #7a1f2b; border: 2px solid #d4af37; }
+.atlas-vitrine .atlas-preview-title, .atlas-vitrine .atlas-preview-close { color: #fbeed0; }
+.atlas-vitrine .atlas-apps { background-color: rgba(212, 175, 55, 0.25); }
+.atlas-vitrine .atlas-apps-icon { color: #fbeed0; }
+.atlas-vitrine .atlas-item-hover { background-color: rgba(212, 175, 55, 0.3); }
+
+/* Tema Natal brasileiro: vidro de pôr do sol com palmeiras e mar, bola de Natal como indicador */
+.atlas-brasileiro .atlas-bg {
+    background-color: rgba(200, 120, 60, 0.4);
+    border: 1px solid #2f8f7a;
+    box-shadow: inset 0 1px 0 rgba(255, 243, 224, 0.16), 0 8px 28px rgba(0, 0, 0, 0.4), 0 0 14px rgba(47, 143, 122, 0.25);
+}
+.atlas-brasileiro .atlas-dot { background-color: #e63946; }
+.atlas-brasileiro .atlas-sep { background-color: rgba(47, 143, 122, 0.5); }
+.atlas-brasileiro .atlas-widget { border-color: rgba(47, 143, 122, 0.5); background-gradient-start: rgba(255, 243, 224, 0.16); background-gradient-end: rgba(255, 243, 224, 0.05); }
+.atlas-brasileiro .atlas-widget-txt { color: #fff3e0; }
+.atlas-brasileiro .atlas-widget-sub { color: rgba(255, 243, 224, 0.72); }
+.atlas-tooltip.atlas-brasileiro { background-color: rgba(120, 70, 35, 0.9); color: #fff3e0; border: 1px solid #2f8f7a; }
+.atlas-preview.atlas-brasileiro { background-color: rgba(120, 70, 35, 0.9); border: 1px solid #2f8f7a; }
+.atlas-brasileiro .atlas-preview-title, .atlas-brasileiro .atlas-preview-close { color: #fff3e0; }
+.atlas-brasileiro .atlas-apps { background-color: rgba(47, 143, 122, 0.2); }
+.atlas-brasileiro .atlas-apps-icon { color: #fff3e0; }
+.atlas-brasileiro .atlas-item-hover { background-color: rgba(47, 143, 122, 0.24); }
 
 /* Botão "Mostrar aplicativos": tile com ícone na cor do tema */
 .atlas-apps { background-color: rgba(255, 255, 255, 0.12); border-radius: 14px; }

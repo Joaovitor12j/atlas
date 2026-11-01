@@ -7,7 +7,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, neve, noel, passear, pendurado, picole, pilha, pinguim, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
+import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
 import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
@@ -17,10 +17,75 @@ import {
     duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPendurado, duracaoPicole, duracaoPinguim,
     duracaoCucoVoa, duracaoPasseio, duracaoPinguimAnda, duracaoPinguimPula, duracaoSolCorre, duracaoSolNasce, duracaoSolQuica,
     quadroCucoVoa, quadroPinguimAnda, quadroPinguimPula, quadroSolCorre, quadroSolNasce, quadroSolQuica, duracaoSolArco, duracaoSolLeque, PASSEIOS, quadroPasseio, tamanhoPasseio, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima,
-    memoriaPedeAparicao, naJanela, naTemporada, posicionarMascote, proximoDisparo, quadroBoneco, quadroChama, quadroCuco,
-    quadroEsqueleto, quadroFantasma, quadroNeve, quadroNoel, quadroPendurado, quadroPicole, quadroPinguim, quadroSolArco,
+    memoriaPedeAparicao, naJanela, naTemporada, posicionarMascote, proximoDisparo, proximoEstadoResidente, quadroAguaViva,
+    quadroBoneco, quadroBonecoIlustrado, quadroChama, quadroCuco,
+    quadroEsqueleto, quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNeve, quadroNoel, quadroPapaiNoel, quadroPendurado, quadroPicole, quadroPinguim, quadroRena, quadroSapo, quadroSolArco,
     quadroSolLeque, rearmarMemoria, tamanhoMascoteClima, usoMemoria,
 } from './logica.js';
+
+// Mascotes residentes: moram na doca do tema atual (ligados por `mascote-residente-ativo`) e nunca saem, diferente
+// dos mascotes por horário/data/evento acima. `estados` é [[id, peso]] para proximoEstadoResidente (logica.js);
+// `duracaoMs` dá a faixa [min, max] de cada estado antes de sortear o próximo. Pixel e nevepixel ficam para quando
+// houver folha de sprites de verdade (precisam de arte, não só código).
+const RESIDENTES = {
+    aurora: {
+        id: 'agua-viva',
+        estados: [['flutuando', 6], ['nadando', 3], ['brilhando', 2], ['dormindo', 1]],
+        duracaoMs: {flutuando: [4000, 7000], nadando: [3000, 5000], brilhando: [2000, 3000], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.5), h: Math.round(icone * 1.5)}),
+        desenhar: aguaViva,
+        quadro: quadroAguaViva,
+    },
+    carta: {
+        id: 'gaivota',
+        estados: [['parada', 5], ['andando', 3], ['voando', 2], ['dormindo', 1]],
+        duracaoMs: {parada: [3000, 6000], andando: [2500, 4500], voando: [2500, 4000], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.4), h: Math.round(icone * 1.1)}),
+        desenhar: gaivota,
+        quadro: quadroGaivota,
+    },
+    jardim: {
+        id: 'gato',
+        estados: [['parado', 5], ['andando', 3], ['correndo', 1], ['dormindo', 1]],
+        duracaoMs: {parado: [3000, 6000], andando: [2500, 4500], correndo: [1500, 2500], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.1)}),
+        desenhar: gatoIlustrado,
+        quadro: quadroGatoIlustrado,
+    },
+    chuva: {
+        id: 'sapo',
+        estados: [['parado', 5], ['pulando', 3], ['coaxando', 2], ['dormindo', 1]],
+        duracaoMs: {parado: [3000, 5500], pulando: [1500, 2500], coaxando: [2000, 3500], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.7)}),
+        desenhar: sapo,
+        quadro: quadroSapo,
+    },
+    nevemat: {
+        id: 'boneco-ilustrado',
+        estados: [['parado', 5], ['saltitando', 3], ['acenando', 2], ['dormindo', 1]],
+        duracaoMs: {parado: [3000, 6000], saltitando: [2000, 3500], acenando: [2000, 3500], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
+        desenhar: bonecoIlustrado,
+        quadro: quadroBonecoIlustrado,
+    },
+    vitrine: {
+        id: 'rena',
+        estados: [['parada', 5], ['trotando', 3], ['sininho', 2], ['dormindo', 1]],
+        duracaoMs: {parada: [3000, 6000], trotando: [2500, 4500], sininho: [2000, 3500], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.5), h: Math.round(icone * 1.1)}),
+        desenhar: rena,
+        quadro: quadroRena,
+    },
+    brasileiro: {
+        id: 'papai-noel',
+        estados: [['parado', 4], ['passeando', 3], ['rindo', 2], ['dormindo', 1]],
+        duracaoMs: {parado: [3000, 5500], passeando: [2500, 4500], rindo: [2000, 3500], dormindo: [5000, 9000]},
+        tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.9)}),
+        desenhar: papaiNoel,
+        quadro: quadroPapaiNoel,
+    },
+};
+const RESIDENTE_QUADRO_MS = 33;
 
 // No teste manual, dizer por que nada apareceu; nos disparos normais pular em silêncio é o esperado.
 const pular = (forcar, motivo) => {
@@ -307,12 +372,17 @@ export class Mascotes {
         this._redeSinal = null;
         this._redeId = 0;
         this._aoFoco = () => this._disparar('tomate');
+        this._residId = 0;
+        this._resid = null;
         const st = this._settings;
         for (const chave of ['mascotes-ativos', 'clima-cidade', ...HORARIOS.map(id => `${IMPL[id].prefixo}-intervalo`)])
             this._sinais.push([st, st.connect(`changed::${chave}`, () => this._reagendar())]);
         this._sinais.push([st, st.connect('changed::mascote-teste', () => this._teste())]);
+        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarResidente())]);
+        this._sinais.push([st, st.connect('changed::mascote-residente-ativo', () => this._atualizarResidente())]);
         this._sinais.push([Main.overview, Main.overview.connect('showing', () => this._encerrar())]);
         this._reagendar();
+        this._atualizarResidente();
     }
 
     disable() {
@@ -322,6 +392,7 @@ export class Mascotes {
         this._cancelar();
         this._desligarEventos();
         this._encerrar();
+        this._pararResidente();
         for (const img of Object.values(this._imagens ?? {}))
             img.finish();
         this._imagens = {};
@@ -737,5 +808,88 @@ export class Mascotes {
         for (const a of this._atuais ?? [])
             a.actor.destroy();
         this._atuais = [];
+    }
+
+    // Religa ou desliga o mascote residente ao trocar de tema ou de chave; o tema atual decide qual (ou nenhum).
+    _atualizarResidente() {
+        const spec = RESIDENTES[this._settings.get_string('tema')];
+        if (!spec || !this._settings.get_boolean('mascote-residente-ativo')) {
+            this._pararResidente();
+            return;
+        }
+        if (this._resid?.spec === spec)
+            return; // já é esse: não recria o actor
+        this._pararResidente();
+        this._iniciarResidente(spec);
+    }
+
+    _iniciarResidente(spec) {
+        const anc = this._ganchos.doca()?.ancoraMascote();
+        const tam = spec.tamanho(anc?.icone ?? 48);
+        const actor = new St.DrawingArea({reactive: false, clip_to_allocation: true});
+        actor.set_size(tam.w, tam.h);
+        actor.set_position(-tam.w, -tam.h);
+        const [faixaMin, faixaMax] = spec.duracaoMs[spec.estados[0][0]];
+        this._resid = {
+            spec, tam, actor,
+            estado: spec.estados[0][0],
+            t0: GLib.get_monotonic_time(),
+            trocaEm: faixaMin + Math.random() * (faixaMax - faixaMin),
+        };
+        actor.connect('repaint', a => {
+            const cr = a.get_context();
+            const t0 = agora();
+            try {
+                const [w, h] = a.get_surface_size();
+                const t = (GLib.get_monotonic_time() - this._resid.t0) / 1000;
+                spec.desenhar(cr, w, h, spec.quadro(t, this._resid.estado));
+            } catch (e) {
+                console.error(`[atlas] erro ao desenhar o mascote residente: ${e}`);
+            } finally {
+                cr.$dispose();
+                registrar('desenho', t0);
+            }
+        });
+        Main.layoutManager.addChrome(actor, {affectsInputRegion: false, affectsStruts: false, trackFullscreen: true});
+        this._residId = agendar('mascote-residente', RESIDENTE_QUADRO_MS, () => this._quadroResidente());
+    }
+
+    // A cada quadro: esconde sem gastar desenho se a doca estiver escondida/Overview aberto; senão posiciona,
+    // troca de estado quando a janela do estado atual termina (sorteio ponderado) e pede o próximo repaint.
+    _quadroResidente() {
+        const r = this._resid;
+        if (!r)
+            return GLib.SOURCE_REMOVE;
+        const anc = this._ganchos.doca()?.ancoraMascote();
+        if (!anc || Main.overview.visible) {
+            r.actor.visible = false;
+            return GLib.SOURCE_CONTINUE;
+        }
+        const dx = Math.round(anc.caixa.w / 2 - r.tam.w / 2 - anc.icone * 0.15);
+        const pos = posicionarMascote(anc.caixa, r.tam, anc.topoUtil, dx);
+        if (!pos) {
+            r.actor.visible = false;
+            return GLib.SOURCE_CONTINUE;
+        }
+        r.actor.visible = true;
+        r.actor.set_position(pos.x, pos.y);
+        const tEstado = (GLib.get_monotonic_time() - r.t0) / 1000;
+        if (tEstado >= r.trocaEm) {
+            r.estado = proximoEstadoResidente(r.spec.estados, Math.random());
+            r.t0 = GLib.get_monotonic_time();
+            const [faixaMin, faixaMax] = r.spec.duracaoMs[r.estado];
+            r.trocaEm = faixaMin + Math.random() * (faixaMax - faixaMin);
+        }
+        r.actor.queue_repaint();
+        return GLib.SOURCE_CONTINUE;
+    }
+
+    _pararResidente() {
+        if (this._residId) {
+            GLib.source_remove(this._residId);
+            this._residId = 0;
+        }
+        this._resid?.actor.destroy();
+        this._resid = null;
     }
 }

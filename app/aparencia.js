@@ -2,7 +2,7 @@
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import {TEMAS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {PACOTES, TEMAS} from '../atlas@joaovitor12j.dev/catalogo.js';
 import {appsDaPrevia, desenharMiniDoca, retanguloArredondado} from './previa.js';
 
 function cor(cr, css) {
@@ -79,31 +79,59 @@ function miniaturaTema(settings, id) {
     return a;
 }
 
-function seletorTema(settings) {
-    const grade = new Gtk.Grid({column_spacing: 10, row_spacing: 10, column_homogeneous: true, margin_top: 6});
-    const botoes = TEMAS.map(([id, nome, desc], i) => {
-        const b = new Gtk.ToggleButton({css_classes: ['atlas-tema'], tooltip_text: nome});
-        const col = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 2});
-        col.append(miniaturaTema(settings, id));
-        col.append(new Gtk.Label({label: nome, xalign: 0, css_classes: ['atlas-tema-nome'], margin_top: 4}));
-        col.append(new Gtk.Label({label: desc.split(',')[0].replace(/^(Grafite-azulado)/, 'Grafite e coral'), xalign: 0, css_classes: ['atlas-tema-desc'], ellipsize: 3}));
-        b.child = col;
-        b.connect('toggled', () => {
-            if (b.active)
-                settings.set_string('tema', id);
-        });
-        grade.attach(b, i % 3, Math.floor(i / 3), 1, 1);
-        return [id, b];
+// Temas dos pacotes Pixel, Materiais e Natal (2026-11-01): ganham a badge "novo" no seletor.
+const TEMAS_NOVOS = new Set(['vila', 'floresta', 'lua', 'praia', 'aurora', 'carta', 'jardim', 'chuva', 'nevepixel', 'nevemat', 'vitrine', 'brasileiro']);
+
+// Um tema do catálogo vira botão com miniatura, nome (+ badge "novo") e descrição.
+function botaoTema(settings, [id, nome, desc]) {
+    const b = new Gtk.ToggleButton({css_classes: ['atlas-tema'], tooltip_text: nome});
+    const col = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 2});
+    col.append(miniaturaTema(settings, id));
+    const linhaNome = new Gtk.Box({spacing: 6, margin_top: 4});
+    linhaNome.append(new Gtk.Label({label: nome, xalign: 0, css_classes: ['atlas-tema-nome'], hexpand: true}));
+    if (TEMAS_NOVOS.has(id))
+        linhaNome.append(new Gtk.Label({label: 'novo', css_classes: ['atlas-badge-novo']}));
+    col.append(linhaNome);
+    col.append(new Gtk.Label({label: desc.split(',')[0].replace(/^(Grafite-azulado)/, 'Grafite e coral'), xalign: 0, css_classes: ['atlas-tema-desc'], ellipsize: 3}));
+    b.child = col;
+    b.connect('toggled', () => {
+        if (b.active)
+            settings.set_string('tema', id);
     });
-    botoes.slice(1).forEach(([, b]) => b.set_group(botoes[0][1]));
+    return b;
+}
+
+// Um grupo de botões por pacote (PACOTES, catalogo.js), todos no mesmo grupo de seleção (um tema ativo só).
+function seletorTema(settings) {
+    const caixa = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 12, margin_top: 6});
+    const porId = new Map(TEMAS.map(t => [t[0], t]));
+    const botoes = [];
+    let primeiro = null;
+    for (const [, nomePacote, ids] of PACOTES) {
+        const temas = ids.map(id => porId.get(id)).filter(Boolean);
+        if (!temas.length)
+            continue;
+        caixa.append(new Gtk.Label({label: nomePacote.toUpperCase(), xalign: 0, css_classes: ['atlas-caps']}));
+        const grade = new Gtk.Grid({column_spacing: 10, row_spacing: 10, column_homogeneous: true});
+        temas.forEach((tema, i) => {
+            const b = botaoTema(settings, tema);
+            if (primeiro)
+                b.set_group(primeiro);
+            else
+                primeiro = b;
+            grade.attach(b, i % 3, Math.floor(i / 3), 1, 1);
+            botoes.push([tema[0], b]);
+        });
+        caixa.append(grade);
+    }
     const sync = () => {
         for (const [id, b] of botoes)
             b.active = id === settings.get_string('tema');
     };
     sync();
     settings.connect('changed::tema', sync);
-    grade._texto = TEMAS.map(t => `${t[1]} ${t[2]}`).join(' ').toLowerCase();
-    return grade;
+    caixa._texto = TEMAS.map(t => `${t[1]} ${t[2]}`).join(' ').toLowerCase();
+    return caixa;
 }
 
 function miniTela(settings) {

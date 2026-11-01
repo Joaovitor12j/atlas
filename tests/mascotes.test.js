@@ -5,6 +5,7 @@ import {
     quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria,
     avaliarDisparo, batidasDoDisparo, duracaoCuco, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoNoel, quadroBoneco, quadroNoel, duracaoChama, memoriaPedeAparicao, quadroChama, rearmarMemoria, usoMemoria, duracaoEsqueleto, duracaoFantasma, escolherAparicao, esperaAte, naJanela, naTemporada, posicionarMascote,
     FINAIS, PASSEIOS, duracaoPasseio, quadroPasseio, tamanhoPasseio, faseSobeDesce, proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
+    proximoEstadoResidente, quadroAguaViva, quadroGaivota, quadroGatoIlustrado, quadroSapo, quadroBonecoIlustrado, quadroRena, quadroPapaiNoel,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();
@@ -367,4 +368,70 @@ test('quadroSprite atravessa a doca sem escorregar e some no fim', () => {
     assert.equal(quadroSprite(60000, 1, SPRITES.gato, cfg), null);
     const e = quadroSprite(0, -1, SPRITES.gato, cfg);
     assert.ok(e.x > 1200 && e.dir === -1, 'da direita para a esquerda');
+});
+
+test('proximoEstadoResidente: respeita o peso de cada estado nas bordas da roleta', () => {
+    const estados = [['flutuando', 6], ['nadando', 3], ['brilhando', 1]];
+    assert.equal(proximoEstadoResidente(estados, 0), 'flutuando');
+    assert.equal(proximoEstadoResidente(estados, 0.5999), 'flutuando');
+    assert.equal(proximoEstadoResidente(estados, 0.6), 'nadando');
+    assert.equal(proximoEstadoResidente(estados, 0.8999), 'nadando');
+    assert.equal(proximoEstadoResidente(estados, 0.9), 'brilhando');
+    assert.equal(proximoEstadoResidente(estados, 0.999999), 'brilhando');
+});
+
+test('quadroAguaViva: sino mais rápido nadando, parado e escuro dormindo, brilho só em brilhando', () => {
+    const parado = quadroAguaViva(0, 'flutuando');
+    assert.equal(parado.tentaculos.length, 5);
+    assert.equal(parado.brilho, 0);
+    const dormindo = quadroAguaViva(500, 'dormindo');
+    assert.ok(dormindo.dormindo);
+    assert.equal(dormindo.sino, 0.15);
+    assert.deepEqual(dormindo.tentaculos, [0, 0, 0, 0, 0]);
+    const brilhando = quadroAguaViva(0, 'brilhando');
+    assert.ok(brilhando.brilho > 0);
+    // o mesmo instante de relógio dentro do estado produz sinos em fases diferentes (período menor nadando)
+    const nadando = quadroAguaViva(475, 'nadando');
+    const flutuando = quadroAguaViva(475, 'flutuando');
+    assert.notEqual(nadando.sino, flutuando.sino);
+});
+
+test('quadroGaivota: perna só andando, asa só voando, recolhida dormindo', () => {
+    assert.equal(quadroGaivota(0, 'parada').perna, 0);
+    assert.notEqual(quadroGaivota(200, 'andando').perna, 0);
+    assert.ok(quadroGaivota(0, 'voando').voando);
+    assert.ok(quadroGaivota(100, 'dormindo').dormindo);
+});
+
+test('quadroGatoIlustrado: amplitude maior correndo que andando, pisca de vez em quando', () => {
+    const andando = quadroGatoIlustrado(200, 'andando');
+    const correndo = quadroGatoIlustrado(200, 'correndo');
+    assert.ok(Math.abs(correndo.perna) <= 38.01);
+    assert.ok(Math.abs(andando.perna) <= 22.01);
+    assert.equal(quadroGatoIlustrado(0, 'dormindo').perna, 0);
+});
+
+test('quadroSapo: papo só infla coaxando, salto só pulando', () => {
+    assert.equal(quadroSapo(0, 'parado').papo, 1);
+    assert.ok(quadroSapo(75, 'coaxando').papo > 1);
+    assert.equal(quadroSapo(0, 'parado').salto, 0);
+    assert.ok(quadroSapo(550, 'pulando').salto >= 0);
+});
+
+test('quadroBonecoIlustrado: braço só acena acenando, parado sem salto', () => {
+    assert.equal(quadroBonecoIlustrado(0, 'parado').salto, 0);
+    assert.ok(quadroBonecoIlustrado(250, 'acenando').braco <= -10);
+});
+
+test('quadroRena: cabeça só balança no sininho, perna só trotando', () => {
+    assert.equal(quadroRena(0, 'parada').perna, 0);
+    assert.equal(quadroRena(0, 'parada').cabeca, 0);
+    assert.notEqual(quadroRena(200, 'trotando').perna, 0);
+    assert.notEqual(quadroRena(200, 'sininho').cabeca, 0);
+});
+
+test('quadroPapaiNoel: barriga só chacoalha rindo, perna só passeando', () => {
+    assert.equal(quadroPapaiNoel(0, 'parado').barriga, 1);
+    assert.notEqual(quadroPapaiNoel(100, 'rindo').barriga, 1);
+    assert.notEqual(quadroPapaiNoel(200, 'passeando').perna, 0);
 });

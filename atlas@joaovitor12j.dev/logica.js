@@ -1122,3 +1122,99 @@ export const rearmarBateria = (pct, estado, limiar, armado) => armado || estado 
 export function escalaLente(distancia, forca, largura) {
     return 1 + (forca - 1) * Math.exp(-(distancia * distancia) / (2 * largura * largura));
 }
+
+// Mascote residente (mora na doca do tema atual, nunca sai): `estados` é [[id, peso]], peso maior = mais comum
+// ("parado" costuma pesar mais). `r` em [0, 1) escolhe o próximo estado por roleta ponderada.
+export function proximoEstadoResidente(estados, r) {
+    const total = estados.reduce((s, [, peso]) => s + peso, 0);
+    let acc = r * total;
+    for (const [id, peso] of estados) {
+        if (acc < peso)
+            return id;
+        acc -= peso;
+    }
+    return estados[estados.length - 1][0];
+}
+
+// Água-viva (tema Aurora): sino pulsando (mais rápido nadando) e 5 tentáculos ondulando com atraso entre eles.
+// `t` em ms desde que o estado atual começou.
+export function quadroAguaViva(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const periodo = estado === 'nadando' ? 950 : 3400;
+    const sino = dormindo ? 0.15 : 0.5 + 0.5 * Math.sin((t / periodo) * Math.PI * 2);
+    const tentaculos = Array.from({length: 5}, (_, i) => {
+        if (dormindo)
+            return 0;
+        const fase = (t - i * 120) / (periodo * 0.6) * Math.PI * 2;
+        return Math.sin(fase) * (estado === 'nadando' ? 18 : 10);
+    });
+    return {sino, tentaculos, dormindo, brilho: estado === 'brilhando' ? 0.5 + 0.5 * Math.sin(t / 260) : 0};
+}
+
+// Gaivota (tema Carta): pernas giram no quadril andando (0,8 s, ±24°), asas batem voando (0,45 s, -28° a 42°).
+export function quadroGaivota(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const voando = estado === 'voando';
+    const andando = estado === 'andando';
+    const perna = andando ? Math.sin(t / 800 * Math.PI * 2) * 24 : 0;
+    const asa = voando ? -28 + (42 + 28) * (0.5 + 0.5 * Math.sin(t / 450 * Math.PI * 2)) : dormindo ? -4 : 0;
+    const voo = voando ? Math.sin(t / 900 * Math.PI * 2) * 4 : 0;
+    return {perna, asa, voo, voando, dormindo};
+}
+
+// Gato ilustrado (tema Jardim): pernas ±22° em 0,8 s (±38° em 0,5 s correndo); rabo e orelha com fase própria.
+export function quadroGatoIlustrado(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const correndo = estado === 'correndo';
+    const periodo = correndo ? 500 : 800;
+    const amp = correndo ? 38 : 22;
+    const perna = (estado === 'andando' || correndo) ? Math.sin(t / periodo * Math.PI * 2) * amp : 0;
+    const rabo = dormindo ? 0 : Math.sin(t / 600 * Math.PI * 2) * (correndo ? 10 : 16);
+    const orelha = Math.sin(t / 900 * Math.PI * 2) * 2;
+    const piscada = !dormindo && (t % 2600) < 120;
+    return {perna, rabo, orelha, piscada, dormindo, correndo};
+}
+
+// Sapo (tema Chuva): salto de 1,1 s (agachar/esticar/pousar), papo infla ao coaxar, guarda-chuva balança no vento.
+export function quadroSapo(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const pulando = estado === 'pulando';
+    const ciclo = (t % 1100) / 1100;
+    const salto = pulando ? Math.sin(ciclo * Math.PI) : 0;
+    const agachar = pulando && ciclo < 0.15 ? (0.15 - ciclo) / 0.15 : 0;
+    const papo = estado === 'coaxando' ? 1 + 0.6 * Math.abs(Math.sin(t / 300 * Math.PI * 2)) : 1;
+    const guardaChuva = Math.sin(t / 700 * Math.PI * 2) * 6;
+    return {salto, agachar, papo, guardaChuva, dormindo};
+}
+
+// Boneco de neve ilustrado (tema Noite de neve/materiais): salto com gingado, braço acena, cachecol balança.
+export function quadroBonecoIlustrado(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const saltitando = estado === 'saltitando';
+    const salto = saltitando ? Math.abs(Math.sin(t / 700 * Math.PI * 2)) : 0;
+    const gingado = saltitando ? Math.sin(t / 700 * Math.PI * 2) * 6 : 0;
+    const braco = estado === 'acenando' ? -10 - 52 * (0.5 + 0.5 * Math.sin(t / 500 * Math.PI * 2)) : -4;
+    const cachecol = dormindo ? 0 : Math.sin(t / 650 * Math.PI * 2) * 8;
+    return {salto, gingado, braco, cachecol, dormindo};
+}
+
+// Rena (tema Vitrine): pernas ±24° em 0,8 s trotando; cabeça balança ±13° tocando o sino.
+export function quadroRena(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const trotando = estado === 'trotando';
+    const perna = trotando ? Math.sin(t / 800 * Math.PI * 2) * 24 : 0;
+    const sininho = estado === 'sininho';
+    const cabeca = sininho ? Math.sin(t / 800 * Math.PI * 2) * 13 : 0;
+    return {perna, cabeca, sininho, dormindo};
+}
+
+// Papai Noel (tema Natal brasileiro): pernas ±20° em 0,9 s passeando; braço acena; barriga chacoalha ao rir.
+export function quadroPapaiNoel(t, estado) {
+    const dormindo = estado === 'dormindo';
+    const passeando = estado === 'passeando';
+    const perna = passeando ? Math.sin(t / 900 * Math.PI * 2) * 20 : 0;
+    const gingado = passeando ? Math.sin(t / 900 * Math.PI * 2) * 5 : 0;
+    const braco = estado === 'acenando' ? -10 - 55 * (0.5 + 0.5 * Math.sin(t / 480 * Math.PI * 2)) : -6;
+    const barriga = estado === 'rindo' ? 1 + 0.08 * Math.sin(t / 220 * Math.PI * 2) : 1;
+    return {perna, gingado, braco, barriga, dormindo};
+}
