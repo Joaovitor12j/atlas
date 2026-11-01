@@ -43,7 +43,7 @@ export function criarJanela(app, settings, paginaInicial) {
 
     // Cabeçalho
     const marca = new Gtk.Box({spacing: 10, valign: Gtk.Align.CENTER});
-    marca.append(new Gtk.Label({label: 'A', halign: Gtk.Align.CENTER, valign: Gtk.Align.CENTER, css_classes: ['atlas-marca-icone'], width_request: 20, height_request: 20}));
+    marca.append(new Gtk.Image({icon_name: 'dev.joaovitor12j.Atlas', pixel_size: 22}));
     marca.append(new Gtk.Label({label: 'ATLAS', css_classes: ['atlas-marca']}));
     const cabecalho = new Adw.HeaderBar({title_widget: marca});
     const restaurar = new Gtk.Button({label: 'Restaurar padrões', css_classes: ['atlas-fantasma']});

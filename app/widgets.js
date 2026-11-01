@@ -3,26 +3,27 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {CORES_TEMA, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 import {diasAte} from '../atlas@joaovitor12j.dev/logica.js';
 import {cartao} from './aparencia.js';
+import {desenharPapelDeParede, desenharWidget} from './previa.js';
 
-// [descrição curta, ícones em ordem de preferência (o tema do usuário pode não ter o primeiro)]
+// descrição curta de cada widget
 const VISUAL = {
-    relogio: ['Ponteiros ou digital', ['preferences-system-time-symbolic', 'appointment-soon-symbolic']],
-    pomodoro: ['Foco e pausas', ['alarm-symbolic', 'appointment-soon-symbolic']],
-    bateria: ['Carga e tempo restante', ['battery-level-80-symbolic', 'battery-symbolic', 'battery-full-symbolic']],
-    musica: ['Capa e controles', ['audio-x-generic-symbolic', 'multimedia-player-symbolic']],
-    progresso: ['Dia, semana, mês, ano', ['emblem-synchronizing-symbolic', 'media-record-symbolic']],
-    cronometro: ['Conta com voltas', ['stopwatch-symbolic', 'preferences-system-time-symbolic']],
-    timer: ['Contagem regressiva', ['timer-symbolic', 'alarm-symbolic', 'appointment-soon-symbolic']],
-    atividade: ['CPU e memória', ['utilities-system-monitor-symbolic', 'computer-symbolic']],
-    rede: ['Download e upload', ['network-transmit-receive-symbolic', 'network-workgroup-symbolic']],
-    contagem: ['Dias até uma data', ['x-office-calendar-symbolic', 'appointment-soon-symbolic']],
-    clipboard: ['Histórico e fixados', ['edit-paste-symbolic', 'edit-copy-symbolic']],
-    slack: ['Selo de não lidas', ['chat-message-new-symbolic']],
-    clima: ['Tempo agora e previsão', ['weather-few-clouds-symbolic', 'weather-clear-symbolic']],
-    nota: ['Um recado fixo', ['document-edit-symbolic', 'accessories-text-editor-symbolic']],
+    relogio: 'Ponteiros ou digital',
+    pomodoro: 'Foco e pausas',
+    bateria: 'Carga e tempo restante',
+    musica: 'Capa e controles',
+    progresso: 'Dia, semana, mês, ano',
+    cronometro: 'Conta com voltas',
+    timer: 'Contagem regressiva',
+    atividade: 'CPU e memória',
+    rede: 'Download e upload',
+    contagem: 'Dias até uma data',
+    clipboard: 'Histórico e fixados',
+    slack: 'Selo de não lidas',
+    clima: 'Tempo agora e previsão',
+    nota: 'Um recado fixo',
 };
 
 function lerAmbientes(settings) {
@@ -64,21 +65,35 @@ export function criarWidgets(settings, p) {
     principal.append(cabeca);
     principal.append(grade);
     principal.append(vazio);
-    principal._texto = `widgets do ambiente ${WIDGETS.map(w => `${w[1]} ${w[2]} ${VISUAL[w[0]]?.[0] ?? ''}`).join(' ')}`.toLowerCase();
+    principal._texto = `widgets do ambiente ${WIDGETS.map(w => `${w[1]} ${w[2]} ${VISUAL[w[0]] ?? ''}`).join(' ')}`.toLowerCase();
     cartoes.push(principal);
 
     const montarCartao = (amb, [id, nome, , largo]) => {
-        const [curta, icones] = VISUAL[id] ?? ['', ['applications-system-symbolic']];
+        const curta = VISUAL[id] ?? '';
         const b = new Gtk.Button({css_classes: ['atlas-w']});
-        const col = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 8});
-        col.append(new Gtk.Image({gicon: Gio.ThemedIcon.new_from_names(icones), pixel_size: 30, halign: Gtk.Align.START}));
-        col.append(new Gtk.Label({label: nome, xalign: 0, css_classes: ['atlas-w-nome']}));
-        col.append(new Gtk.Label({label: curta, xalign: 0, wrap: true, vexpand: true, valign: Gtk.Align.START, css_classes: ['atlas-w-desc']}));
+        const col = new Gtk.Box({spacing: 12});
+        const texto = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 2, hexpand: true, valign: Gtk.Align.CENTER});
+        // o tile como ele aparece na doca, com o tema do ambiente, sobre o papel de parede
+        const tile = new Gtk.DrawingArea({content_width: 52, content_height: 52, valign: Gtk.Align.CENTER});
+        tile.set_draw_func((_a, cr, w, h) => {
+            const tema = amb.tema && CORES_TEMA[amb.tema] ? amb.tema : settings.get_string('tema');
+            cr.save();
+            desenharPapelDeParede(cr, w, h, 12);
+            cr.restore();
+            cr.save();
+            cr.translate(5, 5);
+            desenharWidget(cr, id, w - 10, h - 10, CORES_TEMA[tema] ?? CORES_TEMA.noite, false);
+            cr.restore();
+        });
+        col.append(tile);
+        texto.append(new Gtk.Label({label: nome, xalign: 0, css_classes: ['atlas-w-nome']}));
+        texto.append(new Gtk.Label({label: curta, xalign: 0, wrap: true, css_classes: ['atlas-w-desc']}));
         const rodape = new Gtk.Box();
         rodape.append(new Gtk.Label({label: largo ? 'Tem versão larga' : '', xalign: 0, hexpand: true, css_classes: ['atlas-w-rodape']}));
         const naDoca = new Gtk.Label({css_classes: ['atlas-w-rodape', 'atlas-ok']});
         rodape.append(naDoca);
-        col.append(rodape);
+        texto.append(rodape);
+        col.append(texto);
         b.child = col;
         const marcar = () => {
             const on = (lerAmbientes(settings).find(a => a.id === amb.id)?.widgets ?? []).includes(id);

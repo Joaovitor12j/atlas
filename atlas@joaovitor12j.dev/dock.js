@@ -193,8 +193,8 @@ class DockView {
         if (this._settings) {
             this._connect(this._settings, 'changed', (_s, key) => {
                 // os mascotes têm o próprio motor; mexer neles não reconstrói a doca
-                if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' || key.startsWith('cuco-') || key.startsWith('fantasma-') || key.startsWith('esqueleto-') || key.startsWith('chama-') ||
-                    key.startsWith('noel-') || key.startsWith('boneco-'))
+                if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' ||
+                    /^(cuco|fantasma|esqueleto|chama|noel|boneco|gato|coruja|pilha|satelite|tomate)-/.test(key))
                     return;
                 this._readConfig();
                 // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica
@@ -1268,6 +1268,7 @@ export class Dock {
         if (this._settings) {
             // um temporizador só, e só com um mascote ligado
             this._mascotes = new Mascotes(this._settings, {
+                pasta: () => this._extDir,
                 doca: () => this._views.find(v => v._monIdx === Main.layoutManager.primaryIndex) ?? this._views[0],
                 naoPerturbe: () => !!this._notif && !this._notif.get_boolean('show-banners'),
             });

@@ -2,7 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {CORES_TEMA, MASCOTES, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {PASSEIOS, SPRITES} from '../atlas@joaovitor12j.dev/logica.js';
+import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
@@ -20,6 +21,22 @@ test('todo tema do catálogo está no schema e tem CSS', () => {
     }
 });
 
+test('as cores de widgets e do botão de apps (prévia) batem com temas.css', () => {
+    for (const [id, c] of Object.entries(CORES_TEMA)) {
+        const regra = re => css.match(new RegExp(`\\.atlas-${id} \\.atlas-${re} \\{([^}]*)\\}`))?.[1];
+        // noite e cristal herdam parte das regras padrão: só confere onde o tema declara a regra
+        const txt = regra('widget-txt');
+        if (txt)
+            assert.ok(txt.includes(c.txt), `texto dos widgets de ${id}`);
+        const icone = regra('apps-icon');
+        if (icone)
+            assert.ok(icone.includes(c.appsIc), `ícone de apps de ${id}`);
+        const widget = regra('widget');
+        if (widget && c.wb.startsWith('rgba') && widget.includes('border-color'))
+            assert.ok(widget.includes(c.wb), `borda dos widgets de ${id}`);
+    }
+});
+
 test('todo widget do catálogo tem classe em widgets.js', () => {
     for (const [id] of WIDGETS)
         assert.match(widgetsJs, new RegExp(`\\b${id}: [A-Z]`), `widgets.js sem a classe de ${id}`);
@@ -32,8 +49,8 @@ test('ids de temas e widgets são únicos', () => {
 
 test('as chaves que o código lê existem no schema', () => {
     const chaves = new Set([...schema.matchAll(/<key name="([^"]+)"/g)].map(m => m[1]));
-    // de schemas do GNOME, não do ATLAS: favoritos (prefs) e Não perturbe (dock)
-    for (const externa of ['favorite-apps', 'show-banners'])
+    // de schemas do GNOME, não do ATLAS: favoritos (prefs), Não perturbe (dock) e papel de parede (palco do app)
+    for (const externa of ['favorite-apps', 'show-banners', 'picture-uri', 'picture-uri-dark'])
         chaves.add(externa);
     for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', ...ARQUIVOS_APP]) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
@@ -49,15 +66,15 @@ test('todo mascote do catálogo tem implementação em mascotes.js', () => {
 });
 
 test('as chaves de mascotes lidas pelo prefs e pelo motor existem no schema', () => {
-    const chaves = [...(mascotesJs + paginasJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|calor|frio|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
+    const chaves = [...(mascotesJs + paginasJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|calor|frio|gato|coruja|pilha|satelite|tomate|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
     assert.ok(chaves.length > 0);
-    const rotulos = new Set(['mascote-quadro', 'mascote-memoria', 'mascote-clima']); // nomes de linha do perf.js, não chaves
+    const rotulos = new Set(['mascote-quadro', 'mascote-memoria', 'mascote-clima', 'mascote-evento', 'cuco-voa', ...Object.keys(PASSEIOS)]); // linhas do perf.js, ids de passeio e de tamanho, não chaves
     for (const chave of new Set(chaves).difference(rotulos))
         assert.ok(schema.includes(`<key name="${chave}"`), `schema sem a chave ${chave}`);
 });
 
 test('todo mascote de horário sazonal tem as três chaves no schema', () => {
-    for (const id of ['fantasma', 'esqueleto', 'noel', 'boneco']) {
+    for (const id of ['fantasma', 'esqueleto', 'noel', 'boneco', 'gato', 'coruja']) {
         for (const sufixo of ['intervalo', 'das', 'ate'])
             assert.ok(schema.includes(`<key name="${id}-${sufixo}"`), `schema sem ${id}-${sufixo}`);
     }
@@ -72,5 +89,26 @@ test('as cores de tema do catálogo (prévia) batem com temas.css', () => {
         assert.ok(bg.includes(c.borda), `borda de ${id}`);
         assert.ok(bloco('dot').includes(c.ponto), `ponto de ${id}`);
         assert.ok(bloco('sep').includes(c.sep), `separador de ${id}`);
+    }
+});
+
+test('os movimentos de cada mascote batem entre catálogo, schema e motor', () => {
+    for (const [id, movs] of Object.entries(MOVIMENTOS)) {
+        const chave = schema.match(new RegExp(`<key name="${id}-movimento"[^>]*>([\\s\\S]*?)</key>`));
+        assert.ok(chave, `schema sem ${id}-movimento`);
+        const valores = [...chave[1].matchAll(/<choice value="([^"]+)"/g)].map(m => m[1]);
+        assert.deepEqual(valores, ['sortear', ...movs.map(m => m[0])], `escolhas de ${id}-movimento`);
+        const bloco = mascotesJs.match(new RegExp(`\\n    ${id}: \\{[\\s\\S]*?\\n    \\},\\n`));
+        assert.ok(bloco, `mascotes.js sem ${id}`);
+        for (const [mov] of movs)
+            assert.ok(bloco[0].includes(`'${mov}'`), `mascotes.js: ${id} sem o movimento ${mov}`);
+    }
+});
+
+test('as folhas de sprites existem e batem com SPRITES', () => {
+    for (const [id, spec] of Object.entries(SPRITES)) {
+        const png = readFileSync(new URL(`sprites/${spec.arquivo}`, raiz));
+        assert.equal(png.readUInt32BE(16), spec.fw * spec.quadros, `${id}: largura da tira`);
+        assert.equal(png.readUInt32BE(20), spec.fh, `${id}: altura`);
     }
 });

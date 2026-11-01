@@ -7,12 +7,15 @@
         <choice value="papel"/>
         <choice value="cristal"/>
         <choice value="neon"/>
+        <choice value="oceano"/>
+        <choice value="sakura"/>
+        <choice value="onix"/>
         <choice value="halloween"/>
         <choice value="natal"/>
       </choices>
       <default>"noite"</default>
       <summary>Tema visual</summary>
-      <description>Aparência da doca: noite, papel, cristal, neon, halloween ou natal.</description>
+      <description>Aparência da doca: noite, papel, cristal, neon, oceano, sakura, ônix, halloween ou natal.</description>
     </key>
     <key name="tamanho-icone" type="i">
       <range min="32" max="96"/>
@@ -278,6 +281,17 @@
       <summary>Cuco: quando canta</summary>
       <description>"hora" canta nas horas cheias (uma batida por hora, até o limite); "meia-hora" também canta às :30, com uma batida.</description>
     </key>
+    <key name="cuco-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="casa"/>
+        <choice value="passeia"/>
+        <choice value="voa"/>
+      </choices>
+      <default>'casa'</default>
+      <summary>Cuco: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
     <key name="cuco-das" type="i">
       <range min="0" max="23"/>
       <default>8</default>
@@ -305,6 +319,17 @@
       <summary>Fantasma: com que frequência aparece</summary>
       <description>Na temporada (24 a 31 de outubro) o fantasma aparece nas horas cheias, ou também nas meias horas.</description>
     </key>
+    <key name="fantasma-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="flutua"/>
+        <choice value="zigue"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Fantasma: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
     <key name="fantasma-das" type="i">
       <range min="0" max="23"/>
       <default>8</default>
@@ -325,6 +350,17 @@
       <default>"hora"</default>
       <summary>Esqueleto: com que frequência aparece</summary>
       <description>Na temporada (24 a 31 de outubro) o esqueleto aparece nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="esqueleto-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="caminha"/>
+        <choice value="danca"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Esqueleto: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
     </key>
     <key name="esqueleto-das" type="i">
       <range min="0" max="23"/>
@@ -347,6 +383,17 @@
       <summary>Papai Papai Noel: com que frequência aparece</summary>
       <description>Na temporada (1 a 25 de dezembro) o Papai Noel aparece nas horas cheias, ou também nas meias horas.</description>
     </key>
+    <key name="noel-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="passeia"/>
+        <choice value="pula"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Papai Noel: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
     <key name="noel-das" type="i">
       <range min="0" max="23"/>
       <default>8</default>
@@ -368,6 +415,17 @@
       <summary>Boneco de neve: com que frequência aparece</summary>
       <description>Na temporada (1 a 25 de dezembro) o boneco aparece nas horas cheias, ou também nas meias horas.</description>
     </key>
+    <key name="boneco-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="desliza"/>
+        <choice value="pula"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Boneco de neve: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
     <key name="boneco-das" type="i">
       <range min="0" max="23"/>
       <default>8</default>
@@ -379,6 +437,17 @@
       <default>23</default>
       <summary>Boneco de neve: última hora do dia</summary>
       <description>O boneco só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="chama-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="salta"/>
+        <choice value="corre"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Chama: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
     </key>
     <key name="chama-limiar" type="i">
       <range min="50" max="99"/>
@@ -410,6 +479,9 @@
         <choice value="picole"/>
         <choice value="sol-arco"/>
         <choice value="sol-leque"/>
+        <choice value="sol-corre"/>
+        <choice value="sol-quica"/>
+        <choice value="sol-nasce"/>
       </choices>
       <default>'sortear'</default>
       <summary>Calor: movimento</summary>
@@ -443,6 +515,8 @@
         <choice value="pinguim"/>
         <choice value="neve"/>
         <choice value="pendurado"/>
+        <choice value="pinguim-pula"/>
+        <choice value="pinguim-anda"/>
       </choices>
       <default>'sortear'</default>
       <summary>Frio: movimento</summary>
@@ -457,6 +531,116 @@
       <range min="0" max="23"/>
       <default>21</default>
       <summary>Frio: última hora do dia</summary>
+    </key>
+    <key name="gato-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Gato: com que frequência aparece</summary>
+      <description>O gato passa pela doca nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="gato-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="caminha"/>
+        <choice value="corre"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Gato: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="gato-das" type="i">
+      <range min="0" max="23"/>
+      <default>9</default>
+      <summary>Gato: primeira hora do dia</summary>
+      <description>Só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="gato-ate" type="i">
+      <range min="0" max="23"/>
+      <default>22</default>
+      <summary>Gato: última hora do dia</summary>
+      <description>Só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="coruja-intervalo" type="s">
+      <choices>
+        <choice value="hora"/>
+        <choice value="meia-hora"/>
+      </choices>
+      <default>"hora"</default>
+      <summary>Coruja: com que frequência aparece</summary>
+      <description>A coruja aparece de madrugada nas horas cheias, ou também nas meias horas.</description>
+    </key>
+    <key name="coruja-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="salta"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Coruja: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="coruja-das" type="i">
+      <range min="0" max="23"/>
+      <default>0</default>
+      <summary>Coruja: primeira hora do dia</summary>
+      <description>Só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+    </key>
+    <key name="coruja-ate" type="i">
+      <range min="0" max="23"/>
+      <default>5</default>
+      <summary>Coruja: última hora do dia</summary>
+      <description>Só aparece até esta hora (inclusive).</description>
+    </key>
+    <key name="pilha-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="arrasta"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Pilha: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="pilha-limiar" type="i">
+      <range min="5" max="50"/>
+      <default>15</default>
+      <summary>Pilha: carga que chama a pilha</summary>
+      <description>A pilha aparece pedindo tomada quando a bateria descarregando chega a este percentual. Só volta depois de carregar ou subir 5 pontos.</description>
+    </key>
+    <key name="pilha-espera" type="i">
+      <range min="1" max="240"/>
+      <default>30</default>
+      <summary>Pilha: minutos entre aparições</summary>
+      <description>Tempo mínimo, em minutos, entre duas aparições da pilha.</description>
+    </key>
+    <key name="satelite-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="deriva"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Satélite: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
+    </key>
+    <key name="satelite-espera" type="i">
+      <range min="1" max="240"/>
+      <default>10</default>
+      <summary>Satélite: minutos entre aparições</summary>
+      <description>Tempo mínimo, em minutos, entre duas aparições do satélite; ele só aparece depois de alguns segundos sem rede.</description>
+    </key>
+    <key name="tomate-movimento" type="s">
+      <choices>
+        <choice value="sortear"/>
+        <choice value="sobe"/>
+        <choice value="pula"/>
+      </choices>
+      <default>'sortear'</default>
+      <summary>Tomate: movimento</summary>
+      <description>Qual animação aparece; "sortear" escolhe uma a cada aparição.</description>
     </key>
     <key name="mascote-teste" type="s">
       <default>''</default>

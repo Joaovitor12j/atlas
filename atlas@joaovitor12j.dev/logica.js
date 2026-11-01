@@ -343,6 +343,75 @@ const easeOutBack = x => {
     return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
 };
 
+// Mola amortecida de 0 a 1: passa uns 12% do alvo, volta e assenta (x de 0 a 1; vale 1 a partir do fim).
+const molaAmortecida = x => (x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(x * 9));
+
+// Sobe de trás da borda, fica e desce, com os princípios de animação aplicados num lugar só (os mascotes que sobem da
+// doca usam): subida em mola com esticada (rápido = alto e fino), assentada com esmagada, respiração enquanto fica e,
+// antes de descer, uma preparação (sobe um pouco, encolhe) seguida da queda esticada.
+// Devolve {sobe, esmaga: {sx, sy}}: `sobe` de 0 a 1 (passa um pouco no overshoot) e `esmaga` é a escala em torno da
+// borda da doca. `t` fora de [0, duração) devolve o estado escondido.
+const FRAC_PREPARO = 0.22;
+export const FINAIS = ['cai', 'afunda', 'espia', 'some'];
+
+export function faseSobeDesce(t, {sobe, fica, desce}, saida = 'cai') {
+    t = Math.max(0, t);
+    let alfa = 1;
+    const fimFica = sobe + fica;
+    let s = 0;
+    let sx = 1;
+    let sy = 1;
+    if (t < sobe) {
+        const x = t / sobe;
+        s = molaAmortecida(x);
+        const v = molaAmortecida(Math.min(1, x + 0.04)) - s; // velocidade: quanto mais rápido, mais esticado
+        sy += Math.min(0.14, v * 3.2);
+        sx -= Math.min(0.08, v * 1.8);
+    } else if (t < fimFica) {
+        s = 1;
+        const a = (t - sobe) / 260; // assentada: esmaga e volta oscilando
+        const pouso = Math.exp(-5 * a) * Math.cos(a * 11);
+        const respira = Math.sin(t / 430) * 0.012;
+        sy += respira - 0.07 * pouso * Math.min(1, a * 6);
+        sx += -respira * 0.6 + 0.045 * pouso * Math.min(1, a * 6);
+    } else if (t < fimFica + desce) {
+        const x = (t - fimFica) / desce;
+        if (saida === 'afunda') {
+            // some de vergonha: afunda devagar, sem preparação
+            s = 1 - easeInOut(x);
+            sy -= 0.04 * Math.sin(x * Math.PI);
+        } else if (saida === 'espia') {
+            // esconde, espia de volta e some de vez
+            const ponto = (a, b, y) => a + (b - a) * easeInOut(limitar01(y));
+            if (x < 0.3)
+                s = ponto(1, 0.4, x / 0.3);
+            else if (x < 0.5)
+                s = 0.4;
+            else if (x < 0.72)
+                s = ponto(0.4, 0.85, (x - 0.5) / 0.22);
+            else
+                s = ponto(0.85, 0, (x - 0.72) / 0.28);
+        } else if (saida === 'some') {
+            // puf: desbota e encolhe no lugar
+            s = 1;
+            alfa = 1 - easeInOut(x);
+            sx -= 0.18 * x;
+            sy -= 0.18 * x;
+        } else if (x < FRAC_PREPARO) {
+            const p = Math.sin((x / FRAC_PREPARO) * Math.PI);
+            s = 1 + 0.05 * p;
+            sy -= 0.06 * p;
+            sx += 0.04 * p;
+        } else {
+            const y = (x - FRAC_PREPARO) / (1 - FRAC_PREPARO);
+            s = 1 - easeInCubic(y);
+            sy += 0.1 * y;
+            sx -= 0.05 * y;
+        }
+    }
+    return {sobe: s, esmaga: {sx, sy}, alfa};
+}
+
 const CUCO = {sobe: 300, porta: 200, batida: 700, saida: 200, canto: 300, fecha: 200, desce: 300};
 CUCO.inicio = CUCO.sobe + CUCO.porta;
 
@@ -395,16 +464,12 @@ export const duracaoFantasma = () => FANTASMA.sobe + FANTASMA.fica + FANTASMA.de
 
 // Estado do fantasma em `t` ms: {sobe, balanco, susto, fase}. `sobe` e `susto` de 0 a 1 (sobe passa um pouco de 1 no
 // overshoot), `balanco` de -1 a 1, `fase` cresce sempre (ondulação da barra). null depois do fim.
-export function quadroFantasma(t) {
+export function quadroFantasma(t, saida = 'cai') {
     t = Math.max(0, t);
     if (t >= duracaoFantasma())
         return null;
     const fimFica = FANTASMA.sobe + FANTASMA.fica;
-    const q = {sobe: 1, balanco: Math.sin(t / 260), susto: 0, fase: t / 160};
-    if (t < FANTASMA.sobe)
-        q.sobe = easeOutBack(t / FANTASMA.sobe);
-    else if (t >= fimFica)
-        q.sobe = 1 - easeInCubic(limitar01((t - fimFica) / FANTASMA.desce));
+    const q = {...faseSobeDesce(t, FANTASMA, saida), balanco: Math.sin(t / 260), susto: 0, fase: t / 160};
     // o "bu!": abre a boca e levanta os braços logo depois de subir, e relaxa antes de descer
     const ini = FANTASMA.sobe + 300;
     q.susto = limitar01((t - ini) / FANTASMA.susto) * limitar01((fimFica - 200 - t) / FANTASMA.susto);
@@ -416,16 +481,12 @@ export const duracaoEsqueleto = () => ESQUELETO.sobe + ESQUELETO.fica + ESQUELET
 
 // Estado do esqueleto em `t` ms: {sobe, balanco, aceno, mandibula}. `sobe` de 0 a 1 (um pouco mais no overshoot),
 // `balanco` e `aceno` de -1 a 1, `mandibula` de 0 a 1 (bate o queixo enquanto acena). null depois do fim.
-export function quadroEsqueleto(t) {
+export function quadroEsqueleto(t, saida = 'cai') {
     t = Math.max(0, t);
     if (t >= duracaoEsqueleto())
         return null;
     const fimFica = ESQUELETO.sobe + ESQUELETO.fica;
-    const q = {sobe: 1, balanco: Math.sin(t / 320) * 0.6, aceno: 0, mandibula: 0};
-    if (t < ESQUELETO.sobe)
-        q.sobe = easeOutBack(t / ESQUELETO.sobe);
-    else if (t >= fimFica)
-        q.sobe = 1 - easeInCubic(limitar01((t - fimFica) / ESQUELETO.desce));
+    const q = {...faseSobeDesce(t, ESQUELETO, saida), balanco: Math.sin(t / 320) * 0.6, aceno: 0, mandibula: 0};
     // acena e bate o queixo no meio da permanência, com entrada e saída suaves
     const rampa = limitar01((t - ESQUELETO.sobe - 150) / 250) * limitar01((fimFica - 150 - t) / 250);
     q.aceno = Math.sin(t / 130) * rampa;
@@ -456,33 +517,24 @@ export const duracaoChama = () => CHAMA.sobe + CHAMA.fica + CHAMA.desce;
 
 // Estado da chama em `t` ms: {sobe, fase, aflicao}. `sobe` de 0 a 1 (um pouco mais no overshoot), `fase` cresce sempre
 // (dança da chama) e `aflicao` de 0 a 1 é o quanto ela está assustada com o calor. null depois do fim.
-export function quadroChama(t) {
+export function quadroChama(t, saida = 'cai') {
     t = Math.max(0, t);
     if (t >= duracaoChama())
         return null;
     const fimFica = CHAMA.sobe + CHAMA.fica;
-    const q = {sobe: 1, fase: t / 110, aflicao: 0};
-    if (t < CHAMA.sobe)
-        q.sobe = easeOutBack(t / CHAMA.sobe);
-    else if (t >= fimFica)
-        q.sobe = 1 - easeInCubic(limitar01((t - fimFica) / CHAMA.desce));
+    const q = {...faseSobeDesce(t, CHAMA, saida), fase: t / 110, aflicao: 0};
     q.aflicao = limitar01((t - CHAMA.sobe) / 600) * limitar01((fimFica - t) / 400);
     return q;
 }
 
 // Sobe, fica e desce: {sobe, ativo} em `t` ms ou null depois do fim. `sobe` passa um pouco de 1 no overshoot e `ativo`
 // (0 a 1) é a rampa da parte animada, que entra logo depois de subir e sai um pouco antes de descer.
-function quadroSobeDesce(t, {sobe, fica, desce}) {
+function quadroSobeDesce(t, {sobe, fica, desce}, saida = 'cai') {
     t = Math.max(0, t);
     if (t >= sobe + fica + desce)
         return null;
     const fimFica = sobe + fica;
-    let s = 1;
-    if (t < sobe)
-        s = easeOutBack(t / sobe);
-    else if (t >= fimFica)
-        s = 1 - easeInCubic(limitar01((t - fimFica) / desce));
-    return {sobe: s, ativo: limitar01((t - sobe) / 250) * limitar01((fimFica - 150 - t) / 250)};
+    return {...faseSobeDesce(t, {sobe, fica, desce}, saida), ativo: limitar01((t - sobe) / 250) * limitar01((fimFica - 150 - t) / 250)};
 }
 
 const NOEL = {sobe: 450, fica: 2800, desce: 400};
@@ -490,12 +542,14 @@ export const duracaoNoel = () => NOEL.sobe + NOEL.fica + NOEL.desce;
 
 // Papai Noel em `t` ms: {sobe, balanco, aceno, riso}. `aceno` de -1 a 1 (braço direito) e `riso` de 0 a 1 (a barriga
 // sacode no "ho ho ho"). null depois do fim.
-export function quadroNoel(t) {
-    const b = quadroSobeDesce(t, NOEL);
+export function quadroNoel(t, saida = 'cai') {
+    const b = quadroSobeDesce(t, NOEL, saida);
     if (!b)
         return null;
     return {
         sobe: b.sobe,
+        esmaga: b.esmaga,
+        alfa: b.alfa,
         balanco: Math.sin(t / 380) * 0.5,
         aceno: Math.sin(t / 150) * b.ativo,
         riso: Math.abs(Math.sin(t / 210)) * b.ativo,
@@ -506,11 +560,11 @@ const BONECO = {sobe: 450, fica: 2600, desce: 400};
 export const duracaoBoneco = () => BONECO.sobe + BONECO.fica + BONECO.desce;
 
 // Boneco de neve em `t` ms: {sobe, balanco, vento}. `vento` de -1 a 1 balança o cachecol e os galhos. null depois do fim.
-export function quadroBoneco(t) {
-    const b = quadroSobeDesce(t, BONECO);
+export function quadroBoneco(t, saida = 'cai') {
+    const b = quadroSobeDesce(t, BONECO, saida);
     if (!b)
         return null;
-    return {sobe: b.sobe, balanco: Math.sin(t / 420) * 0.5, vento: Math.sin(t / 230) * (0.4 + 0.6 * b.ativo)};
+    return {sobe: b.sobe, esmaga: b.esmaga, alfa: b.alfa, balanco: Math.sin(t / 420) * 0.5, vento: Math.sin(t / 230) * (0.4 + 0.6 * b.ativo)};
 }
 
 // Onde pôr um mascote de `tam` {w, h, abaixo?}: centrado na doca `caixa` {x, y, w, h} e encostado no topo dela;
@@ -742,8 +796,16 @@ export function tamanhoMascoteClima(variante, icone, larguraDoca) {
     case 'sol-arco':
         return {w: r(larguraDoca), h: r(a * 2), abaixo: 0};
     case 'sol-leque':
+    case 'sol-corre':
         return {w: r(larguraDoca), h: r(a * 1.7), abaixo: 0};
+    case 'sol-quica':
+    case 'sol-nasce':
+        return {w: r(larguraDoca), h: r(a * 2), abaixo: 0};
+    case 'cuco-voa':
+        return {w: r(larguraDoca), h: r(a * 2.4), abaixo: 0};
     case 'pinguim':
+    case 'pinguim-pula':
+    case 'pinguim-anda':
         return {w: r(larguraDoca), h: r(a * 1.3), abaixo: 0};
     case 'neve':
         return {w: r(a * 2.6), h: r(a * 3.2), abaixo: 0};
@@ -753,6 +815,308 @@ export function tamanhoMascoteClima(variante, icone, larguraDoca) {
         return null;
     }
 }
+
+// ----- Passeios: mascotes que atravessam a doca em vez de só subir e descer -----
+// Cada passeio é uma configuração: `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura, em múltiplos da altura dela), `modo` do movimento (`flutua`: paira e balança; `anda`: passinhos;
+// `salta`: pulos de um lado ao outro), `passoMs` (período de um ciclo), `altura` (pairando, em alturas da figura),
+// `bob` (amplitude, em alturas), `inclina` (rad) e `pausa` opcional {dur}: para no meio da doca por `dur` ms.
+export const PASSEIOS = {
+    'fantasma-flutua': {dur: 6200, fig: [1.4, 1.8], cabeca: 0.3, modo: 'flutua', passoMs: 1500, altura: 0.12, bob: 0.07, inclina: 0.1, pausa: {dur: 1500}},
+    'fantasma-zigue': {dur: 4600, fig: [1.4, 1.8], cabeca: 0.5, modo: 'flutua', passoMs: 900, altura: 0.3, bob: 0.22, inclina: 0.22},
+    'esqueleto-caminha': {dur: 7000, fig: [1.2, 1.9], cabeca: 0.1, modo: 'anda', passoMs: 380, bob: 0.03, inclina: 0.07, pausa: {dur: 1900}},
+    'esqueleto-danca': {dur: 6600, fig: [1.2, 1.9], cabeca: 0.3, modo: 'salta', passoMs: 520, bob: 0.1, inclina: 0.14, pausa: {dur: 3600}},
+    'noel-passeia': {dur: 7000, fig: [1.3, 1.8], cabeca: 0.1, modo: 'anda', passoMs: 420, bob: 0.03, inclina: 0.06, pausa: {dur: 2200}},
+    'noel-pula': {dur: 5600, fig: [1.3, 1.8], cabeca: 0.4, modo: 'salta', passoMs: 800, bob: 0.22, inclina: 0.05},
+    'boneco-desliza': {dur: 5200, fig: [1.2, 1.8], cabeca: 0.1, modo: 'flutua', passoMs: 700, altura: 0.012, bob: 0.012, inclina: 0.16},
+    'boneco-pula': {dur: 5400, fig: [1.2, 1.8], cabeca: 0.4, modo: 'salta', passoMs: 700, bob: 0.2, inclina: 0.05},
+    'chama-salta': {dur: 4200, fig: [1.1, 1.5], cabeca: 0.5, modo: 'salta', passoMs: 600, bob: 0.3, inclina: 0.1},
+    'cuco-passeia': {dur: 8200, fig: [1.6, 2], cabeca: 0.1, modo: 'anda', passoMs: 460, bob: 0.015, inclina: 0.05, pausa: {dur: 3600}},
+    'coruja-salta': {dur: 5200, fig: [1.2, 1.4], cabeca: 0.4, modo: 'salta', passoMs: 700, bob: 0.2, inclina: 0.07},
+    'pilha-arrasta': {dur: 7400, fig: [1, 1.5], cabeca: 0.1, modo: 'anda', passoMs: 760, bob: 0.02, inclina: 0.06, pausa: {dur: 2000}},
+    'satelite-deriva': {dur: 6400, fig: [1.3, 1.3], cabeca: 0.4, modo: 'flutua', passoMs: 1800, altura: 0.25, bob: 0.12, inclina: 0.14},
+    'tomate-pula': {dur: 4800, fig: [1.1, 1.1], cabeca: 0.5, modo: 'salta', passoMs: 600, bob: 0.25, inclina: 0.08},
+    'chama-corre': {dur: 3200, fig: [1.1, 1.5], cabeca: 0.2, modo: 'anda', passoMs: 200, bob: 0.08, inclina: 0.16},
+};
+
+export const duracaoPasseio = chave => PASSEIOS[chave].dur;
+
+// Tamanho do actor de um passeio: a largura da doca inteira e a altura da figura mais a folga para pulos e voo.
+export function tamanhoPasseio(chave, icone, larguraDoca) {
+    const c = PASSEIOS[chave];
+    return {w: Math.round(larguraDoca), h: Math.round(icone * c.fig[1] * (1 + c.cabeca + (c.altura ?? 0) + c.bob)), abaixo: 0};
+}
+
+// Estado do passeio em `t` ms: {x, dy, rot, sx, sy, parado, acena, t, dir}. `x` de 0 a 1 ao longo da doca (um pouco
+// fora nas pontas; `dir` -1 vai da direita para a esquerda), `dy` é a altura do chão em alturas da figura, `rot` a
+// inclinação em rad e `sx`/`sy` o esticar e esmagar. `parado` (0 a 1) vale 1 enquanto para no meio e `acena` oscila
+// de -1 a 1 nessa hora. null depois do fim.
+export function quadroPasseio(t, dir, c) {
+    t = Math.max(0, t);
+    if (t >= c.dur)
+        return null;
+    const margem = 0.14;
+    const lerp = (a, b, x) => a + (b - a) * limitar01(x);
+    let p;
+    let parado = 0;
+    if (c.pausa) {
+        const a = (c.dur - c.pausa.dur) / 2;
+        if (t < a) {
+            p = lerp(-margem, 0.5, t / a);
+        } else if (t < a + c.pausa.dur) {
+            p = 0.5;
+            parado = rampa(t, a, a + 250) * (1 - rampa(t, a + c.pausa.dur - 250, a + c.pausa.dur));
+        } else {
+            p = lerp(0.5, 1 + margem, (t - a - c.pausa.dur) / a);
+        }
+    } else {
+        p = lerp(-margem, 1 + margem, t / c.dur);
+    }
+    const andando = 1 - parado;
+    const ciclo = (t % c.passoMs) / c.passoMs;
+    let dy = 0;
+    let rot = 0;
+    let sx = 1;
+    let sy = 1;
+    if (c.modo === 'flutua') {
+        dy = c.altura + Math.sin(ciclo * 2 * Math.PI) * c.bob;
+        rot = Math.sin(ciclo * 2 * Math.PI + 1) * c.inclina * 0.6 + (dir < 0 ? -1 : 1) * c.inclina * 0.5 * andando;
+    } else if (c.modo === 'anda') {
+        dy = Math.abs(Math.sin(ciclo * Math.PI)) * c.bob * andando;
+        rot = Math.sin(ciclo * 2 * Math.PI) * c.inclina * andando;
+    } else {
+        const s = Math.sin(ciclo * Math.PI);
+        dy = s * c.bob;
+        const chao = 1 - Math.min(1, s * 4); // perto do chão: agacha e alarga
+        sy = 1 - 0.12 * chao + 0.06 * (1 - chao);
+        sx = 1 + 0.08 * chao - 0.03 * (1 - chao);
+        rot = Math.sin(ciclo * 2 * Math.PI) * c.inclina;
+    }
+    return {
+        x: dir < 0 ? 1 - p : p, dy, rot, sx, sy, parado, t, dir: dir < 0 ? -1 : 1,
+        acena: Math.sin(t / 150) * parado,
+    };
+}
+
+// ----- Movimentos extras (Cuco, Calor e Frio) -----
+
+// Cuco voando: o pássaro sai da casinha e cruza a doca batendo asas e cantando.
+const CUCO_VOA = 4800;
+export const duracaoCucoVoa = () => CUCO_VOA;
+
+// {x, alt, asa, bico, dir}: `x` de 0 a 1 ao longo da doca (fora nas pontas), `alt` altura do voo em ícones, `asa` de -1
+// a 1 (batida), `bico` de 0 a 1. null depois do fim.
+export function quadroCucoVoa(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= CUCO_VOA)
+        return null;
+    const p = t / CUCO_VOA;
+    const x = -0.1 + 1.2 * p;
+    return {
+        x: dir < 0 ? 1 - x : x,
+        alt: 0.9 + 0.35 * Math.sin(p * Math.PI * 3),
+        asa: Math.sin(t / 55),
+        bico: Math.abs(Math.sin(t / 210)),
+        dir: dir < 0 ? -1 : 1,
+    };
+}
+
+// Sol correndo: atravessa a doca sem parar, abanando o leque o tempo todo.
+const SOL_CORRE = 3000;
+export const duracaoSolCorre = () => SOL_CORRE;
+
+// Mesmo estado do sol de óculos (quadroSolLeque), só que correndo: passos curtos e rápidos e o leque a mil.
+export function quadroSolCorre(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= SOL_CORRE)
+        return null;
+    const p = -0.1 + 1.2 * (t / SOL_CORRE);
+    return {x: dir < 0 ? 1 - p : p, anda: 1, passo: t / 70, leque: Math.sin(t / 55), enxuga: 0, dir: dir < 0 ? -1 : 1};
+}
+
+// Sol quicando: atravessa a doca pulando, como uma bola.
+const SOL_QUICA = 4400;
+export const duracaoSolQuica = () => SOL_QUICA;
+
+// Estado do sol no arco (quadroSolArco): `altura` sobe e desce em quicadas.
+export function quadroSolQuica(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= SOL_QUICA)
+        return null;
+    const p = t / SOL_QUICA;
+    const x = -0.02 + 1.04 * p;
+    return {x: dir < 0 ? 1 - x : x, altura: 0.18 + 0.55 * Math.abs(Math.sin(p * Math.PI * 5)) * (1 - 0.3 * p), giro: t / 600};
+}
+
+// Sol nascendo no meio da doca: sobe, brilha e se põe no mesmo lugar.
+const SOL_NASCE = {sobe: 1500, brilha: 2600, desce: 1300};
+export const duracaoSolNasce = () => SOL_NASCE.sobe + SOL_NASCE.brilha + SOL_NASCE.desce;
+
+export function quadroSolNasce(t) {
+    t = Math.max(0, t);
+    if (t >= duracaoSolNasce())
+        return null;
+    const iDesce = SOL_NASCE.sobe + SOL_NASCE.brilha;
+    let altura = 1;
+    if (t < SOL_NASCE.sobe)
+        altura = easeOutCubic(t / SOL_NASCE.sobe);
+    else if (t >= iDesce)
+        altura = 1 - easeInCubic((t - iDesce) / SOL_NASCE.desce);
+    return {x: 0.5, altura, giro: t / 700};
+}
+
+// Pinguim pulando: atravessa a doca em pulinhos seguidos.
+const PINGUIM_PULA = 4400;
+export const duracaoPinguimPula = () => PINGUIM_PULA;
+
+// Mesmo estado do pinguim (quadroPinguim): vários pulos pelo caminho.
+export function quadroPinguimPula(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= PINGUIM_PULA)
+        return null;
+    const p = t / PINGUIM_PULA;
+    const x = -0.08 + 1.16 * p;
+    const ciclo = (p * 8) % 1;
+    const pulo = Math.sin(Math.PI * ciclo);
+    return {x: dir < 0 ? 1 - x : x, pulo, inclina: -0.35 * pulo * (dir < 0 ? -1 : 1), dir: dir < 0 ? -1 : 1};
+}
+
+// Pinguim andando de lado a lado e parando no meio, balançando como pinguim.
+const PINGUIM_ANDA = 5200;
+export const duracaoPinguimAnda = () => PINGUIM_ANDA;
+
+export function quadroPinguimAnda(t, dir = 1) {
+    t = Math.max(0, t);
+    if (t >= PINGUIM_ANDA)
+        return null;
+    const a = 1800;
+    const parado = 1600;
+    let x;
+    let anda = 1;
+    if (t < a) {
+        x = -0.08 + 0.58 * easeOutCubic(t / a);
+    } else if (t < a + parado) {
+        x = 0.5;
+        anda = 0;
+    } else {
+        x = 0.5 + 0.58 * easeInCubic((t - a - parado) / (PINGUIM_ANDA - a - parado));
+    }
+    const balanco = Math.sin(t / 150);
+    return {
+        x: dir < 0 ? 1 - x : x,
+        pulo: anda ? 0.12 * Math.abs(balanco) : 0.04 * Math.abs(Math.sin(t / 400)),
+        inclina: balanco * (anda ? 0.22 : 0.05),
+        dir: dir < 0 ? -1 : 1,
+    };
+}
+
+// ----- Mascotes novos: coruja, pilha (bateria baixa), satélite (sem rede) e tomate (pomodoro) -----
+
+// Olho aberto de 0 a 1: fecha por ~150 ms a cada `periodo` ms (piscada).
+const piscada = (t, periodo = 2100) => {
+    const f = t % periodo;
+    return f < 150 ? 1 - Math.sin((f / 150) * Math.PI) : 1;
+};
+
+const CORUJA = {sobe: 450, fica: 3600, desce: 400};
+export const duracaoCoruja = () => CORUJA.sobe + CORUJA.fica + CORUJA.desce;
+
+// Estado da coruja em `t` ms: {sobe, esmaga, alfa, sono, olhos, cabeca}. Sobe dormindo (`sono` 1, olhos fechados),
+// acorda, pisca e olha em volta (`cabeca` de -1 a 1) e volta a dormir antes de descer. null depois do fim.
+export function quadroCoruja(t, saida = 'cai') {
+    const q = quadroSobeDesce(t, CORUJA, saida);
+    if (!q)
+        return null;
+    const fimFica = CORUJA.sobe + CORUJA.fica;
+    const sono = 1 - rampa(t, CORUJA.sobe + 400, CORUJA.sobe + 900) + rampa(t, fimFica - 900, fimFica - 300);
+    const sonoOk = limitar01(sono);
+    return {...q, sono: sonoOk, olhos: (1 - sonoOk) * piscada(t, 1700), cabeca: Math.sin(t / 650) * (1 - sonoOk)};
+}
+
+const PILHA = {sobe: 500, fica: 3200, desce: 450};
+export const duracaoPilha = () => PILHA.sobe + PILHA.fica + PILHA.desce;
+
+// Estado da pilha em `t` ms: {sobe, esmaga, alfa, nivel, cansaco, suspiro}. `nivel` (0 a 1) é a carga, sempre baixa e
+// piscando; `cansaco` de -1 a 1 é o balanço de sono em pé e `suspiro` de 0 a 1 a pausa pesada. null depois do fim.
+export function quadroPilha(t, saida = 'cai') {
+    const q = quadroSobeDesce(t, PILHA, saida);
+    if (!q)
+        return null;
+    return {
+        ...q,
+        nivel: 0.1 + 0.05 * Math.abs(Math.sin(t / 420)),
+        cansaco: Math.sin(t / 700) * 0.8,
+        suspiro: 0.5 + 0.5 * Math.sin(t / 900),
+    };
+}
+
+const SATELITE = {sobe: 500, fica: 3400, desce: 450};
+export const duracaoSatelite = () => SATELITE.sobe + SATELITE.fica + SATELITE.desce;
+
+// Estado do satélite em `t` ms: {sobe, esmaga, alfa, giro, sinal, perdido}. `giro` (rad) é o balanço da antena
+// procurando o sinal e `sinal` (0 a 1) o pulso do arco que nunca chega; `perdido` vale 1 durante a permanência. null
+// depois do fim.
+export function quadroSatelite(t, saida = 'cai') {
+    const q = quadroSobeDesce(t, SATELITE, saida);
+    if (!q)
+        return null;
+    return {...q, giro: Math.sin(t / 520) * 0.5, sinal: (t % 1300) / 1300, perdido: q.ativo};
+}
+
+const TOMATE = {sobe: 400, fica: 3000, desce: 400};
+export const duracaoTomate = () => TOMATE.sobe + TOMATE.fica + TOMATE.desce;
+
+// Estado do tomate em `t` ms: {sobe, esmaga, alfa, pulo, confete}. `pulo` (0 a 1) é a altura do pulinho de alegria e
+// `confete` o tempo, em segundos, desde o estouro (0 antes de subir). null depois do fim.
+export function quadroTomate(t, saida = 'cai') {
+    const q = quadroSobeDesce(t, TOMATE, saida);
+    if (!q)
+        return null;
+    return {...q, pulo: q.ativo * Math.abs(Math.sin(t / 240)), confete: Math.max(0, t - TOMATE.sobe * 0.6) / 1000};
+}
+
+// Posição (0 a 1 de cada eixo, relativa ao ponto de origem) de cada pedaço de confete `i` de `n`, `s` segundos depois
+// do estouro: sobe em arco, cai com a gravidade e gira. Determinístico (sem sorteio) para a prévia bater com o Shell.
+export function confete(i, n, s) {
+    const ang = -Math.PI / 2 + ((i / n) - 0.5) * 2.4 + Math.sin(i * 12.9898) * 0.25;
+    const vel = 0.9 + 0.5 * Math.abs(Math.sin(i * 78.233));
+    return {x: Math.cos(ang) * vel * s, y: Math.sin(ang) * vel * s + 1.6 * s * s, giro: s * (4 + (i % 5)) * (i % 2 ? 1 : -1)};
+}
+
+// Folhas de sprites (sprites/<id>.png, quadros lado a lado): `quadros`, tamanho de cada um (`fw` x `fh`, em px da
+// imagem), `chao` (a linha dos pés, em px a partir do topo do quadro) e `altura`, a do mascote em múltiplos do ícone.
+// quanto o sprite afunda na doca, em ícones: os pés pousam no vidro, não na linha do topo
+const PE_NA_DOCA = 0.25;
+export const SPRITES = {
+    gato: {arquivo: 'gato.png', quadros: 6, fw: 212, fh: 131, chao: 123, altura: 1.25},
+};
+
+// Gato (ou outro sprite que anda) atravessando a doca de ponta a ponta. A posição avança em velocidade quase constante
+// (`velocidade` em ícones por segundo, com uma leve respirada) e o quadro é amarrado à distância percorrida
+// (`passo` = comprimento do ciclo de quadros em larguras do sprite), então os pés não escorregam.
+// Devolve {x, quadro, dir, escala, pe}: `x` em px dentro do actor de largura `largura` e `pe` quanto os pés afundam
+// abaixo da linha do topo da doca (o vidro da doca tem uma folga em cima). null depois do fim.
+export function quadroSprite(t, dir, spec, {largura, icone, velocidade, passo}) {
+    t = Math.max(0, t);
+    const escala = (icone * spec.altura) / spec.fh;
+    const fw = spec.fw * escala;
+    const dist = icone * velocidade * (t / 1000 + 0.12 * Math.sin(t / 900));
+    if (dist >= largura + fw)
+        return null;
+    const ciclo = dist / (fw * passo);
+    const quadro = Math.floor((ciclo % 1) * spec.quadros) % spec.quadros;
+    const x = dir < 0 ? largura + fw / 2 - dist : -fw / 2 + dist;
+    return {x, quadro, dir: dir < 0 ? -1 : 1, escala, pe: icone * PE_NA_DOCA};
+}
+
+// Bateria baixa: deve aparecer agora? Só descarregando (estado 2 do UPower), no limiar ou abaixo, armado (já carregou
+// ou subiu 5 pontos desde a última) e depois de `esperaMs` da aparição anterior.
+export function bateriaPedeAparicao(pct, estado, limiar, armado, agoraMs, ultimoMs, esperaMs) {
+    return pct !== null && estado === 2 && armado && pct <= limiar && agoraMs - ultimoMs >= esperaMs;
+}
+
+// Rearma quando a bateria carrega ou passa 5 pontos do limiar.
+export const rearmarBateria = (pct, estado, limiar, armado) => armado || estado !== 2 || (pct !== null && pct > limiar + 5);
 
 // Escala de um ícone a `distancia` px do ponteiro: gaussiana entre 1 (longe) e `forca` (embaixo do ponteiro).
 export function escalaLente(distancia, forca, largura) {

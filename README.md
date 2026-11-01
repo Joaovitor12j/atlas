@@ -16,7 +16,7 @@ Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 - Favoritos do GNOME + apps abertos (separados por uma linha) e botão de grade de apps
 - Lente de ampliação suave, indicador de app aberto, tooltip com o nome
 - Clique: ativa/abre; botão do meio ou Ctrl+clique: nova janela
-- Temas: **Noite** (padrão), **Papel**, **Cristal** (blur do fundo), **Neon**, **Halloween** e **Natal**; cada ambiente pode ter o seu
+- Temas: **Noite** (padrão), **Papel**, **Cristal** (blur do fundo), **Neon**, **Oceano**, **Sakura**, **Ônix**, **Halloween** e **Natal**; cada ambiente pode ter o seu
 - Posição: embaixo, esquerda ou direita, com margem; auto-ocultar (zona de 2px na borda traz a doca de volta)
 - Telas: só na principal, em todas, ou só em uma tela específica (lista montada com seus monitores)
 - Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz, X ou clique do meio fecha)

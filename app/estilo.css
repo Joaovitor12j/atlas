@@ -23,7 +23,6 @@ headerbar { box-shadow: none; min-height: 48px; }
 
 /* Cabeçalho */
 .atlas-marca { font-family: "Sora", "Cantarell", sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 4px; }
-.atlas-marca-icone { background: #ff6b4a; color: #2a0d06; border-radius: 6px; min-width: 20px; min-height: 20px; font-weight: 800; font-size: 11px; letter-spacing: 0; }
 .atlas-fantasma { background: none; border: 1px solid #25424b; color: #9bb7b6; border-radius: 9px; padding: 5px 12px; font-size: 12px; box-shadow: none; }
 .atlas-fantasma:hover { border-color: #31565f; color: #e9f3f1; }
 
@@ -79,7 +78,7 @@ switch:checked { background: #ff6b4a; }
 switch:checked slider { background: #2a0d06; }
 
 /* Cartões de widget (grade da aba Widgets) */
-.atlas-w { background: #1a323a; border: 1.5px solid transparent; border-radius: 12px; padding: 12px; box-shadow: none; color: #e9f3f1; min-height: 118px; }
+.atlas-w { background: #1a323a; border: 1.5px solid transparent; border-radius: 12px; padding: 10px 12px; box-shadow: none; color: #e9f3f1; }
 .atlas-w:hover { background: #20404a; }
 .atlas-w-on { border-color: #ff6b4a; background: alpha(#ff6b4a, 0.16); }
 .atlas-w-nome { font-family: "Sora", "Cantarell", sans-serif; font-weight: 600; font-size: 13px; }

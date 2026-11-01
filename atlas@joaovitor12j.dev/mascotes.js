@@ -2,16 +2,21 @@
 //
 // Em repouso o custo é um único temporizador (no máximo a cada 15 min) e só com um mascote ligado; o actor só
 // existe durante a aparição. A lógica de horários e a linha do tempo estão em logica.js, o desenho em desenho.js.
+import Cairo from 'gi://cairo';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {boneco, chama, cuco, esqueleto, fantasma, neve, noel, pendurado, picole, pinguim, solArco, solLeque} from './desenho.js';
+import {boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, neve, noel, passear, pendurado, picole, pilha, pinguim, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
+import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
 import {
-    avaliarDisparo, batidasDoDisparo, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCuco,
+    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
+    quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCuco,
     duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPendurado, duracaoPicole, duracaoPinguim,
-    duracaoSolArco, duracaoSolLeque, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima,
+    duracaoCucoVoa, duracaoPasseio, duracaoPinguimAnda, duracaoPinguimPula, duracaoSolCorre, duracaoSolNasce, duracaoSolQuica,
+    quadroCucoVoa, quadroPinguimAnda, quadroPinguimPula, quadroSolCorre, quadroSolNasce, quadroSolQuica, duracaoSolArco, duracaoSolLeque, PASSEIOS, quadroPasseio, tamanhoPasseio, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima,
     memoriaPedeAparicao, naJanela, naTemporada, posicionarMascote, proximoDisparo, quadroBoneco, quadroChama, quadroCuco,
     quadroEsqueleto, quadroFantasma, quadroNeve, quadroNoel, quadroPendurado, quadroPicole, quadroPinguim, quadroSolArco,
     quadroSolLeque, rearmarMemoria, tamanhoMascoteClima, usoMemoria,
@@ -40,62 +45,210 @@ const movimento = (variante, duracao, quadro, desenhar) => ({
     desenhar: (cr, w, h, q, ctx) => desenhar(cr, w, h, q, ctx),
 });
 
+// Um passeio (logica.js, PASSEIOS): o mascote atravessa a doca. `quadroFig` converte o estado do passeio no estado do
+// desenho que sobe da doca (o mesmo desenho do mascote, só que andando, voando ou pulando).
+const passeio = (chave, desenhar, quadroFig, contexto = () => ({})) => ({
+    tamanho: (icone, caixa) => tamanhoPasseio(chave, icone, caixa.w),
+    contexto: (settings, alvo) => ({dir: Math.random() < 0.5 ? -1 : 1, ...contexto(settings, alvo)}),
+    duracao: () => duracaoPasseio(chave),
+    quadro: (t, ctx) => quadroPasseio(t, ctx.dir, PASSEIOS[chave]),
+    desenhar: (cr, w, h, q, ctx) => passear(cr, w, h, q, ctx, PASSEIOS[chave].fig, desenhar, quadroFig),
+});
+
+// Um sprite que atravessa a doca (SPRITES, logica.js): o actor tem a largura da doca e a altura do mascote. A imagem
+// é carregada pelo motor (`impl.sprite`) e chega ao desenho em `ctx.imagem`.
+const andarSprite = (id, {velocidade, passo}) => ({
+    sprite: id,
+    tamanho: (icone, caixa) => ({w: Math.round(caixa.w), h: Math.round(icone * (SPRITES[id].altura * 1.05 + 0.25)), abaixo: Math.round(icone * 0.25)}),
+    contexto: () => ({dir: Math.random() < 0.5 ? -1 : 1, spec: SPRITES[id]}),
+    duracao: () => 0,
+    quadro: (t, ctx) => quadroSprite(t, ctx.dir, ctx.spec, {largura: ctx.largura, icone: ctx.icone, velocidade, passo}),
+    desenhar: (cr, w, h, q, ctx) => sprite(cr, w, h, q, ctx),
+});
+
 const IMPL = {
     cuco: {
         prefixo: 'cuco',
-        tamanho: icone => ({w: Math.round(icone * 1.6), h: Math.round(icone * 2)}),
-        contexto: (settings, alvo) => ({
-            batidas: batidasDoDisparo(alvo.hora, alvo.minuto, settings.get_int('cuco-max-batidas')),
-            hora: alvo.hora,
-            minuto: alvo.minuto,
-        }),
-        duracao: ctx => duracaoCuco(ctx.batidas),
-        quadro: (t, ctx) => quadroCuco(t, ctx.batidas),
-        desenhar: (cr, w, h, q, ctx) => cuco(cr, w, h, q, ctx),
+        variantes: {
+            'casa': {
+                tamanho: icone => ({w: Math.round(icone * 1.6), h: Math.round(icone * 2)}),
+                contexto: (settings, alvo) => ({
+                    batidas: batidasDoDisparo(alvo.hora, alvo.minuto, settings.get_int('cuco-max-batidas')),
+                    hora: alvo.hora,
+                    minuto: alvo.minuto,
+                }),
+                duracao: ctx => duracaoCuco(ctx.batidas),
+                quadro: (t, ctx) => quadroCuco(t, ctx.batidas),
+                desenhar: (cr, w, h, q, ctx) => cuco(cr, w, h, q, ctx),
+            },
+            'passeia': passeio('cuco-passeia', cuco, q => ({
+                casa: 1, porta: q.parado, passaro: q.parado * Math.abs(Math.sin(q.t / 480)), bico: Math.abs(Math.sin(q.t / 160)) * q.parado,
+                inclina: Math.sin(q.t / 240) * q.parado,
+            }), (settings, alvo) => ({hora: alvo.hora, minuto: alvo.minuto})),
+            'voa': movimento('cuco-voa', duracaoCucoVoa, quadroCucoVoa, cucoVoa),
+        },
     },
     fantasma: {
         prefixo: 'fantasma',
         temporada: {ini: [9, 24], fim: [9, 31]}, // 24 a 31 de outubro
-        tamanho: icone => ({w: Math.round(icone * 1.4), h: Math.round(icone * 1.8)}),
-        contexto: () => ({}),
-        duracao: () => duracaoFantasma(),
-        quadro: t => quadroFantasma(t),
-        desenhar: (cr, w, h, q) => fantasma(cr, w, h, q),
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.4), h: Math.round(icone * 1.8)}),
+                contexto: () => ({}),
+                duracao: () => duracaoFantasma(),
+                finais: ['cai', 'some', 'espia'],
+                quadro: (t, ctx) => quadroFantasma(t, ctx.saida),
+                desenhar: (cr, w, h, q) => fantasma(cr, w, h, q),
+            },
+            'flutua': passeio('fantasma-flutua', fantasma, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 260), susto: q.parado, fase: q.t / 160, olhar: q.olhar,
+            })),
+            'zigue': passeio('fantasma-zigue', fantasma, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 200), susto: 0.4 + 0.4 * Math.sin(q.t / 350), fase: q.t / 120, olhar: q.olhar,
+            })),
+        },
     },
     esqueleto: {
         prefixo: 'esqueleto',
         temporada: {ini: [9, 24], fim: [9, 31]},
-        tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.9)}),
-        contexto: () => ({}),
-        duracao: () => duracaoEsqueleto(),
-        quadro: t => quadroEsqueleto(t),
-        desenhar: (cr, w, h, q) => esqueleto(cr, w, h, q),
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.9)}),
+                contexto: () => ({}),
+                duracao: () => duracaoEsqueleto(),
+                finais: ['cai', 'afunda', 'espia'],
+                quadro: (t, ctx) => quadroEsqueleto(t, ctx.saida),
+                desenhar: (cr, w, h, q) => esqueleto(cr, w, h, q),
+            },
+            'caminha': passeio('esqueleto-caminha', esqueleto, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 190) * 0.8, aceno: q.acena, mandibula: Math.abs(Math.sin(q.t / 95)) * q.parado, olhar: q.olhar,
+            })),
+            'danca': passeio('esqueleto-danca', esqueleto, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 260), aceno: Math.sin(q.t / 130), mandibula: Math.abs(Math.sin(q.t / 130)), olhar: q.olhar,
+            })),
+        },
     },
     noel: {
         prefixo: 'noel',
         temporada: {ini: [11, 1], fim: [11, 25]}, // 1 a 25 de dezembro
-        tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
-        contexto: () => ({}),
-        duracao: () => duracaoNoel(),
-        quadro: t => quadroNoel(t),
-        desenhar: (cr, w, h, q) => noel(cr, w, h, q),
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
+                contexto: () => ({}),
+                duracao: () => duracaoNoel(),
+                finais: ['cai', 'afunda', 'espia'],
+                quadro: (t, ctx) => quadroNoel(t, ctx.saida),
+                desenhar: (cr, w, h, q) => noel(cr, w, h, q),
+            },
+            'passeia': passeio('noel-passeia', noel, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 210) * 0.7, aceno: q.acena, riso: Math.abs(Math.sin(q.t / 210)) * q.parado, olhar: q.olhar,
+            })),
+            'pula': passeio('noel-pula', noel, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 400) * 0.5, aceno: Math.sin(q.t / 150), riso: Math.abs(Math.sin(q.t / 260)), olhar: q.olhar,
+            })),
+        },
     },
     boneco: {
         prefixo: 'boneco',
         temporada: {ini: [11, 1], fim: [11, 25]},
-        tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.8)}),
-        contexto: () => ({}),
-        duracao: () => duracaoBoneco(),
-        quadro: t => quadroBoneco(t),
-        desenhar: (cr, w, h, q) => boneco(cr, w, h, q),
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.8)}),
+                contexto: () => ({}),
+                duracao: () => duracaoBoneco(),
+                finais: ['cai', 'afunda'],
+                quadro: (t, ctx) => quadroBoneco(t, ctx.saida),
+                desenhar: (cr, w, h, q) => boneco(cr, w, h, q),
+            },
+            'desliza': passeio('boneco-desliza', boneco, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 350) * 0.4, vento: Math.sin(q.t / 150), olhar: q.olhar,
+            })),
+            'pula': passeio('boneco-pula', boneco, q => ({
+                sobe: 1, balanco: Math.sin(q.t / 350) * 0.5, vento: Math.sin(q.t / 230), olhar: q.olhar,
+            })),
+        },
     },
     chama: {
         gatilho: 'memoria',
-        tamanho: icone => ({w: Math.round(icone * 1.1), h: Math.round(icone * 1.5)}),
-        contexto: () => ({}),
-        duracao: () => duracaoChama(),
-        quadro: t => quadroChama(t),
-        desenhar: (cr, w, h, q) => chama(cr, w, h, q),
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.1), h: Math.round(icone * 1.5)}),
+                contexto: () => ({}),
+                duracao: () => duracaoChama(),
+                finais: ['cai', 'some'],
+                quadro: (t, ctx) => quadroChama(t, ctx.saida),
+                desenhar: (cr, w, h, q) => chama(cr, w, h, q),
+            },
+            'salta': passeio('chama-salta', chama, q => ({sobe: 1, fase: q.t / 90, aflicao: 1, olhar: q.olhar})),
+            'corre': passeio('chama-corre', chama, q => ({sobe: 1, fase: q.t / 60, aflicao: 0.8, olhar: q.olhar})),
+        },
+    },
+    gato: {
+        prefixo: 'gato',
+        variantes: {
+            'caminha': andarSprite('gato', {velocidade: 3, passo: 0.8}),
+            'corre': andarSprite('gato', {velocidade: 6.5, passo: 1.5}),
+        },
+    },
+    coruja: {
+        prefixo: 'coruja',
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
+                contexto: () => ({}),
+                duracao: () => duracaoCoruja(),
+                finais: ['cai', 'afunda', 'espia'],
+                quadro: (t, ctx) => quadroCoruja(t, ctx.saida),
+                desenhar: (cr, w, h, q) => coruja(cr, w, h, q),
+            },
+            'salta': passeio('coruja-salta', coruja, q => ({sobe: 1, sono: 0, olhos: 1, cabeca: Math.sin(q.t / 500), olhar: q.olhar})),
+        },
+    },
+    pilha: {
+        gatilho: 'bateria',
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.8)}),
+                contexto: () => ({}),
+                duracao: () => duracaoPilha(),
+                finais: ['cai', 'afunda'],
+                quadro: (t, ctx) => quadroPilha(t, ctx.saida),
+                desenhar: (cr, w, h, q) => pilha(cr, w, h, q),
+            },
+            'arrasta': passeio('pilha-arrasta', pilha, q => ({
+                sobe: 1, nivel: 0.1 + 0.05 * Math.abs(Math.sin(q.t / 420)), cansaco: Math.sin(q.t / 380) * 0.8, suspiro: 0.5 + 0.5 * Math.sin(q.t / 600), olhar: q.olhar,
+            })),
+        },
+    },
+    satelite: {
+        gatilho: 'rede',
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.8), h: Math.round(icone * 2.1)}),
+                contexto: () => ({}),
+                duracao: () => duracaoSatelite(),
+                finais: ['cai', 'some'],
+                quadro: (t, ctx) => quadroSatelite(t, ctx.saida),
+                desenhar: (cr, w, h, q) => satelite(cr, w, h, q),
+            },
+            'deriva': passeio('satelite-deriva', satelite, q => ({
+                sobe: 1, giro: Math.sin(q.t / 520) * 0.5, sinal: (q.t % 1300) / 1300, perdido: 1, olhar: q.olhar,
+            })),
+        },
+    },
+    tomate: {
+        gatilho: 'pomodoro',
+        variantes: {
+            'sobe': {
+                tamanho: icone => ({w: Math.round(icone * 1.8), h: Math.round(icone * 1.9)}),
+                contexto: () => ({}),
+                duracao: () => duracaoTomate(),
+                finais: ['cai', 'afunda', 'some'],
+                quadro: (t, ctx) => quadroTomate(t, ctx.saida),
+                desenhar: (cr, w, h, q) => tomate(cr, w, h, q),
+            },
+            'pula': passeio('tomate-pula', tomate, q => ({sobe: 1, pulo: 0, confete: q.t / 1000 % 2.4, olhar: q.olhar})),
+        },
     },
     calor: {
         gatilho: 'clima',
@@ -103,12 +256,17 @@ const IMPL = {
             'picole': movimento('picole', duracaoPicole, t => quadroPicole(t), picole),
             'sol-arco': movimento('sol-arco', duracaoSolArco, quadroSolArco, solArco),
             'sol-leque': movimento('sol-leque', duracaoSolLeque, quadroSolLeque, solLeque),
+            'sol-corre': movimento('sol-corre', duracaoSolCorre, quadroSolCorre, solLeque),
+            'sol-quica': movimento('sol-quica', duracaoSolQuica, quadroSolQuica, solArco),
+            'sol-nasce': movimento('sol-nasce', duracaoSolNasce, t => quadroSolNasce(t), solArco),
         },
     },
     frio: {
         gatilho: 'clima',
         variantes: {
             'pinguim': movimento('pinguim', duracaoPinguim, quadroPinguim, pinguim),
+            'pinguim-pula': movimento('pinguim-pula', duracaoPinguimPula, quadroPinguimPula, pinguim),
+            'pinguim-anda': movimento('pinguim-anda', duracaoPinguimAnda, quadroPinguimAnda, pinguim),
             'neve': movimento('neve', duracaoNeve, t => quadroNeve(t),
                 (cr, w, h, q, ctx) => neve(cr, w, h, q, {...ctx, flocos: flocosDeNeve(q.t)})),
             'pendurado': movimento('pendurado', duracaoPendurado, t => quadroPendurado(t), pendurado),
@@ -119,7 +277,10 @@ const IMPL = {
 // de memória e os do clima conferem a previsão (que só é buscada de novo a cada 30 min, ver clima.js)
 const HORARIOS = Object.keys(IMPL).filter(id => !IMPL[id].gatilho);
 const DO_CLIMA = Object.keys(IMPL).filter(id => IMPL[id].gatilho === 'clima');
+// mascotes de evento sem prefixo: ligam só ao evento (memória, bateria, rede, fim de foco do Pomodoro)
+const DE_EVENTO = new Set(['memoria', 'bateria', 'rede', 'pomodoro']);
 const AMOSTRA_MS = 15_000;
+const CONFIRMA_REDE_MS = 6000; // fica sem rede por esse tempo antes de o satélite aparecer
 const AMOSTRA_CLIMA_MS = 5 * 60_000;
 const naData = (impl, ms) => !impl.temporada || naTemporada(new Date(ms), impl.temporada.ini, impl.temporada.fim);
 
@@ -141,6 +302,11 @@ export class Mascotes {
         this._climaId = 0;
         this._climaUltimo = {};
         this._climaOuvinte = null;
+        this._ultimoEvento = {};
+        this._bat = null;
+        this._redeSinal = null;
+        this._redeId = 0;
+        this._aoFoco = () => this._disparar('tomate');
         const st = this._settings;
         for (const chave of ['mascotes-ativos', 'clima-cidade', ...HORARIOS.map(id => `${IMPL[id].prefixo}-intervalo`)])
             this._sinais.push([st, st.connect(`changed::${chave}`, () => this._reagendar())]);
@@ -154,7 +320,26 @@ export class Mascotes {
             obj.disconnect(id);
         this._sinais = [];
         this._cancelar();
+        this._desligarEventos();
         this._encerrar();
+        for (const img of Object.values(this._imagens ?? {}))
+            img.finish();
+        this._imagens = {};
+    }
+
+    // Folha de sprites `id` (sprites/<arquivo> na pasta da extensão), aberta uma vez e solta ao desligar; null se falhar.
+    _imagem(id) {
+        this._imagens ??= {};
+        if (!this._imagens[id]) {
+            try {
+                const arq = this._ganchos.pasta().get_child('sprites').get_child(SPRITES[id].arquivo);
+                this._imagens[id] = Cairo.ImageSurface.createFromPNG(arq.get_path());
+            } catch (e) {
+                console.error(`[atlas] sprite ${id}: ${e}`);
+                return null;
+            }
+        }
+        return this._imagens[id];
     }
 
     _ativo(id) {
@@ -177,6 +362,7 @@ export class Mascotes {
     // não sobra temporizador.
     _reagendar() {
         this._cancelar();
+        this._ligarEventos();
         const ligados = HORARIOS.filter(id => this._ativo(id));
         const comMemoria = this._ativo('chama');
         const comClima = DO_CLIMA.some(id => this._ativo(id));
@@ -234,6 +420,120 @@ export class Mascotes {
         this._reagendar();
     }
 
+    // Os mascotes de evento (pilha, satélite, tomate) só escutam enquanto estão ligados, por sinais: sem temporizador
+    // em repouso (o da rede só existe nos segundos de confirmação da queda).
+    _ligarEventos() {
+        if (this._ativo('pilha'))
+            this._abrirBateria();
+        else
+            this._fecharBateria();
+        if (this._ativo('satelite') && !this._redeSinal) {
+            const m = Gio.NetworkMonitor.get_default();
+            this._redeSinal = [m, m.connect('network-changed', () => this._redeMudou(m))];
+        } else if (!this._ativo('satelite')) {
+            this._fecharRede();
+        }
+        if (this._ativo('tomate'))
+            AO_CONCLUIR_FOCO.add(this._aoFoco);
+        else
+            AO_CONCLUIR_FOCO.delete(this._aoFoco);
+    }
+
+    _desligarEventos() {
+        this._fecharBateria();
+        this._fecharRede();
+        AO_CONCLUIR_FOCO.delete(this._aoFoco);
+    }
+
+    // Chama o mascote de evento `id` agora, se ele estiver ligado e puder aparecer.
+    _disparar(id) {
+        const d = new Date();
+        const alvo = {hora: d.getHours(), minuto: d.getMinutes(), ms: d.getTime()};
+        return this._pode(id, alvo, false) && this._iniciar([[id, alvo]], false);
+    }
+
+    // Passou `esperaMin` desde a última aparição de `id`? (marca o instante ao devolver verdadeiro)
+    _livre(id, esperaMin) {
+        const agoraMs = Date.now();
+        if (agoraMs - (this._ultimoEvento[id] ?? -Infinity) < esperaMin * 60_000)
+            return false;
+        this._ultimoEvento[id] = agoraMs;
+        return true;
+    }
+
+    _abrirBateria() {
+        if (this._bat)
+            return;
+        const bat = this._bat = {proxy: null, sig: 0, armado: true, ultimo: -Infinity};
+        Gio.DBusProxy.new_for_bus(Gio.BusType.SYSTEM, Gio.DBusProxyFlags.NONE, null,
+            'org.freedesktop.UPower', '/org/freedesktop/UPower/devices/DisplayDevice',
+            'org.freedesktop.UPower.Device', null, (_o, res) => {
+                try {
+                    const proxy = Gio.DBusProxy.new_for_bus_finish(res);
+                    if (this._bat !== bat)
+                        return; // desligado enquanto conectava
+                    bat.proxy = proxy;
+                    bat.sig = proxy.connect('g-properties-changed', () => this._bateriaMudou());
+                    this._bateriaMudou();
+                } catch (e) {
+                    console.error(`[atlas] UPower indisponível para o mascote da bateria: ${e}`);
+                }
+            });
+    }
+
+    _fecharBateria() {
+        if (this._bat?.proxy && this._bat.sig)
+            this._bat.proxy.disconnect(this._bat.sig);
+        this._bat = null;
+    }
+
+    _bateriaMudou() {
+        const bat = this._bat;
+        const p = bat?.proxy;
+        if (!p || !p.get_cached_property('IsPresent')?.unpack())
+            return;
+        const pct = p.get_cached_property('Percentage')?.unpack() ?? null;
+        const estado = p.get_cached_property('State')?.unpack() ?? 0; // 1 carregando, 2 descarregando
+        const st = this._settings;
+        const limiar = st.get_int('pilha-limiar');
+        bat.armado = rearmarBateria(pct, estado, limiar, bat.armado);
+        const agoraMs = GLib.get_monotonic_time() / 1000;
+        if (bateriaPedeAparicao(pct, estado, limiar, bat.armado, agoraMs, bat.ultimo, st.get_int('pilha-espera') * 60_000) &&
+            this._disparar('pilha')) {
+            bat.armado = false;
+            bat.ultimo = agoraMs;
+        }
+    }
+
+    _fecharRede() {
+        if (this._redeSinal)
+            this._redeSinal[0].disconnect(this._redeSinal[1]);
+        this._redeSinal = null;
+        if (this._redeId) {
+            GLib.source_remove(this._redeId);
+            this._redeId = 0;
+        }
+    }
+
+    // A rede caiu? Confirma depois de alguns segundos (oscilações curtas não contam) antes de chamar o satélite.
+    _redeMudou(monitor) {
+        if (monitor.network_available) {
+            if (this._redeId) {
+                GLib.source_remove(this._redeId);
+                this._redeId = 0;
+            }
+            return;
+        }
+        if (this._redeId)
+            return;
+        this._redeId = agendar('mascote-evento', CONFIRMA_REDE_MS, () => {
+            this._redeId = 0;
+            if (!monitor.network_available && this._ativo('satelite') && this._livre('satelite', this._settings.get_int('satelite-espera')))
+                this._disparar('satelite');
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
     // A cada 15 s, só com a chama ligada: lê o uso de memória e chama o mascote quando passa do limiar.
     _amostrar() {
         let uso = null;
@@ -288,7 +588,7 @@ export class Mascotes {
     _pode(id, alvo, forcar) {
         if (forcar)
             return true;
-        if (IMPL[id].gatilho === 'memoria')
+        if (DE_EVENTO.has(IMPL[id].gatilho))
             return this._ativo(id) && !this._ganchos.naoPerturbe();
         if (IMPL[id].gatilho === 'clima') {
             return this._ativo(id) && naJanela(alvo.hora, this._settings.get_int(`${id}-das`), this._settings.get_int(`${id}-ate`)) &&
@@ -310,12 +610,16 @@ export class Mascotes {
         if (!anc)
             return pular(forcar, 'doca escondida'); // pula a aparição
         const impls = grupo.map(([id, , variante]) => this._impl(id, variante));
+        if (impls.some(impl => impl.sprite && !this._imagem(impl.sprite)))
+            return pular(forcar, 'não consegui abrir a folha de sprites');
         const tams = impls.map(impl => impl.tamanho(anc.icone, anc.caixa));
-        const larguras = tams.map(t => t.w);
+        // quem atravessa a doca (actor da largura dela) não entra na fila lado a lado: passa por cima, sem deslocamento
+        const largo = tams.map(t => t.w > anc.caixa.w * 0.6);
+        const larguras = tams.map((t, i) => (largo[i] ? 0 : t.w));
         const folga = Math.round(anc.icone * 0.1);
         // o conjunto aparece num ponto qualquer da doca, sorteado a cada aparição
         const base = deslocamentoAleatorio(anc.caixa.w, larguras.reduce((s, w) => s + w, folga * (larguras.length - 1)), Math.random());
-        const dxs = deslocamentosLado(larguras, folga).map(d => d + base);
+        const dxs = deslocamentosLado(larguras, folga).map((d, i) => (largo[i] ? 0 : d + base));
         grupo.forEach(([id, alvo], i) => {
             if (posicionarMascote(anc.caixa, tams[i], anc.topoUtil, dxs[i]))
                 this._criar(id, impls[i], alvo, tams[i], dxs[i], anc.icone);
@@ -341,8 +645,14 @@ export class Mascotes {
         const ctx = impl.contexto(this._settings, alvo);
         ctx.base = tam.h - (tam.abaixo ?? 0); // a linha do topo da doca dentro do actor
         ctx.icone = icone;
+        ctx.largura = tam.w;
+        if (impl.sprite)
+            ctx.imagem = this._imagem(impl.sprite);
+        // cada aparição escolhe um final entre os do mascote (cai, afunda, espia, some)
+        if (impl.finais)
+            ctx.saida = impl.finais[Math.floor(Math.random() * impl.finais.length)];
         console.log(`[atlas] mascote ${id} aparece (${tam.w}x${tam.h}, deslocamento ${dx})`);
-        const atual = {impl, ctx, tam, dx, q: impl.quadro(0, ctx), t0: GLib.get_monotonic_time()};
+        const atual = {impl, ctx, tam, dx, olhar: {x: 0, y: 0}, q: impl.quadro(0, ctx), t0: GLib.get_monotonic_time()};
         const actor = atual.actor = new St.DrawingArea({reactive: false, clip_to_allocation: true});
         actor.set_size(tam.w, tam.h);
         actor.connect('repaint', a => {
@@ -350,7 +660,23 @@ export class Mascotes {
             const t0 = agora();
             try {
                 const [w, h] = a.get_surface_size();
+                // esticar e esmagar em torno da borda da doca (base do actor), para quem traz `esmaga` no quadro
+                const e = atual.q?.esmaga;
+                if (e) {
+                    const base = atual.ctx.base ?? h;
+                    cr.translate(w / 2, base);
+                    cr.scale(e.sx, e.sy);
+                    cr.translate(-w / 2, -base);
+                }
+                // "puf": o final `some` desbota o mascote inteiro
+                const alfa = atual.q?.alfa ?? 1;
+                if (alfa < 1)
+                    cr.pushGroup();
                 atual.impl.desenhar(cr, w, h, atual.q, atual.ctx);
+                if (alfa < 1) {
+                    cr.popGroupToSource();
+                    cr.paintWithAlpha(Math.max(0, alfa));
+                }
             } catch (e) {
                 console.error(`[atlas] erro ao desenhar o mascote: ${e}`);
             } finally {
@@ -380,7 +706,13 @@ export class Mascotes {
                 this._atuais.splice(this._atuais.indexOf(a), 1);
                 continue;
             }
-            a.q = q;
+            // os olhos seguem o ponteiro (suavizado quadro a quadro); só existe durante a aparição
+            const [px, py] = global.get_pointer();
+            const alvoX = Math.max(-1, Math.min(1, (px - (pos.x + a.tam.w / 2)) / 400));
+            const alvoY = Math.max(-1, Math.min(1, (py - (pos.y + a.tam.h * 0.4)) / 300));
+            a.olhar.x += (alvoX - a.olhar.x) * 0.2;
+            a.olhar.y += (alvoY - a.olhar.y) * 0.2;
+            a.q = {...q, olhar: a.olhar};
             a.actor.set_position(pos.x, pos.y);
             a.actor.queue_repaint();
         }

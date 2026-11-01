@@ -2,8 +2,8 @@
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import {CORES_TEMA, TEMAS} from '../atlas@joaovitor12j.dev/catalogo.js';
-import {desenharPapelDeParede, retanguloArredondado} from './previa.js';
+import {TEMAS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {appsDaPrevia, desenharMiniDoca, retanguloArredondado} from './previa.js';
 
 function cor(cr, css) {
     const c = new Gdk.RGBA();
@@ -73,19 +73,9 @@ function escala(settings, key, min, max, passo, digitos, formato) {
     return [s, v];
 }
 
-function miniaturaTema(id) {
-    const t = CORES_TEMA[id];
-    const a = new Gtk.DrawingArea({content_width: 150, content_height: 52, hexpand: true});
-    a.set_draw_func((_a, cr, w, h) => {
-        desenharPapelDeParede(cr, w, h, 9);
-        const pw = w * 0.62, ph = 16;
-        retanguloArredondado(cr, (w - pw) / 2, h - ph - 9, pw, ph, 8);
-        cor(cr, t.fundo);
-        cr.fillPreserve();
-        cor(cr, t.borda);
-        cr.setLineWidth(1);
-        cr.stroke();
-    });
+function miniaturaTema(settings, id) {
+    const a = new Gtk.DrawingArea({content_width: 150, content_height: 78, hexpand: true});
+    a.set_draw_func((_a, cr, w, h) => desenharMiniDoca(cr, w, h, id, appsDaPrevia(settings)));
     return a;
 }
 
@@ -94,7 +84,7 @@ function seletorTema(settings) {
     const botoes = TEMAS.map(([id, nome, desc], i) => {
         const b = new Gtk.ToggleButton({css_classes: ['atlas-tema'], tooltip_text: nome});
         const col = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 2});
-        col.append(miniaturaTema(id));
+        col.append(miniaturaTema(settings, id));
         col.append(new Gtk.Label({label: nome, xalign: 0, css_classes: ['atlas-tema-nome'], margin_top: 4}));
         col.append(new Gtk.Label({label: desc.split(',')[0].replace(/^(Grafite-azulado)/, 'Grafite e coral'), xalign: 0, css_classes: ['atlas-tema-desc'], ellipsize: 3}));
         b.child = col;

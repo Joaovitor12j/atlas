@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    SPRITES, quadroSprite, bateriaPedeAparicao, confete, duracaoCoruja, duracaoPilha, duracaoSatelite, duracaoTomate,
+    quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria,
     avaliarDisparo, batidasDoDisparo, duracaoCuco, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoNoel, quadroBoneco, quadroNoel, duracaoChama, memoriaPedeAparicao, quadroChama, rearmarMemoria, usoMemoria, duracaoEsqueleto, duracaoFantasma, escolherAparicao, esperaAte, naJanela, naTemporada, posicionarMascote,
-    proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
+    FINAIS, PASSEIOS, duracaoPasseio, quadroPasseio, tamanhoPasseio, faseSobeDesce, proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();
@@ -224,4 +226,145 @@ test('quadroNoel e quadroBoneco: começam e terminam escondidos, valores no inte
         assert.ok(q.riso >= 0 && q.riso <= 1 && Math.abs(q.aceno) <= 1);
     }
     assert.ok(aceno > 0.9 && riso > 0.9);
+});
+
+test('faseSobeDesce: começa e termina escondido, esmaga dentro de limites e assenta em 1', () => {
+    const f = {sobe: 450, fica: 2000, desce: 400};
+    const fim = f.sobe + f.fica + f.desce;
+    assert.ok(faseSobeDesce(0, f).sobe < 1e-9);
+    assert.ok(faseSobeDesce(fim - 1, f).sobe < 0.01);
+    let maximo = 0;
+    for (let t = 0; t < fim; t += 10) {
+        const {sobe, esmaga} = faseSobeDesce(t, f);
+        maximo = Math.max(maximo, sobe);
+        assert.ok(sobe >= 0 && sobe <= 1.2, `sobe ${sobe} em ${t}`);
+        assert.ok(esmaga.sx > 0.85 && esmaga.sx < 1.1 && esmaga.sy > 0.85 && esmaga.sy < 1.2, `esmaga em ${t}`);
+    }
+    assert.ok(maximo > 1.05, 'a subida passa do alvo (mola)');
+    assert.equal(faseSobeDesce(f.sobe + 1500, f).sobe, 1);
+    // a preparação da descida sobe um pouco antes de cair
+    assert.ok(faseSobeDesce(f.sobe + f.fica + 40, f).sobe > 1);
+});
+
+test('faseSobeDesce: cada final termina escondido e fica em limites', () => {
+    const f = {sobe: 450, fica: 2000, desce: 400};
+    const fim = f.sobe + f.fica + f.desce;
+    for (const saida of FINAIS) {
+        const ultimo = faseSobeDesce(fim - 1, f, saida);
+        assert.ok(ultimo.sobe < 0.02 || ultimo.alfa < 0.02, `${saida} termina escondido`);
+        for (let t = f.sobe + f.fica; t < fim; t += 10) {
+            const q = faseSobeDesce(t, f, saida);
+            assert.ok(q.sobe >= 0 && q.sobe <= 1.2 && q.alfa >= 0 && q.alfa <= 1, `${saida} em ${t}`);
+        }
+    }
+    // o `some` não mexe na altura, só no desbotar; o `espia` volta a subir depois de esconder
+    assert.equal(faseSobeDesce(f.sobe + f.fica + 200, f, 'some').sobe, 1);
+    assert.ok(faseSobeDesce(f.sobe + f.fica + 200, f, 'espia').sobe < faseSobeDesce(f.sobe + f.fica + 280, f, 'espia').sobe);
+    // quem não sorteia final fica com o padrão
+    assert.deepEqual(quadroFantasma(2000, 'cai').esmaga, quadroFantasma(2000).esmaga);
+});
+
+test('quadroPasseio: atravessa a doca, para quando tem pausa e termina fora dela', () => {
+    for (const [chave, c] of Object.entries(PASSEIOS)) {
+        for (const dir of [1, -1]) {
+            assert.equal(quadroPasseio(c.dur, dir, c), null, `${chave} acaba`);
+            const ini = quadroPasseio(0, dir, c);
+            const fim = quadroPasseio(c.dur - 1, dir, c);
+            const antes = dir < 0 ? ini.x > 1 : ini.x < 0;
+            const depois = dir < 0 ? fim.x < 0 : fim.x > 1;
+            assert.ok(antes && depois, `${chave} entra e sai fora da doca (dir ${dir})`);
+            for (let t = 0; t < c.dur; t += 20) {
+                const q = quadroPasseio(t, dir, c);
+                assert.ok(q.dy >= -0.01 && q.dy <= (c.altura ?? 0) + c.bob + 0.01, `${chave} dy ${q.dy}`);
+                assert.ok(q.sx > 0.8 && q.sx < 1.2 && q.sy > 0.8 && q.sy < 1.2, `${chave} esmaga`);
+                assert.ok(q.parado >= 0 && q.parado <= 1);
+            }
+        }
+        const meio = quadroPasseio(c.dur / 2, 1, c);
+        if (c.pausa)
+            assert.ok(Math.abs(meio.x - 0.5) < 1e-9 && meio.parado > 0.99, `${chave} para no meio`);
+        const t = tamanhoPasseio(chave, 50, 800);
+        assert.ok(t.w === 800 && t.h >= 50 * c.fig[1], `${chave} cabe a figura`);
+        assert.equal(duracaoPasseio(chave), c.dur);
+    }
+});
+
+// ----- Gato, coruja, pilha, satélite e tomate -----
+
+test('os mascotes novos têm linha do tempo que acaba e some', () => {
+    for (const [dur, quadro] of [[duracaoCoruja, quadroCoruja], [duracaoPilha, quadroPilha],
+        [duracaoSatelite, quadroSatelite], [duracaoTomate, quadroTomate]]) {
+        assert.ok(dur() > 2000);
+        assert.ok(quadro(dur() / 2), 'no meio da aparição devolve o estado');
+        assert.equal(quadro(dur()), null);
+        assert.equal(quadro(dur() + 500), null);
+        assert.ok(Number.isFinite(quadro(0).sobe));
+    }
+});
+
+test('a coruja dorme ao subir e ao descer', () => {
+    const c = quadroCoruja(450 + 100);
+    assert.equal(c.sono, 1);
+    assert.equal(c.olhos, 0);
+    const acordada = quadroCoruja(450 + 1500);
+    assert.equal(acordada.sono, 0);
+    assert.ok(quadroCoruja(duracaoCoruja() - 700).sono > 0.5, 'volta a dormir antes de descer');
+});
+
+test('a pilha fica com pouca carga e o tomate solta confete só depois de subir', () => {
+    for (let t = 0; t < duracaoPilha(); t += 100)
+        assert.ok(quadroPilha(t).nivel <= 0.16 && quadroPilha(t).nivel >= 0.1);
+    assert.equal(quadroTomate(0).confete, 0);
+    assert.ok(quadroTomate(1000).confete > 0.5);
+    const a = confete(3, 18, 0.5), b = confete(3, 18, 0.5);
+    assert.deepEqual(a, b, 'determinístico');
+    assert.ok(confete(3, 18, 2).y > confete(3, 18, 0.4).y, 'cai com a gravidade');
+});
+
+test('bateriaPedeAparicao só descarregando, no limiar, armada e depois da espera', () => {
+    const livre = -Infinity;
+    assert.equal(bateriaPedeAparicao(14, 2, 15, true, 1e6, livre, 1e5), true);
+    assert.equal(bateriaPedeAparicao(14, 1, 15, true, 1e6, livre, 1e5), false, 'carregando');
+    assert.equal(bateriaPedeAparicao(30, 2, 15, true, 1e6, livre, 1e5), false, 'acima do limiar');
+    assert.equal(bateriaPedeAparicao(14, 2, 15, false, 1e6, livre, 1e5), false, 'desarmada');
+    assert.equal(bateriaPedeAparicao(14, 2, 15, true, 1e6, 1e6 - 10, 1e5), false, 'dentro da espera');
+    assert.equal(bateriaPedeAparicao(null, 2, 15, true, 1e6, livre, 1e5), false);
+});
+
+test('rearmarBateria volta ao carregar ou ao passar 5 pontos do limiar', () => {
+    assert.equal(rearmarBateria(10, 2, 15, false), false);
+    assert.equal(rearmarBateria(10, 1, 15, false), true);
+    assert.equal(rearmarBateria(21, 2, 15, false), true);
+    assert.equal(rearmarBateria(20, 2, 15, false), false);
+    assert.equal(rearmarBateria(10, 2, 15, true), true);
+});
+
+test('os passeios novos atravessam a doca', () => {
+    for (const chave of ['coruja-salta', 'pilha-arrasta', 'satelite-deriva', 'tomate-pula']) {
+        const c = PASSEIOS[chave];
+        assert.ok(c, chave);
+        assert.ok(quadroPasseio(c.dur / 2, 1, c));
+        assert.equal(quadroPasseio(c.dur, 1, c), null);
+        assert.ok(tamanhoPasseio(chave, 48, 600).w === 600);
+    }
+});
+
+test('quadroSprite atravessa a doca sem escorregar e some no fim', () => {
+    const cfg = {largura: 1200, icone: 48, velocidade: 3, passo: 0.8};
+    const a = quadroSprite(0, 1, SPRITES.gato, cfg);
+    assert.ok(a.x < 0, 'começa fora da doca');
+    const quadros = new Set();
+    let ultimo = -Infinity;
+    for (let t = 0; t < 12000; t += 33) {
+        const q = quadroSprite(t, 1, SPRITES.gato, cfg);
+        if (!q)
+            break;
+        assert.ok(q.x >= ultimo, 'só avança');
+        ultimo = q.x;
+        quadros.add(q.quadro);
+    }
+    assert.equal(quadros.size, SPRITES.gato.quadros, 'usa todos os quadros');
+    assert.equal(quadroSprite(60000, 1, SPRITES.gato, cfg), null);
+    const e = quadroSprite(0, -1, SPRITES.gato, cfg);
+    assert.ok(e.x > 1200 && e.dir === -1, 'da direita para a esquerda');
 });
