@@ -68,7 +68,7 @@ test('todo mascote do catálogo tem implementação em mascotes.js', () => {
 test('as chaves de mascotes lidas pelo prefs e pelo motor existem no schema', () => {
     const chaves = [...(mascotesJs + paginasJs).matchAll(/'((?:cuco|fantasma|esqueleto|noel|boneco|chama|calor|frio|gato|coruja|pilha|satelite|tomate|mascotes?)-[a-z-]+)'/g)].map(m => m[1]);
     assert.ok(chaves.length > 0);
-    const rotulos = new Set(['mascote-quadro', 'mascote-memoria', 'mascote-clima', 'mascote-evento', 'mascote-residente', 'boneco-ilustrado', 'cuco-voa', ...Object.keys(PASSEIOS)]); // linhas do perf.js, ids de passeio e de tamanho, não chaves
+    const rotulos = new Set(['mascote-quadro', 'mascote-memoria', 'mascote-clima', 'mascote-evento', 'mascote-residente', 'mascote-efeito', 'boneco-ilustrado', 'cuco-voa', ...Object.keys(PASSEIOS)]); // linhas do perf.js, ids de passeio e de tamanho, não chaves
     for (const chave of new Set(chaves).difference(rotulos))
         assert.ok(schema.includes(`<key name="${chave}"`), `schema sem a chave ${chave}`);
 });

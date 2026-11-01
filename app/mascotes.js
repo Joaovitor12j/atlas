@@ -34,6 +34,20 @@ export function criarMascotes(settings, p, win) {
         xalign: 0, wrap: true, css_classes: ['atlas-cartao-sub'], margin_bottom: 6,
     }));
 
+    // Efeito de época: campo de partículas do tema (neve, brilhos, etc.), ligado por padrão nos temas que têm.
+    const linhaEfeito = new Gtk.Box({spacing: 12, margin_top: 4});
+    linhaEfeito.append(new Gtk.Label({
+        label: 'Efeito de época do tema', xalign: 0, hexpand: true, css_classes: ['atlas-w-nome'],
+    }));
+    const swEfeito = new Gtk.Switch({valign: Gtk.Align.CENTER});
+    settings.bind('efeito-epoca-ativo', swEfeito, 'active', Gio.SettingsBindFlags.DEFAULT);
+    linhaEfeito.append(swEfeito);
+    principal.append(linhaEfeito);
+    principal.append(new Gtk.Label({
+        label: 'Temas do pacote Natal (Noite de neve, Vitrine, Natal brasileiro) trazem neve, brilhos ou luzinhas no vidro da doca; este interruptor desliga o efeito, mantendo o resto do tema.',
+        xalign: 0, wrap: true, css_classes: ['atlas-cartao-sub'], margin_bottom: 6,
+    }));
+
     const ligados = () => settings.get_strv('mascotes-ativos');
 
     const abrirOpcoes = (id, nome) => {

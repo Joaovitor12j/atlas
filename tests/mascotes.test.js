@@ -6,6 +6,7 @@ import {
     avaliarDisparo, batidasDoDisparo, duracaoCuco, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoNoel, quadroBoneco, quadroNoel, duracaoChama, memoriaPedeAparicao, quadroChama, rearmarMemoria, usoMemoria, duracaoEsqueleto, duracaoFantasma, escolherAparicao, esperaAte, naJanela, naTemporada, posicionarMascote,
     FINAIS, PASSEIOS, duracaoPasseio, quadroPasseio, tamanhoPasseio, faseSobeDesce, proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
     proximoEstadoResidente, quadroAguaViva, quadroGaivota, quadroGatoIlustrado, quadroSapo, quadroBonecoIlustrado, quadroRena, quadroPapaiNoel,
+    campoNeve, luzinhasPiscando, brilhosDourados, marOnda,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();
@@ -434,4 +435,35 @@ test('quadroPapaiNoel: barriga só chacoalha rindo, perna só passeando', () => 
     assert.equal(quadroPapaiNoel(0, 'parado').barriga, 1);
     assert.notEqual(quadroPapaiNoel(100, 'rindo').barriga, 1);
     assert.notEqual(quadroPapaiNoel(200, 'passeando').perna, 0);
+});
+
+test('campoNeve: fica dentro da largura/altura, mesma semente sempre no mesmo lugar', () => {
+    const a = campoNeve(1000, 200, 100);
+    const b = campoNeve(1000, 200, 100);
+    assert.deepEqual(a, b);
+    for (const floco of a) {
+        assert.ok(floco.y >= 0 && floco.y <= 100);
+        assert.ok(floco.r > 0);
+    }
+});
+
+test('luzinhasPiscando: brilho sempre entre 0,3 e 1, nunca mais de 1x por segundo (período > 2s)', () => {
+    const brilhos = luzinhasPiscando(500, 6);
+    assert.equal(brilhos.length, 6);
+    for (const b of brilhos)
+        assert.ok(b >= 0.3 && b <= 1);
+});
+
+test('brilhosDourados: x e y entre 0 e 1, brilho nunca negativo', () => {
+    for (const p of brilhosDourados(700, 5)) {
+        assert.ok(p.x >= 0 && p.x <= 1);
+        assert.ok(p.y >= 0 && p.y <= 1);
+        assert.ok(p.brilho >= 0);
+    }
+});
+
+test('marOnda: oscila entre -1 e 1, começa em 0', () => {
+    assert.equal(marOnda(0), 0);
+    for (let t = 0; t < 5000; t += 500)
+        assert.ok(Math.abs(marOnda(t)) <= 1);
 });

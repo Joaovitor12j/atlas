@@ -7,7 +7,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
+import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, efeitoBrasileiro, efeitoNeve, efeitoVitrine, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
 import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
@@ -86,6 +86,14 @@ const RESIDENTES = {
     },
 };
 const RESIDENTE_QUADRO_MS = 33;
+
+// Efeitos de época (pacote Natal, ligados por padrão via `efeito-epoca-ativo`): campo de partículas em loop,
+// desenhado dentro do vidro da doca (não a tela toda). `desenhar(cr, w, h, t)` é puro, sem estado.
+const EFEITOS = {
+    nevemat: efeitoNeve,
+    vitrine: efeitoVitrine,
+    brasileiro: efeitoBrasileiro,
+};
 
 // No teste manual, dizer por que nada apareceu; nos disparos normais pular em silêncio é o esperado.
 const pular = (forcar, motivo) => {
@@ -374,15 +382,20 @@ export class Mascotes {
         this._aoFoco = () => this._disparar('tomate');
         this._residId = 0;
         this._resid = null;
+        this._efeitoId = 0;
+        this._efeito = null;
         const st = this._settings;
         for (const chave of ['mascotes-ativos', 'clima-cidade', ...HORARIOS.map(id => `${IMPL[id].prefixo}-intervalo`)])
             this._sinais.push([st, st.connect(`changed::${chave}`, () => this._reagendar())]);
         this._sinais.push([st, st.connect('changed::mascote-teste', () => this._teste())]);
         this._sinais.push([st, st.connect('changed::tema', () => this._atualizarResidente())]);
         this._sinais.push([st, st.connect('changed::mascote-residente-ativo', () => this._atualizarResidente())]);
+        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarEfeito())]);
+        this._sinais.push([st, st.connect('changed::efeito-epoca-ativo', () => this._atualizarEfeito())]);
         this._sinais.push([Main.overview, Main.overview.connect('showing', () => this._encerrar())]);
         this._reagendar();
         this._atualizarResidente();
+        this._atualizarEfeito();
     }
 
     disable() {
@@ -393,6 +406,7 @@ export class Mascotes {
         this._desligarEventos();
         this._encerrar();
         this._pararResidente();
+        this._pararEfeito();
         for (const img of Object.values(this._imagens ?? {}))
             img.finish();
         this._imagens = {};
@@ -891,5 +905,65 @@ export class Mascotes {
         }
         this._resid?.actor.destroy();
         this._resid = null;
+    }
+
+    // Religa ou desliga o efeito de época ao trocar de tema ou de chave; cobre todo o vidro da doca (não a tela).
+    _atualizarEfeito() {
+        const desenhar = EFEITOS[this._settings.get_string('tema')];
+        if (!desenhar || !this._settings.get_boolean('efeito-epoca-ativo')) {
+            this._pararEfeito();
+            return;
+        }
+        if (this._efeito?.desenhar === desenhar)
+            return; // já é esse: não recria o actor
+        this._pararEfeito();
+        this._iniciarEfeito(desenhar);
+    }
+
+    _iniciarEfeito(desenhar) {
+        const actor = new St.DrawingArea({reactive: false, clip_to_allocation: true});
+        actor.set_position(-1, -1);
+        this._efeito = {desenhar, actor, t0: GLib.get_monotonic_time()};
+        actor.connect('repaint', a => {
+            const cr = a.get_context();
+            const t0 = agora();
+            try {
+                const [w, h] = a.get_surface_size();
+                desenhar(cr, w, h, (GLib.get_monotonic_time() - this._efeito.t0) / 1000);
+            } catch (e) {
+                console.error(`[atlas] erro ao desenhar o efeito de época: ${e}`);
+            } finally {
+                cr.$dispose();
+                registrar('desenho', t0);
+            }
+        });
+        Main.layoutManager.addChrome(actor, {affectsInputRegion: false, affectsStruts: false, trackFullscreen: true});
+        this._efeitoId = agendar('mascote-efeito', RESIDENTE_QUADRO_MS, () => this._quadroEfeito());
+    }
+
+    // Cobre exatamente o vidro da doca (ancoraMascote().caixa); some sem gastar desenho se a doca estiver escondida.
+    _quadroEfeito() {
+        const e = this._efeito;
+        if (!e)
+            return GLib.SOURCE_REMOVE;
+        const anc = this._ganchos.doca()?.ancoraMascote();
+        if (!anc || Main.overview.visible) {
+            e.actor.visible = false;
+            return GLib.SOURCE_CONTINUE;
+        }
+        e.actor.visible = true;
+        e.actor.set_size(anc.caixa.w, anc.caixa.h);
+        e.actor.set_position(Math.round(anc.caixa.x), Math.round(anc.caixa.y));
+        e.actor.queue_repaint();
+        return GLib.SOURCE_CONTINUE;
+    }
+
+    _pararEfeito() {
+        if (this._efeitoId) {
+            GLib.source_remove(this._efeitoId);
+            this._efeitoId = 0;
+        }
+        this._efeito?.actor.destroy();
+        this._efeito = null;
     }
 }
