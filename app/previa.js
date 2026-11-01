@@ -369,7 +369,14 @@ function desenharVidro(cr, t, x, w, espessura, corBorda) {
         }
     }
     retanguloArredondado(cr, x, -espessura, w, espessura, raio);
-    cor(cr, t.fundo);
+    if (t.fundo2) {
+        const g = new (imports.cairo.LinearGradient)(x, -espessura, x + w, 0);
+        corRgba(g, 0, t.fundo);
+        corRgba(g, 1, t.fundo2);
+        cr.setSource(g);
+    } else {
+        cor(cr, t.fundo);
+    }
     cr.fillPreserve();
     cor(cr, corBorda ?? t.borda);
     cr.setLineWidth(1);
