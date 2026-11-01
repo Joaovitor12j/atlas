@@ -6,8 +6,9 @@ Dois pacotes visuais que convivem no app. Cada pacote traz **temas** e **mascote
 |---|---|---|---|---|
 | Pixel | jogo aconchegante, nostálgico | Vila, Floresta, Noite de lua, Praia | Gato, Folhinha, Coruja, Caranguejo | `pixel/index.html` |
 | Materiais | objeto físico, calmo, polido | Aurora, Carta, Jardim, Chuva | Água-viva, Gaivota, Gato ilustrado, Sapo | `materiais/index.html` |
+| Natal | festivo, quente | Noite de neve (pixel e materiais), Vitrine, Natal brasileiro | Boneco de neve (pixel e ilustrado), Rena, Papai Noel | `natal/index.html` |
 
-Os 7 temas atuais (Noite, Papel, Cristal, Neon, Oceano, Sakura, Ônix) continuam como pacote "Clássico". Natal e Halloween saem.
+Os 7 temas atuais (Noite, Papel, Cristal, Neon, Oceano, Sakura, Ônix) continuam como pacote "Clássico". O Natal antigo (só paleta) é substituído pelo pacote Natal; Halloween sai.
 
 Abrir os protótipos no navegador. `?t=SEGUNDOS` congela um instante (útil para capturas). Decisões do João em 2026-11-01: pixel art e ilustração convivem; Natal e Halloween saem; gato novo desenhado do zero.
 
