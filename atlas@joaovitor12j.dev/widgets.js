@@ -13,7 +13,8 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anel, barra, cor, grafico, iconeTempo, relogioAnalogico} from './desenho.js';
+import {anel, anelDeTile, barra, cor, grafico, iconeTempo, relogioAnalogico} from './desenho.js';
+import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {agendar, agora, registrar} from './perf.js';
 import {CLIMA, buscarClima, localDoClima} from './clima.js';
 import {obterPonte} from './ponte.js';
@@ -545,6 +546,8 @@ function pomoTick() {
         const terminou = POMO.fase;
         pomoAvancar();
         POMO.pulsoAte = agoraMs() + 10000; // o tile pisca por 10 s
+        if (terminou === 'foco')
+            AO_CONCLUIR_FOCO.forEach(f => f()); // o mascote do tomate comemora
         Main.notify('ATLAS',
             terminou === 'foco' ? `Foco concluído. Hora da ${FASES[POMO.fase].nome.toLowerCase()}.` : 'Pausa acabou. Hora de focar.');
     }
@@ -573,7 +576,7 @@ class Pomodoro extends Widget {
         this._criarTexto();
         this._ocultar(this._topo); // a fase aparece na cor do anel e no tooltip
         this._anim = this._animado();
-        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(FASES[POMO.fase].cor)));
+        this._camada((cr, w, h) => anelDeTile(cr, w, h, this._anim.atual, cor(FASES[POMO.fase].cor)));
     }
 
     atualizar() {
@@ -627,7 +630,7 @@ class Bateria extends Widget {
     construir() {
         this._criarTexto();
         this._anim = this._animado();
-        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(this._corAnel ?? COR.ok)));
+        this._camada((cr, w, h) => anelDeTile(cr, w, h, this._anim.atual, cor(this._corAnel ?? COR.ok)));
     }
 
     iniciar() {
@@ -1084,7 +1087,7 @@ function progresso() {
 }
 
 class Progresso extends Widget {
-    static FONTES = [0.13, 0.19, 0.13];
+    static FONTES = [0.13, 0.15, 0.13];
 
     get intervalo() {
         return 30000;
@@ -1099,10 +1102,11 @@ class Progresso extends Widget {
         this._criarTexto();
         this._p = progresso();
         this._camada((cr, w, h) => {
-            const r0 = Math.min(w, h) / 2 - 5;
-            PROGRESSO.forEach(([, chave, c], i) => anel(cr, w / 2, h / 2, r0 - i * 6, 3.2, this._p[chave], cor(c)));
+            const r0 = Math.min(w, h) / 2 - 4;
+            PROGRESSO.forEach(([, chave, c], i) => anel(cr, w / 2, h / 2, r0 - i * 4.2, 2.4, this._p[chave], cor(c)));
         });
         this._texto.y_align = AL.CENTER;
+        this._meio.x_align = AL.CENTER;
         this._ocultar(this._topo, this._base);
     }
 
@@ -1159,7 +1163,7 @@ class Cronometro extends Widget {
         this._criarTexto();
         this._ocultar(this._topo);
         // o anel dá uma volta por minuto
-        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, (cronoMs() % 60000) / 60000,
+        this._camada((cr, w, h) => anelDeTile(cr, w, h, (cronoMs() % 60000) / 60000,
             cor(CRONO.inicio ? COR.ok : COR.ambar)));
     }
 
@@ -1246,7 +1250,7 @@ class Timer extends Widget {
         this._criarTexto();
         this._ocultar(this._topo);
         this._anim = this._animado();
-        this._camada((cr, w, h) => anel(cr, w / 2, h / 2, Math.min(w, h) / 2 - 7, 5, this._anim.atual, cor(COR.ambar)));
+        this._camada((cr, w, h) => anelDeTile(cr, w, h, this._anim.atual, cor(COR.ambar)));
     }
 
     atualizar() {
@@ -1338,7 +1342,7 @@ function ativAmostrar() {
 const ultimo = (lista, padrao = 0) => (lista.length ? lista[lista.length - 1] : padrao);
 
 class Atividade extends Widget {
-    static FONTES = [0.13, 0.27, 0.17];
+    static FONTES = [0.13, 0.22, 0.17];
     static LARGURA = 2.2;
 
     get intervalo() {
@@ -1359,9 +1363,9 @@ class Atividade extends Widget {
             const lado = Math.min(h, this._tam);
             const cx = lado / 2;
             const cy = h / 2;
-            const r = lado / 2 - 6;
-            anel(cr, cx, cy, r, 5, ultimo(ATIV.cpu) / 100, cor(COR.ambar));
-            anel(cr, cx, cy, r - 8, 4, ultimo(ATIV.mem) / 100, cor(COR.azul));
+            const r = lado / 2 - 5;
+            anel(cr, cx, cy, r, 4, ultimo(ATIV.cpu) / 100, cor(COR.ambar));
+            anel(cr, cx, cy, r - 6, 2.5, ultimo(ATIV.mem) / 100, cor(COR.azul));
             if (this._largo) {
                 grafico(cr, lado + 6, 12, w - lado - 18, h - 24, [
                     {valores: ATIV.mem, cor: cor(COR.azul, 0.9)},

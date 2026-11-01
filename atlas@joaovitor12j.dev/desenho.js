@@ -1,7 +1,12 @@
 // Desenho dos widgets com Cairo. Só recebe o contexto `cr`, sem St nem Clutter, para poder ser
 // visto fora do Shell (ver tests/previa-desenho.js) e para o parser de cor ser testado com node.
 
+import {confete} from './logica.js';
+
 const VOLTA = Math.PI * 2;
+
+// Para onde o mascote olha: {x, y} de -1 a 1 (o motor passa o ponteiro suavizado; sem ele, olha em frente).
+const olhar = q => q.olhar ?? {x: 0, y: 0};
 const TOPO = -Math.PI / 2;
 
 // "#e0654f" -> [r, g, b, alfa] com canais de 0 a 1.
@@ -27,6 +32,27 @@ export function anel(cr, cx, cy, raio, espessura, frac, rgba, trilha = FUNDO_TRI
     cr.setSourceRGBA(...rgba);
     cr.arc(cx, cy, raio, TOPO, TOPO + VOLTA * f);
     cr.stroke();
+}
+
+// Escala de carta náutica: marcas de 1px na borda do tile, mais longas a cada quarto de volta.
+export function escala(cr, cx, cy, raio, marcas = 12, rgba = [0.6, 0.6, 0.6, 0.65]) {
+    cr.setLineCap(0);
+    cr.setLineWidth(1);
+    cr.setSourceRGBA(...rgba);
+    for (let i = 0; i < marcas; i++) {
+        const a = TOPO + (VOLTA * i) / marcas;
+        const comp = i % (marcas / 4) === 0 ? 3 : 1.6;
+        cr.moveTo(cx + Math.cos(a) * raio, cy + Math.sin(a) * raio);
+        cr.lineTo(cx + Math.cos(a) * (raio - comp), cy + Math.sin(a) * (raio - comp));
+    }
+    cr.stroke();
+}
+
+// Anel do tile quadrado (pomodoro, bateria, cronômetro, timer): escala fina por fora e o anel por dentro.
+export function anelDeTile(cr, w, h, frac, rgba) {
+    const cx = w / 2, cy = h / 2, lado = Math.min(w, h);
+    escala(cr, cx, cy, lado / 2 - 3);
+    anel(cr, cx, cy, lado / 2 - 9, 4.5, frac, rgba);
 }
 
 function retanguloArredondado(cr, x, y, w, h, r) {
@@ -492,7 +518,7 @@ export function fantasma(cr, w, h, q) {
     cr.setSourceRGBA(0.1, 0.08, 0.2, 1);
     for (const lado of [-1, 1]) {
         cr.save();
-        cr.translate(lado * gw * 0.17, r * 0.95);
+        cr.translate(lado * gw * 0.17 + olhar(q).x * gw * 0.05, r * 0.95 + olhar(q).y * gw * 0.035);
         cr.scale(1, 1 + 0.5 * q.susto);
         cr.arc(0, 0, gw * 0.075, 0, Math.PI * 2);
         cr.restore();
@@ -593,6 +619,13 @@ export function esqueleto(cr, w, h, q) {
         cr.arc(lado * r * 0.4, r * 0.95, r * 0.26, 0, Math.PI * 2);
         cr.fill();
     }
+    // brilho no fundo de cada órbita, que acompanha o ponteiro
+    cr.setSourceRGBA(1, 0.85, 0.37, 0.95);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * r * 0.4 + olhar(q).x * r * 0.11, r * 0.95 + olhar(q).y * r * 0.08, r * 0.07, 0, Math.PI * 2);
+        cr.fill();
+    }
+    cr.setSourceRGBA(...vazio);
     cr.moveTo(0, r * 1.2);
     cr.lineTo(-r * 0.12, r * 1.45);
     cr.lineTo(r * 0.12, r * 1.45);
@@ -646,7 +679,7 @@ export function chama(cr, w, h, q) {
         cr.arc(lado * gw * 0.15, ya, gw * (0.075 + 0.03 * q.aflicao), 0, Math.PI * 2);
         cr.setSourceRGBA(1, 1, 1, 1);
         cr.fill();
-        cr.arc(lado * gw * 0.15, ya + gw * 0.015, gw * 0.035, 0, Math.PI * 2);
+        cr.arc(lado * gw * 0.15 + olhar(q).x * gw * 0.035, ya + gw * 0.015 + olhar(q).y * gw * 0.025, gw * 0.035, 0, Math.PI * 2);
         cr.setSourceRGBA(0.1, 0.05, 0.05, 1);
         cr.fill();
     }
@@ -748,7 +781,7 @@ export function noel(cr, w, h, q) {
     cr.fill();
     cr.setSourceRGBA(0.1, 0.08, 0.08, 1);
     for (const lado of [-1, 1]) {
-        cr.arc(lado * a * 0.32, ya - a * 0.22, a * 0.07, 0, Math.PI * 2);
+        cr.arc(lado * a * 0.32 + olhar(q).x * a * 0.07, ya - a * 0.22 + olhar(q).y * a * 0.05, a * 0.07, 0, Math.PI * 2);
         cr.fill();
     }
 
@@ -816,7 +849,7 @@ export function boneco(cr, w, h, q) {
         cr.fill();
     }
     for (const lado of [-1, 1]) {
-        cr.arc(lado * r1 * 0.38, y1 - r1 * 0.22, a * 0.09, 0, Math.PI * 2);
+        cr.arc(lado * r1 * 0.38 + olhar(q).x * r1 * 0.07, y1 - r1 * 0.22 + olhar(q).y * r1 * 0.05, a * 0.09, 0, Math.PI * 2);
         cr.fill();
     }
     for (let i = -2; i <= 2; i++) {
@@ -1344,4 +1377,393 @@ export function pendurado(cr, w, h, q, {base, icone}) {
             cr.stroke();
         }
     });
+}
+
+// Leva um mascote desenhado em (0, 0, w, h) (fantasma, esqueleto, noel, boneco, chama) para passear pela doca. `q` vem de
+// quadroPasseio (logica.js); `fig` é o tamanho da figura em múltiplos do ícone ([largura, altura]); `desenhar` é o desenho
+// do mascote e `quadroFig` converte o estado do passeio no estado que esse desenho espera.
+export function passear(cr, w, h, q, ctx, fig, desenhar, quadroFig) {
+    const {base, icone} = ctx;
+    const fw = Math.round(icone * fig[0]);
+    const fh = Math.round(icone * fig[1]);
+    cr.save();
+    cr.translate(q.x * w, base - q.dy * fh); // pés da figura, no ponto do passeio
+    cr.rotate(q.rot);
+    cr.scale(q.sx, q.sy);
+    cr.translate(-fw / 2, -fh);
+    desenhar(cr, fw, fh, quadroFig(q), ctx);
+    cr.restore();
+}
+
+// Pássaro do cuco voando pela doca: sai da casinha e bate as asas. `q` vem de quadroCucoVoa (logica.js).
+export function cucoVoa(cr, w, h, q, {base, icone}) {
+    const L = icone * 1.1;
+    cr.save();
+    cr.translate(q.x * w, base - q.alt * icone);
+    cr.rotate(-0.12 * q.dir * Math.cos(q.asa * 1.2));
+    cr.scale(q.dir, 1); // o pássaro olha para a direita no desenho
+    cr.translate(0, L * 0.4);
+    // asa de trás e asa da frente, batendo em oposição
+    cr.setSourceRGBA(...cor('#2f6fb0'));
+    for (const [sinal, alfa] of [[-1, 0.7], [1, 1]]) {
+        cr.save();
+        cr.translate(-L * 0.04, -L * 0.36);
+        cr.rotate(-0.5 - q.asa * 0.9 * sinal);
+        cr.scale(1, 0.4);
+        cr.arc(0, -L * 0.18, L * 0.3, 0, VOLTA);
+        cr.setSourceRGBA(0.18, 0.44, 0.69, alfa);
+        cr.fill();
+        cr.restore();
+    }
+    passaro(cr, L, q.bico);
+    cr.restore();
+}
+
+// ----- Mascotes novos: coruja, pilha, satélite e tomate -----
+// Todos no retângulo (0, 0, w, h), de pé na borda de baixo, com `q.sobe` (0 a 1) subindo de trás dela, como os outros.
+
+// Coruja marrom. `q` vem de quadroCoruja: {sobe, sono, olhos, cabeca}. Dormindo, os olhos viram traços e sobem "z".
+export function coruja(cr, w, h, q) {
+    const gw = Math.min(w * 0.7, h * 0.75);
+    const pe = h + (1 - q.sobe) * h;
+    const marrom = [0.55, 0.38, 0.22, 1], claro = [0.86, 0.72, 0.5, 1], contorno = [0.2, 0.12, 0.06, 1];
+    cr.save();
+    cr.translate(w / 2, pe);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    cr.rotate(q.cabeca * 0.08);
+    // corpo
+    cr.save();
+    cr.translate(0, -gw * 0.42);
+    cr.scale(1, 1.15);
+    cr.arc(0, 0, gw * 0.4, 0, VOLTA);
+    cr.restore();
+    cr.setSourceRGBA(...marrom);
+    cr.fillPreserve();
+    cr.setLineWidth(1.5);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    // barriga com penas
+    cr.save();
+    cr.translate(0, -gw * 0.32);
+    cr.scale(1, 1.15);
+    cr.arc(0, 0, gw * 0.24, 0, VOLTA);
+    cr.restore();
+    cr.setSourceRGBA(...claro);
+    cr.fill();
+    cr.setSourceRGBA(...marrom);
+    cr.setLineWidth(1);
+    for (let i = 0; i < 6; i++) {
+        const x = ((i % 3) - 1) * gw * 0.12, y = -gw * (0.45 - 0.1 * Math.floor(i / 3) - (i % 2) * 0.05);
+        cr.arc(x, y, gw * 0.05, 0, Math.PI);
+        cr.stroke();
+    }
+    // asas
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(lado * gw * 0.36, -gw * 0.45);
+        cr.rotate(lado * (0.15 + q.sono * 0.1));
+        cr.scale(0.55, 1.3);
+        cr.arc(0, 0, gw * 0.16, 0, VOLTA);
+        cr.restore();
+        cr.setSourceRGBA(0.45, 0.3, 0.16, 1);
+        cr.fillPreserve();
+        cr.setLineWidth(1.2);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+    }
+    // pés
+    cr.setSourceRGBA(0.95, 0.65, 0.2, 1);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * gw * 0.14, -gw * 0.02, gw * 0.07, Math.PI, 0);
+        cr.fill();
+    }
+    // cabeça: tufos, olhões, bico
+    cr.save();
+    cr.translate(q.cabeca * gw * 0.04, -gw * 0.85);
+    for (const lado of [-1, 1]) {
+        cr.moveTo(lado * gw * 0.3, gw * 0.02);
+        cr.lineTo(lado * gw * 0.28, -gw * 0.3);
+        cr.lineTo(lado * gw * 0.08, -gw * 0.12);
+        cr.closePath();
+        cr.setSourceRGBA(...marrom);
+        cr.fillPreserve();
+        cr.setLineWidth(1.3);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+    }
+    const o = olhar(q);
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(lado * gw * 0.18, 0);
+        cr.arc(0, 0, gw * 0.17, 0, VOLTA);
+        cr.setSourceRGBA(...claro);
+        cr.fillPreserve();
+        cr.setLineWidth(1.2);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+        if (q.olhos > 0.1) {
+            cr.save();
+            cr.scale(1, q.olhos);
+            cr.arc(o.x * gw * 0.04, o.y * gw * 0.03, gw * 0.085, 0, VOLTA);
+            cr.setSourceRGBA(0.98, 0.8, 0.15, 1);
+            cr.fill();
+            cr.arc(o.x * gw * 0.05, o.y * gw * 0.04, gw * 0.045, 0, VOLTA);
+            cr.setSourceRGBA(0.05, 0.05, 0.05, 1);
+            cr.fill();
+            cr.restore();
+        } else { // dormindo: pálpebra
+            cr.setLineWidth(1.6);
+            cr.setSourceRGBA(...contorno);
+            cr.arc(0, -gw * 0.04, gw * 0.09, 0.15 * Math.PI, 0.85 * Math.PI);
+            cr.stroke();
+        }
+        cr.restore();
+    }
+    cr.moveTo(-gw * 0.06, gw * 0.1);
+    cr.lineTo(gw * 0.06, gw * 0.1);
+    cr.lineTo(0, gw * 0.22);
+    cr.closePath();
+    cr.setSourceRGBA(0.95, 0.65, 0.2, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(1);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    cr.restore();
+    // "z" subindo enquanto dorme
+    if (q.sono > 0.3) {
+        cr.setSourceRGBA(0.75, 0.85, 1, q.sono * 0.9);
+        cr.selectFontFace('sans-serif', 0, 1);
+        for (let i = 0; i < 2; i++) {
+            cr.setFontSize(gw * (0.16 + 0.08 * i));
+            cr.moveTo(gw * (0.38 + 0.12 * i), -gw * (1.0 + 0.2 * i));
+            cr.showText('z');
+        }
+    }
+    cr.restore();
+}
+
+// Pilha cansada pedindo tomada. `q` vem de quadroPilha: {sobe, nivel, cansaco, suspiro}.
+export function pilha(cr, w, h, q) {
+    const pw = Math.min(w * 0.55, h * 0.5), ph = pw * 1.55;
+    const pe = h + (1 - q.sobe) * h;
+    const vermelho = [0.9, 0.25, 0.2, 1], contorno = [0.2, 0.2, 0.25, 1];
+    cr.save();
+    cr.translate(w / 2, pe);
+    cr.rotate(q.cansaco * 0.08);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    // polo
+    cr.rectangle(-pw * 0.2, -ph - pw * 0.12, pw * 0.4, pw * 0.14);
+    cr.setSourceRGBA(0.7, 0.72, 0.78, 1);
+    cr.fill();
+    // corpo
+    const r = pw * 0.18;
+    cr.newPath();
+    cr.arc(-pw / 2 + r, -ph + r, r, Math.PI, 1.5 * Math.PI);
+    cr.arc(pw / 2 - r, -ph + r, r, 1.5 * Math.PI, 0);
+    cr.arc(pw / 2 - r, -r, r, 0, 0.5 * Math.PI);
+    cr.arc(-pw / 2 + r, -r, r, 0.5 * Math.PI, Math.PI);
+    cr.closePath();
+    cr.setSourceRGBA(0.93, 0.94, 0.97, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(2);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    // carga: um fiapo vermelho no fundo
+    const cargaH = (ph - pw * 0.2) * q.nivel;
+    cr.rectangle(-pw * 0.38, -pw * 0.1 - cargaH, pw * 0.76, cargaH);
+    cr.setSourceRGBA(...vermelho);
+    cr.fill();
+    // rosto cansado: olhos meio fechados com olheiras, boca torta
+    const o = olhar(q);
+    const ey = -ph * 0.68;
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * pw * 0.2, ey, pw * 0.1, 0, VOLTA);
+        cr.setSourceRGBA(1, 1, 1, 1);
+        cr.fillPreserve();
+        cr.setLineWidth(1.2);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+        cr.arc(lado * pw * 0.2 + o.x * pw * 0.03, ey + pw * 0.025 + o.y * pw * 0.02, pw * 0.045, 0, VOLTA);
+        cr.fill();
+        // pálpebra pesada
+        cr.rectangle(lado * pw * 0.2 - pw * 0.11, ey - pw * 0.11, pw * 0.22, pw * (0.11 + 0.05 * q.suspiro));
+        cr.setSourceRGBA(0.93, 0.94, 0.97, 1);
+        cr.fillPreserve();
+        cr.setSourceRGBA(...contorno);
+        cr.setLineWidth(1.4);
+        cr.moveTo(lado * pw * 0.2 - pw * 0.11, ey + pw * 0.05 * q.suspiro);
+        cr.lineTo(lado * pw * 0.2 + pw * 0.11, ey + pw * 0.05 * q.suspiro);
+        cr.stroke();
+        cr.newPath();
+    }
+    cr.setLineWidth(1.6);
+    cr.moveTo(-pw * 0.14, ey + pw * 0.3);
+    cr.curveTo(-pw * 0.05, ey + pw * 0.24, pw * 0.05, ey + pw * 0.34, pw * 0.14, ey + pw * 0.28);
+    cr.stroke();
+    // gota de suor
+    cr.arc(pw * 0.38, ey - pw * 0.05 + q.suspiro * pw * 0.05, pw * 0.05, 0, VOLTA);
+    cr.setSourceRGBA(0.5, 0.75, 1, 0.9);
+    cr.fill();
+    cr.restore();
+}
+
+// Satélite perdido procurando sinal. `q` vem de quadroSatelite: {sobe, giro, sinal, perdido}.
+export function satelite(cr, w, h, q) {
+    const s = Math.min(w * 0.45, h * 0.4);
+    const corpoY = h - s * 0.9 * q.sobe + (1 - q.sobe) * s;
+    cr.save();
+    cr.translate(w / 2, corpoY);
+    cr.rotate(q.giro * 0.4);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    const contorno = [0.15, 0.2, 0.35, 1];
+    // painéis solares
+    for (const lado of [-1, 1]) {
+        cr.rectangle(lado > 0 ? s * 0.38 : -s * 0.98, -s * 0.2, s * 0.6, s * 0.4);
+        cr.setSourceRGBA(0.2, 0.4, 0.8, 1);
+        cr.fillPreserve();
+        cr.setLineWidth(1.4);
+        cr.setSourceRGBA(...contorno);
+        cr.stroke();
+        cr.setLineWidth(0.8);
+        for (let i = 1; i < 3; i++) {
+            const x = (lado > 0 ? s * 0.38 : -s * 0.98) + s * 0.2 * i;
+            cr.moveTo(x, -s * 0.2);
+            cr.lineTo(x, s * 0.2);
+            cr.stroke();
+        }
+    }
+    // corpo
+    cr.rectangle(-s * 0.38, -s * 0.3, s * 0.76, s * 0.6);
+    cr.setSourceRGBA(0.85, 0.87, 0.92, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(1.8);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    // carinha confusa
+    const o = olhar(q);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * s * 0.16 + o.x * s * 0.03, -s * 0.05 + o.y * s * 0.03, s * 0.07, 0, VOLTA);
+        cr.setSourceRGBA(...contorno);
+        cr.fill();
+    }
+    cr.setLineWidth(1.4);
+    cr.moveTo(-s * 0.12, s * 0.15);
+    cr.curveTo(-s * 0.04, s * 0.1, s * 0.04, s * 0.2, s * 0.12, s * 0.14);
+    cr.stroke();
+    // antena parabólica no topo, girando
+    cr.moveTo(0, -s * 0.3);
+    cr.lineTo(0, -s * 0.5);
+    cr.stroke();
+    cr.arc(0, -s * 0.55, s * 0.17, Math.PI, 0);
+    cr.closePath();
+    cr.setSourceRGBA(0.95, 0.95, 1, 1);
+    cr.fillPreserve();
+    cr.stroke();
+    // arcos de sinal que pulsam e esmaecem, e um "?" no fim
+    cr.setLineWidth(2);
+    for (let i = 0; i < 3; i++) {
+        const f = (q.sinal + i / 3) % 1;
+        cr.arc(0, -s * 0.6, s * (0.3 + 0.6 * f), -Math.PI * 0.8, -Math.PI * 0.2);
+        cr.setSourceRGBA(1, 0.55, 0.3, (1 - f) * 0.8 * q.perdido);
+        cr.stroke();
+    }
+    cr.setSourceRGBA(1, 0.55, 0.3, 0.95 * q.perdido);
+    cr.selectFontFace('sans-serif', 0, 1);
+    cr.setFontSize(s * 0.5);
+    cr.moveTo(s * 0.6, -s * 0.7);
+    cr.showText('?');
+    cr.restore();
+}
+
+// Tomate do pomodoro, comemorando com confete. `q` vem de quadroTomate: {sobe, pulo, confete}; `confete(i, n, s)` (logica.js).
+export function tomate(cr, w, h, q) {
+    const r = Math.min(w * 0.3, h * 0.28);
+    const pe = h + (1 - q.sobe) * h;
+    const y0 = pe - r * 0.95 - q.pulo * r * 0.6;
+    const contorno = [0.45, 0.08, 0.06, 1];
+    cr.save();
+    cr.translate(w / 2, y0);
+    cr.setLineJoin(1);
+    cr.setLineCap(1);
+    // corpo achatado
+    cr.save();
+    cr.scale(1.1, 0.95);
+    cr.arc(0, 0, r, 0, VOLTA);
+    cr.restore();
+    cr.setSourceRGBA(0.9, 0.2, 0.15, 1);
+    cr.fillPreserve();
+    cr.setLineWidth(1.6);
+    cr.setSourceRGBA(...contorno);
+    cr.stroke();
+    // brilho
+    cr.arc(-r * 0.45, -r * 0.35, r * 0.18, 0, VOLTA);
+    cr.setSourceRGBA(1, 1, 1, 0.35);
+    cr.fill();
+    // folhas
+    cr.setSourceRGBA(0.3, 0.65, 0.25, 1);
+    for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i - 2) * 0.55;
+        cr.save();
+        cr.translate(0, -r * 0.9);
+        cr.rotate(a + Math.PI / 2);
+        cr.moveTo(0, 0);
+        cr.curveTo(r * 0.12, -r * 0.1, r * 0.1, -r * 0.3, 0, -r * 0.36);
+        cr.curveTo(-r * 0.1, -r * 0.3, -r * 0.12, -r * 0.1, 0, 0);
+        cr.fill();
+        cr.restore();
+    }
+    // rosto feliz
+    const o = olhar(q);
+    cr.setSourceRGBA(0.12, 0.05, 0.05, 1);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * r * 0.36 + o.x * r * 0.05, -r * 0.1 + o.y * r * 0.04, r * 0.09, 0, VOLTA);
+        cr.fill();
+    }
+    cr.arc(0, r * 0.1, r * (0.2 + 0.1 * q.pulo), 0, Math.PI);
+    cr.closePath();
+    cr.setSourceRGBA(0.5, 0.05, 0.08, 1);
+    cr.fill();
+    cr.setSourceRGBA(1, 0.6, 0.5, 0.5);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * r * 0.6, r * 0.12, r * 0.1, 0, VOLTA);
+        cr.fill();
+    }
+    cr.restore();
+    // confete: 18 pedaços que estouram do tomate, sobem em arco e caem
+    if (q.confete > 0 && q.confete < 2.2) {
+        const cores = [[1, 0.8, 0.2], [0.3, 0.7, 1], [0.4, 0.9, 0.4], [1, 0.45, 0.7], [1, 1, 1]];
+        const n = 18;
+        for (let i = 0; i < n; i++) {
+            const c = confete(i, n, q.confete);
+            cr.save();
+            cr.translate(w / 2 + c.x * h * 0.55, y0 - r * 0.6 + c.y * h * 0.55);
+            cr.rotate(c.giro);
+            cr.rectangle(-r * 0.07, -r * 0.04, r * 0.14, r * 0.08);
+            cr.setSourceRGBA(...cores[i % cores.length], Math.max(0, Math.min(1, (2.2 - q.confete) * 1.5)));
+            cr.fill();
+            cr.restore();
+        }
+    }
+}
+
+// Quadro de uma folha de sprites (PNG em tira horizontal): `ctx.imagem` é a ImageSurface e `ctx.spec` vem de SPRITES
+// (logica.js). Desenha o quadro `q.quadro` com os pés em (q.x, ctx.base), na escala dada por `q.escala` e virado
+// para a esquerda quando `q.dir` é -1 (a arte olha para a direita).
+export function sprite(cr, w, h, q, ctx) {
+    const s = ctx.spec;
+    cr.save();
+    cr.translate(q.x, ctx.base + q.pe);
+    cr.scale(q.dir * q.escala, q.escala);
+    cr.translate(-s.fw / 2, -s.chao);
+    cr.rectangle(0, 0, s.fw, s.fh);
+    cr.clip();
+    cr.setSourceSurface(ctx.imagem, -q.quadro * s.fw, 0);
+    try {
+        cr.getSource().setFilter(2); // CAIRO_FILTER_BEST: reduz a arte sem serrilhar
+    } catch (_e) { /* sem filtro, fica o padrão */ }
+    cr.paint();
+    cr.restore();
 }
