@@ -10,12 +10,32 @@
         <choice value="oceano"/>
         <choice value="sakura"/>
         <choice value="onix"/>
-        <choice value="halloween"/>
-        <choice value="natal"/>
+        <choice value="vila"/>
+        <choice value="floresta"/>
+        <choice value="lua"/>
+        <choice value="praia"/>
+        <choice value="aurora"/>
+        <choice value="carta"/>
+        <choice value="jardim"/>
+        <choice value="chuva"/>
+        <choice value="nevepixel"/>
+        <choice value="nevemat"/>
+        <choice value="vitrine"/>
+        <choice value="brasileiro"/>
       </choices>
       <default>"noite"</default>
       <summary>Tema visual</summary>
-      <description>Aparência da doca: noite, papel, cristal, neon, oceano, sakura, ônix, halloween ou natal.</description>
+      <description>Aparência da doca: pacote Clássico (noite, papel, cristal, neon, oceano, sakura, ônix), Pixel (vila, floresta, lua, praia), Materiais (aurora, carta, jardim, chuva) ou Natal (nevepixel, nevemat, vitrine, brasileiro).</description>
+    </key>
+    <key name="mascote-residente-ativo" type="b">
+      <default>true</default>
+      <summary>Mascote residente do tema</summary>
+      <description>Mostra o mascote que mora na doca do tema atual (ex.: água-viva no Aurora), sempre visível, sem ser o conjunto de mascotes por horário/data/evento.</description>
+    </key>
+    <key name="efeito-epoca-ativo" type="b">
+      <default>true</default>
+      <summary>Efeito de época do tema</summary>
+      <description>Mostra o efeito ambiente do tema atual (ex.: neve e luzinhas no Noite de neve), dentro do vidro da doca.</description>
     </key>
     <key name="tamanho-icone" type="i">
       <range min="32" max="96"/>

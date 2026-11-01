@@ -10,8 +10,26 @@ export const TEMAS = [
     ['oceano', 'Oceano', 'Azul-marinho e azul-céu'],
     ['sakura', 'Sakura', 'Rosa-claro e cereja'],
     ['onix', 'Ônix', 'Preto liso, minimalista'],
-    ['halloween', 'Halloween', 'Roxo escuro e laranja'],
-    ['natal', 'Natal', 'Vinho e verde-pinheiro'],
+    ['vila', 'Vila', 'Madeira clara e grama, indicador em coração'],
+    ['floresta', 'Floresta', 'Pedra com musgo e vagalumes, indicador em folha'],
+    ['lua', 'Noite de lua', 'Céu noturno pontilhado de estrelas sobre telhados'],
+    ['praia', 'Praia', 'Areia e mar com ondas, indicador em estrela-do-mar'],
+    ['aurora', 'Aurora', 'Vidro líquido com blur forte e manchas de aurora'],
+    ['carta', 'Carta', 'Papel creme com moldura de tinta e carimbo vermelho'],
+    ['jardim', 'Jardim', 'Vidro damasco com sol e pétalas caindo'],
+    ['chuva', 'Chuva', 'Vidro escuro com bokeh e chuva escorrendo'],
+    ['nevepixel', 'Noite de neve (pixel)', 'Céu azul-noite pixelado com neve e sincelos'],
+    ['nevemat', 'Noite de neve (materiais)', 'Vidro de gelo fosco com neve acumulada'],
+    ['vitrine', 'Vitrine', 'Papel de presente vermelho com fita dourada'],
+    ['brasileiro', 'Natal brasileiro', 'Pôr do sol de verão, palmeiras e mar'],
+];
+
+// Pacotes de temas: [id, nome, [ids dos temas]]. Agrupa TEMAS na janela de preferências.
+export const PACOTES = [
+    ['classico', 'Clássico', ['noite', 'papel', 'cristal', 'neon', 'oceano', 'sakura', 'onix']],
+    ['pixel', 'Pixel', ['vila', 'floresta', 'lua', 'praia']],
+    ['materiais', 'Materiais', ['aurora', 'carta', 'jardim', 'chuva']],
+    ['natal', 'Natal', ['nevepixel', 'nevemat', 'vitrine', 'brasileiro']],
 ];
 
 // Cores por tema (as mesmas de temas.css; tests/estrutura.test.js confere). Usadas na prévia e nas miniaturas do app.
@@ -32,10 +50,31 @@ export const CORES_TEMA = {
         txt: '#4a2a33', apps: 'rgba(214, 69, 107, 0.12)', appsIc: '#8a2f48', w0: 'rgba(214, 69, 107, 0.10)', w1: 'rgba(214, 69, 107, 0.03)', wb: 'rgba(214, 69, 107, 0.28)'},
     onix: {fundo: 'rgba(14, 14, 16, 0.96)', borda: 'rgba(255, 255, 255, 0.08)', ponto: '#ffffff', sep: 'rgba(255, 255, 255, 0.14)',
         txt: '#ededed', apps: 'rgba(255, 255, 255, 0.09)', appsIc: '#ededed', w0: 'rgba(255, 255, 255, 0.09)', w1: 'rgba(255, 255, 255, 0.02)', wb: 'rgba(255, 255, 255, 0.14)'},
-    halloween: {fundo: 'rgba(36, 18, 52, 0.94)', borda: '#ff7a1a', ponto: '#ff7a1a', sep: 'rgba(255, 122, 26, 0.5)',
-        txt: '#ffb36b', apps: 'rgba(255, 122, 26, 0.18)', appsIc: '#ffb36b', w0: 'rgba(255, 255, 255, 0.15)', w1: 'rgba(255, 255, 255, 0.05)', wb: 'rgba(255, 122, 26, 0.5)'},
-    natal: {fundo: 'rgba(70, 16, 28, 0.94)', borda: '#2f8f4e', ponto: '#f4d35e', sep: 'rgba(47, 143, 78, 0.8)',
-        txt: '#fbeed0', apps: 'rgba(47, 143, 78, 0.28)', appsIc: '#fbeed0', w0: 'rgba(255, 255, 255, 0.15)', w1: 'rgba(255, 255, 255, 0.05)', wb: 'rgba(47, 143, 78, 0.7)'},
+    // Cores extraídas por amostragem de docs/design/pacotes-de-temas/*/previa.png (pixel real dos protótipos).
+    vila: {fundo: '#a9763f', borda: '#5c3a1a', ponto: '#ff8fb0', sep: 'rgba(92, 58, 26, 0.6)', raio: 10,
+        txt: '#f6ead0', apps: 'rgba(95, 158, 69, 0.3)', appsIc: '#f6ead0', w0: 'rgba(246, 234, 208, 0.3)', w1: 'rgba(107, 66, 32, 0.2)', wb: '#5c3a1a'},
+    floresta: {fundo: '#2b4538', borda: '#5f9a4e', ponto: '#8fd96a', sep: 'rgba(95, 154, 78, 0.5)', raio: 10,
+        txt: '#d5e8bd', apps: 'rgba(95, 154, 78, 0.3)', appsIc: '#d5e8bd', w0: 'rgba(213, 232, 189, 0.25)', w1: 'rgba(53, 84, 67, 0.25)', wb: '#5f9a4e'},
+    lua: {fundo: '#161b40', borda: '#6b72c4', ponto: '#ffd36b', sep: 'rgba(107, 114, 196, 0.5)', raio: 10,
+        txt: '#ffe9a8', apps: 'rgba(107, 114, 196, 0.3)', appsIc: '#ffe9a8', w0: 'rgba(107, 114, 196, 0.25)', w1: 'rgba(22, 27, 64, 0.3)', wb: '#6b72c4'},
+    praia: {fundo: '#ecdfb4', borda: '#4fb8d6', ponto: '#ff8a4a', sep: 'rgba(79, 184, 214, 0.5)', raio: 10,
+        txt: '#2f2f2a', apps: 'rgba(79, 184, 214, 0.2)', appsIc: '#2f2f2a', w0: 'rgba(255, 255, 255, 0.4)', w1: 'rgba(79, 184, 214, 0.1)', wb: '#4fb8d6'},
+    aurora: {fundo: '#4a3e7a', fundo2: '#e6728e', borda: 'rgba(255, 255, 255, 0.4)', ponto: '#ffffff', sep: 'rgba(255, 255, 255, 0.35)',
+        txt: '#fff5fa', apps: 'rgba(255, 255, 255, 0.2)', appsIc: '#ffffff', w0: 'rgba(255, 255, 255, 0.3)', w1: 'rgba(255, 255, 255, 0.08)', wb: 'rgba(255, 255, 255, 0.45)'},
+    carta: {fundo: '#f3ead2', borda: '#8a6d4a', ponto: '#c23b3b', sep: '#8a6d4a', raio: 10,
+        txt: '#3a2c1a', apps: 'rgba(138, 109, 74, 0.14)', appsIc: '#3a2c1a', w0: 'rgba(138, 109, 74, 0.1)', w1: 'rgba(138, 109, 74, 0.03)', wb: 'rgba(194, 59, 59, 0.4)'},
+    jardim: {fundo: '#fdcd91', fundo2: '#bc5c5a', borda: '#e0a24a', ponto: '#5fae4e', sep: 'rgba(58, 36, 22, 0.25)', raio: 22,
+        txt: '#3a2416', apps: 'rgba(58, 36, 22, 0.14)', appsIc: '#3a2416', w0: 'rgba(255, 255, 255, 0.3)', w1: 'rgba(255, 255, 255, 0.06)', wb: 'rgba(224, 162, 74, 0.5)'},
+    chuva: {fundo: '#191328', borda: '#39e0ff', ponto: '#ff6ec7', sep: 'rgba(57, 224, 255, 0.4)', brilho: '#39e0ff',
+        txt: '#d8f6ff', apps: 'rgba(57, 224, 255, 0.14)', appsIc: '#d8f6ff', w0: 'rgba(255, 110, 199, 0.16)', w1: 'rgba(57, 224, 255, 0.08)', wb: 'rgba(57, 224, 255, 0.4)'},
+    nevepixel: {fundo: '#1c3a73', borda: '#f4f8ff', ponto: '#f4f8ff', sep: 'rgba(244, 248, 255, 0.35)', raio: 10,
+        txt: '#f4f8ff', apps: 'rgba(244, 248, 255, 0.15)', appsIc: '#f4f8ff', w0: 'rgba(244, 248, 255, 0.22)', w1: 'rgba(16, 35, 74, 0.3)', wb: 'rgba(244, 248, 255, 0.4)'},
+    nevemat: {fundo: '#213866', fundo2: '#2257ab', borda: 'rgba(255, 255, 255, 0.5)', ponto: '#f4f8ff', sep: 'rgba(255, 255, 255, 0.4)',
+        txt: '#eaf6ff', apps: 'rgba(255, 255, 255, 0.18)', appsIc: '#eaf6ff', w0: 'rgba(255, 255, 255, 0.22)', w1: 'rgba(255, 255, 255, 0.06)', wb: 'rgba(255, 255, 255, 0.4)'},
+    vitrine: {fundo: '#d22d38', borda: '#ffd448', ponto: '#fff6e0', sep: 'rgba(255, 212, 72, 0.55)', raio: 10,
+        txt: '#fff6e0', apps: 'rgba(255, 212, 72, 0.3)', appsIc: '#fff6e0', w0: 'rgba(255, 255, 255, 0.2)', w1: 'rgba(255, 255, 255, 0.05)', wb: 'rgba(255, 212, 72, 0.55)'},
+    brasileiro: {fundo: '#9d398b', fundo2: '#ffa064', borda: '#269ab0', ponto: '#ffd23f', sep: 'rgba(38, 154, 176, 0.5)',
+        txt: '#fff3e0', apps: 'rgba(38, 154, 176, 0.25)', appsIc: '#fff3e0', w0: 'rgba(255, 243, 224, 0.2)', w1: 'rgba(255, 243, 224, 0.06)', wb: 'rgba(38, 154, 176, 0.5)'},
 };
 
 // [id, nome, descrição, tem versão larga?]

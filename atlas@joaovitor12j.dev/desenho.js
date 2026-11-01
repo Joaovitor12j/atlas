@@ -1,7 +1,7 @@
 // Desenho dos widgets com Cairo. Só recebe o contexto `cr`, sem St nem Clutter, para poder ser
 // visto fora do Shell (ver tests/previa-desenho.js) e para o parser de cor ser testado com node.
 
-import {confete} from './logica.js';
+import {brilhosDourados, campoNeve, confete, luzinhasPiscando, marOnda} from './logica.js';
 
 const VOLTA = Math.PI * 2;
 
@@ -1747,6 +1747,515 @@ export function tomate(cr, w, h, q) {
             cr.restore();
         }
     }
+}
+
+// Água-viva (mascote residente do tema Aurora): sino translúcido pulsando e 5 tentáculos ondulando. `q` vem de
+// quadroAguaViva (logica.js): {sino, tentaculos, dormindo, brilho}. Flutua centrada no actor, sem tocar o chão.
+export function aguaViva(cr, w, h, q) {
+    const gw = w * 0.56, gh = h * 0.42;
+    cr.save();
+    cr.translate(w / 2, h * 0.42);
+
+    // brilho (estado "brilhando"): halo atrás do sino
+    if (q.brilho > 0) {
+        cr.save();
+        cr.setSourceRGBA(0.78, 0.98, 1, 0.35 * q.brilho);
+        cr.arc(0, 0, gw * 0.75, 0, VOLTA);
+        cr.fill();
+        cr.restore();
+    }
+
+    // tentáculos: atrás do sino, cada um balançando numa fase diferente
+    cr.setLineCap(1);
+    cr.setLineWidth(gw * 0.05);
+    q.tentaculos.forEach((desvio, i) => {
+        const x0 = (i - 2) * gw * 0.16;
+        cr.newPath();
+        cr.moveTo(x0, gh * 0.3);
+        cr.curveTo(x0 + desvio * 0.3, gh * 0.9, x0 + desvio, gh * 1.5, x0 + desvio * 0.6, gh * 2.1);
+        cr.setSourceRGBA(0.6, 0.85, 0.95, 0.55);
+        cr.stroke();
+    });
+
+    // sino: cúpula achatada, altura pulsa com q.sino (0 a 1)
+    const altura = gh * (0.55 + 0.35 * q.sino);
+    cr.newPath();
+    cr.moveTo(-gw / 2, 0);
+    cr.curveTo(-gw / 2, -altura, gw / 2, -altura, gw / 2, 0);
+    cr.curveTo(gw * 0.3, gh * 0.18, -gw * 0.3, gh * 0.18, -gw / 2, 0);
+    cr.closePath();
+    cr.setSourceRGBA(0.74, 0.93, 0.96, q.dormindo ? 0.45 : 0.75);
+    cr.fillPreserve();
+    cr.setSourceRGBA(0.5, 0.78, 0.86, 0.6);
+    cr.setLineWidth(gw * 0.025);
+    cr.stroke();
+
+    // olhinhos fechados ao dormir, abertos nos demais estados
+    cr.setSourceRGBA(0.2, 0.35, 0.4, 0.8);
+    for (const lado of [-1, 1]) {
+        if (q.dormindo) {
+            cr.setLineWidth(gw * 0.02);
+            cr.moveTo(lado * gw * 0.14 - gw * 0.03, -altura * 0.45);
+            cr.lineTo(lado * gw * 0.14 + gw * 0.03, -altura * 0.45);
+            cr.stroke();
+        } else {
+            cr.newPath();
+            cr.arc(lado * gw * 0.14, -altura * 0.45, gw * 0.025, 0, VOLTA);
+            cr.fill();
+        }
+    }
+    cr.restore();
+}
+
+// Gaivota (mascote residente do tema Carta): corpo oval, bico, pernas e asas que batem voando.
+export function gaivota(cr, w, h, q) {
+    const gw = w * 0.5, gh = h * 0.3;
+    cr.save();
+    cr.translate(w / 2, h * 0.62 - q.voo);
+
+    // pernas (atrás do corpo), recolhidas enquanto voa
+    if (!q.voando) {
+        cr.setLineWidth(gw * 0.05);
+        cr.setSourceRGBA(0.85, 0.6, 0.2, 1);
+        for (const lado of [-1, 1]) {
+            cr.save();
+            cr.translate(lado * gw * 0.15, gh * 0.4);
+            cr.rotate((q.perna * lado) * Math.PI / 180);
+            cr.moveTo(0, 0);
+            cr.lineTo(0, gh * 0.5);
+            cr.stroke();
+            cr.restore();
+        }
+    }
+
+    // asas
+    cr.setSourceRGBA(0.88, 0.89, 0.92, 1);
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(lado * gw * 0.3, -gh * 0.1);
+        cr.rotate(lado * q.asa * Math.PI / 180);
+        cr.newPath();
+        cr.moveTo(0, 0);
+        cr.curveTo(lado * gw * 0.5, -gh * 0.3, lado * gw * 0.7, gh * 0.1, lado * gw * 0.3, gh * 0.2);
+        cr.closePath();
+        cr.fill();
+        cr.restore();
+    }
+
+    // corpo
+    cr.setSourceRGBA(0.95, 0.96, 0.97, 1);
+    cr.newPath();
+    cr.save();
+    cr.scale(1, 0.62);
+    cr.arc(0, 0, gw / 2, 0, VOLTA);
+    cr.restore();
+    cr.fill();
+
+    // cabeça e bico
+    cr.newPath();
+    cr.arc(gw * 0.4, -gh * 0.25, gw * 0.18, 0, VOLTA);
+    cr.fill();
+    cr.setSourceRGBA(0.95, 0.65, 0.15, 1);
+    cr.newPath();
+    cr.moveTo(gw * 0.55, -gh * 0.25);
+    cr.lineTo(gw * 0.75, -gh * 0.2);
+    cr.lineTo(gw * 0.55, -gh * 0.15);
+    cr.closePath();
+    cr.fill();
+
+    // olho (fechado se dormindo)
+    cr.setSourceRGBA(0.1, 0.1, 0.12, 1);
+    if (q.dormindo) {
+        cr.setLineWidth(1.5);
+        cr.moveTo(gw * 0.42, -gh * 0.3);
+        cr.lineTo(gw * 0.5, -gh * 0.3);
+        cr.stroke();
+    } else {
+        cr.arc(gw * 0.46, -gh * 0.3, gw * 0.025, 0, VOLTA);
+        cr.fill();
+    }
+    cr.restore();
+}
+
+// Gato ilustrado (mascote residente do tema Jardim): corpo, cabeça, orelhas, rabo e pernas articuladas.
+export function gatoIlustrado(cr, w, h, q) {
+    const gw = w * 0.52, gh = h * 0.4;
+    cr.save();
+    cr.translate(w / 2, h * 0.68);
+    const corDormindo = q.dormindo ? 0.75 : 1;
+
+    // rabo
+    cr.setLineWidth(gw * 0.12);
+    cr.setLineCap(1);
+    cr.setSourceRGBA(0.95, 0.58, 0.22, corDormindo);
+    cr.newPath();
+    cr.moveTo(-gw * 0.4, -gh * 0.1);
+    cr.curveTo(-gw * 0.7, -gh * 0.2, -gw * 0.75, -gh * 0.6 - q.rabo * 0.6, -gw * 0.55 + q.rabo * 0.2, -gh * 0.75);
+    cr.stroke();
+
+    // pernas
+    cr.setLineWidth(gw * 0.1);
+    for (const [lado, dx] of [[-1, -0.18], [1, 0.18]]) {
+        cr.save();
+        cr.translate(dx * gw, gh * 0.15);
+        cr.rotate(q.dormindo ? Math.PI / 2 : (lado * q.perna) * Math.PI / 180);
+        cr.moveTo(0, 0);
+        cr.lineTo(0, gh * 0.4);
+        cr.stroke();
+        cr.restore();
+    }
+
+    // corpo
+    cr.setSourceRGBA(0.97, 0.63, 0.26, corDormindo);
+    cr.save();
+    cr.translate(0, -gh * 0.15);
+    cr.scale(1, 0.7);
+    cr.arc(0, 0, gw * 0.42, 0, VOLTA);
+    cr.restore();
+    cr.fill();
+
+    // cabeça
+    cr.newPath();
+    cr.arc(gw * 0.3, -gh * 0.55, gw * 0.24, 0, VOLTA);
+    cr.fill();
+
+    // orelhas (com tremor)
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(gw * 0.3 + lado * gw * 0.14, -gh * 0.72);
+        cr.rotate((lado * (6 + q.orelha)) * Math.PI / 180);
+        cr.moveTo(0, 0);
+        cr.lineTo(-gw * 0.06, -gw * 0.14);
+        cr.lineTo(gw * 0.06, -gw * 0.14);
+        cr.closePath();
+        cr.fill();
+        cr.restore();
+    }
+
+    // olhos
+    cr.setSourceRGBA(0.12, 0.08, 0.06, 1);
+    for (const lado of [-1, 1]) {
+        const cx = gw * 0.3 + lado * gw * 0.08;
+        if (q.dormindo || q.piscada) {
+            cr.setLineWidth(1.4);
+            cr.moveTo(cx - gw * 0.03, -gh * 0.56);
+            cr.lineTo(cx + gw * 0.03, -gh * 0.56);
+            cr.stroke();
+        } else {
+            cr.newPath();
+            cr.arc(cx, -gh * 0.56, gw * 0.025, 0, VOLTA);
+            cr.fill();
+        }
+    }
+    cr.restore();
+}
+
+// Sapo (mascote residente do tema Chuva): salto com agachar/esticar, papo que infla ao coaxar e guarda-chuva.
+export function sapo(cr, w, h, q) {
+    const gw = w * 0.5, gh = h * 0.36;
+    cr.save();
+    cr.translate(w / 2, h * 0.7 - q.salto * gh * 0.5);
+    cr.scale(1 + q.agachar * 0.12, 1 - q.agachar * 0.18);
+
+    // guarda-chuva (atrás, abre pra trás com o vento)
+    cr.save();
+    cr.translate(gw * 0.35, -gh * 1.3);
+    cr.rotate(q.guardaChuva * Math.PI / 180);
+    cr.setLineWidth(gw * 0.04);
+    cr.setSourceRGBA(0.3, 0.3, 0.35, 1);
+    cr.moveTo(0, 0);
+    cr.lineTo(0, gh * 0.9);
+    cr.stroke();
+    cr.setSourceRGBA(0.35, 0.55, 0.75, 1);
+    cr.newPath();
+    cr.arc(0, 0, gw * 0.3, Math.PI, 0);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
+
+    // corpo
+    cr.setSourceRGBA(0.42, 0.72, 0.36, q.dormindo ? 0.75 : 1);
+    cr.save();
+    cr.scale(1, 0.75);
+    cr.arc(0, 0, gw * 0.45, 0, VOLTA);
+    cr.restore();
+    cr.fill();
+
+    // papo (infla ao coaxar)
+    cr.save();
+    cr.scale(q.papo, q.papo);
+    cr.arc(0, gh * 0.18, gw * 0.18, 0, VOLTA);
+    cr.restore();
+    cr.fill();
+
+    // olhos no topo da cabeça
+    cr.setSourceRGBA(0.42, 0.72, 0.36, 1);
+    for (const lado of [-1, 1]) {
+        cr.arc(lado * gw * 0.18, -gh * 0.42, gw * 0.12, 0, VOLTA);
+        cr.fill();
+    }
+    cr.setSourceRGBA(0.08, 0.08, 0.08, 1);
+    for (const lado of [-1, 1]) {
+        if (q.dormindo) {
+            cr.setLineWidth(1.4);
+            cr.moveTo(lado * gw * 0.18 - 3, -gh * 0.42);
+            cr.lineTo(lado * gw * 0.18 + 3, -gh * 0.42);
+            cr.stroke();
+        } else {
+            cr.newPath();
+            cr.arc(lado * gw * 0.18, -gh * 0.42, gw * 0.04, 0, VOLTA);
+            cr.fill();
+        }
+    }
+    cr.restore();
+}
+
+// Boneco de neve ilustrado (mascote residente dos temas de neve): três bolas, braços, cachecol e cenoura.
+export function bonecoIlustrado(cr, w, h, q) {
+    const gw = w * 0.5, gh = h * 0.78;
+    cr.save();
+    cr.translate(w / 2, h * 0.85 - q.salto * gh * 0.12);
+    cr.rotate(q.gingado * Math.PI / 180);
+    cr.setSourceRGBA(0.97, 0.98, 1, 1);
+
+    // braços
+    cr.setLineWidth(gw * 0.06);
+    cr.setSourceRGBA(0.4, 0.28, 0.16, 1);
+    for (const lado of [-1, 1]) {
+        cr.save();
+        cr.translate(lado * gw * 0.32, -gh * 0.45);
+        cr.rotate(lado * -q.braco * Math.PI / 180 * (lado === 1 ? 1 : -0.3));
+        cr.moveTo(0, 0);
+        cr.lineTo(lado * gw * 0.35, -gw * 0.05);
+        cr.stroke();
+        cr.restore();
+    }
+
+    // corpo: bola de baixo e de cima
+    cr.setSourceRGBA(0.97, 0.98, 1, 1);
+    cr.newPath();
+    cr.arc(0, -gh * 0.2, gw * 0.42, 0, VOLTA);
+    cr.fill();
+    cr.newPath();
+    cr.arc(0, -gh * 0.62, gw * 0.28, 0, VOLTA);
+    cr.fill();
+
+    // cachecol
+    cr.save();
+    cr.translate(0, -gh * 0.48);
+    cr.rotate(q.cachecol * Math.PI / 180 * 0.1);
+    cr.setSourceRGBA(0.8, 0.2, 0.2, 1);
+    cr.newPath();
+    cr.rectangle(-gw * 0.3, -gw * 0.06, gw * 0.6, gw * 0.12);
+    cr.fill();
+    cr.save();
+    cr.translate(gw * 0.26, 0);
+    cr.rotate(q.cachecol * Math.PI / 180);
+    cr.rectangle(0, 0, gw * 0.08, gh * 0.22);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+
+    // cenoura e olhos de carvão
+    cr.setSourceRGBA(0.95, 0.5, 0.15, 1);
+    cr.newPath();
+    cr.moveTo(gw * 0.1, -gh * 0.63);
+    cr.lineTo(gw * 0.32, -gh * 0.6);
+    cr.lineTo(gw * 0.1, -gh * 0.57);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.08, 0.08, 0.1, 1);
+    for (const lado of [-1, 1]) {
+        if (q.dormindo) {
+            cr.setLineWidth(1.4);
+            cr.moveTo(lado * gw * 0.08 - gw * 0.1, -gh * 0.68);
+            cr.lineTo(lado * gw * 0.08 - gw * 0.04, -gh * 0.68);
+            cr.stroke();
+        } else {
+            cr.newPath();
+            cr.arc(lado * gw * 0.08 - gw * 0.07, -gh * 0.68, gw * 0.025, 0, VOLTA);
+            cr.fill();
+        }
+    }
+    cr.restore();
+}
+
+// Rena (mascote residente do tema Vitrine): corpo, chifres, pernas trotando e sino balançando no pescoço.
+export function rena(cr, w, h, q) {
+    const gw = w * 0.56, gh = h * 0.34;
+    cr.save();
+    cr.translate(w / 2, h * 0.68);
+
+    // pernas
+    cr.setLineWidth(gw * 0.07);
+    cr.setSourceRGBA(0.42, 0.26, 0.14, 1);
+    for (const [lado, dx] of [[-1, -0.3], [1, 0.3]]) {
+        cr.save();
+        cr.translate(dx * gw, gh * 0.3);
+        cr.rotate((lado * q.perna) * Math.PI / 180);
+        cr.moveTo(0, 0);
+        cr.lineTo(0, gh * 0.55);
+        cr.stroke();
+        cr.restore();
+    }
+
+    // corpo
+    cr.setSourceRGBA(0.55, 0.35, 0.18, q.dormindo ? 0.75 : 1);
+    cr.save();
+    cr.scale(1, 0.6);
+    cr.arc(0, 0, gw * 0.46, 0, VOLTA);
+    cr.restore();
+    cr.fill();
+
+    // cabeça (balança com q.cabeca), chifres e sino
+    cr.save();
+    cr.translate(gw * 0.42, -gh * 0.35);
+    cr.rotate(q.cabeca * Math.PI / 180);
+    cr.setSourceRGBA(0.55, 0.35, 0.18, 1);
+    cr.newPath();
+    cr.arc(0, 0, gw * 0.2, 0, VOLTA);
+    cr.fill();
+    cr.setLineWidth(gw * 0.025);
+    cr.setSourceRGBA(0.4, 0.26, 0.14, 1);
+    for (const lado of [-1, 1]) {
+        cr.moveTo(lado * gw * 0.1, -gw * 0.15);
+        cr.lineTo(lado * gw * 0.22, -gw * 0.35);
+        cr.lineTo(lado * gw * 0.3, -gw * 0.3);
+        cr.stroke();
+    }
+    cr.setSourceRGBA(0.85, 0.65, 0.15, 1);
+    cr.newPath();
+    cr.arc(0, gw * 0.18, gw * 0.045, 0, VOLTA);
+    cr.fill();
+    cr.restore();
+    cr.restore();
+}
+
+// Papai Noel (mascote residente do tema Natal brasileiro): casaco vermelho, barba, braço que acena e barriga que ri.
+export function papaiNoel(cr, w, h, q) {
+    const gw = w * 0.5, gh = h * 0.72;
+    cr.save();
+    cr.translate(w / 2, h * 0.85);
+    cr.rotate(q.gingado * Math.PI / 180);
+
+    // pernas
+    cr.setLineWidth(gw * 0.14);
+    cr.setSourceRGBA(0.15, 0.13, 0.15, 1);
+    for (const [lado, dx] of [[-1, -0.15], [1, 0.15]]) {
+        cr.save();
+        cr.translate(dx * gw, -gh * 0.1);
+        cr.rotate((lado * q.perna) * Math.PI / 180);
+        cr.moveTo(0, 0);
+        cr.lineTo(0, gh * 0.22);
+        cr.stroke();
+        cr.restore();
+    }
+
+    // braço que acena (atrás do corpo do lado que ergue)
+    cr.setLineWidth(gw * 0.16);
+    cr.setSourceRGBA(0.75, 0.1, 0.1, 1);
+    cr.save();
+    cr.translate(gw * 0.34, -gh * 0.45);
+    cr.rotate(q.braco * Math.PI / 180);
+    cr.moveTo(0, 0);
+    cr.lineTo(0, -gh * 0.32);
+    cr.stroke();
+    cr.restore();
+
+    // corpo: casaco vermelho com barriga que chacoalha
+    cr.save();
+    cr.scale(q.barriga, q.barriga);
+    cr.setSourceRGBA(0.75, 0.1, 0.1, 1);
+    cr.newPath();
+    cr.arc(0, -gh * 0.3, gw * 0.4, 0, VOLTA);
+    cr.fill();
+    cr.restore();
+
+    // cinto
+    cr.setSourceRGBA(0.1, 0.1, 0.1, 1);
+    cr.rectangle(-gw * 0.4, -gh * 0.32, gw * 0.8, gh * 0.06);
+    cr.fill();
+
+    // cabeça, barba e gorro
+    cr.setSourceRGBA(0.93, 0.78, 0.62, 1);
+    cr.newPath();
+    cr.arc(0, -gh * 0.68, gw * 0.24, 0, VOLTA);
+    cr.fill();
+    cr.setSourceRGBA(0.97, 0.97, 0.97, 1);
+    cr.newPath();
+    cr.arc(0, -gh * 0.6, gw * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);
+    cr.fill();
+    cr.setSourceRGBA(0.75, 0.1, 0.1, 1);
+    cr.newPath();
+    cr.moveTo(-gw * 0.24, -gh * 0.78);
+    cr.curveTo(-gw * 0.1, -gh * 1.05, gw * 0.15, -gh * 1.05, gw * 0.2, -gh * 0.85);
+    cr.curveTo(gw * 0.05, -gh * 0.92, -gw * 0.15, -gh * 0.9, -gw * 0.24, -gh * 0.78);
+    cr.closePath();
+    cr.fill();
+    cr.setSourceRGBA(0.97, 0.97, 0.97, 1);
+    cr.newPath();
+    cr.arc(gw * 0.2, -gh * 0.85, gw * 0.045, 0, VOLTA);
+    cr.fill();
+    cr.restore();
+}
+
+// Fio de luzinhas piscando ao longo do topo do vidro da doca (nevemat e brasileiro).
+function fioDeLuzinhas(cr, w, h, t, cores) {
+    const n = cores.length;
+    const brilhos = luzinhasPiscando(t, n);
+    for (let i = 0; i < n; i++) {
+        const x = w * (0.08 + 0.84 * (i / (n - 1)));
+        const y = h * 0.1 + Math.sin((i / n) * Math.PI) * h * 0.04;
+        cr.setSourceRGBA(...cor(cores[i % cores.length], 0.35 + 0.65 * brilhos[i]));
+        cr.newPath();
+        cr.arc(x, y, Math.max(1.5, h * 0.02), 0, VOLTA);
+        cr.fill();
+    }
+}
+
+// Efeito de época do tema Noite de neve (materiais): neve caindo e fio de luzinhas piscando devagar.
+export function efeitoNeve(cr, w, h, t) {
+    cr.save();
+    fioDeLuzinhas(cr, w, h, t, ['#bfe9ff', '#eaf6ff', '#8fd3e8']);
+    cr.setSourceRGBA(1, 1, 1, 0.85);
+    for (const floco of campoNeve(t, w, h)) {
+        cr.newPath();
+        cr.arc(floco.x, floco.y, floco.r, 0, VOLTA);
+        cr.fill();
+    }
+    cr.restore();
+}
+
+// Efeito de época do tema Vitrine: brilhos dourados espalhados pelo vidro.
+export function efeitoVitrine(cr, w, h, t) {
+    cr.save();
+    for (const p of brilhosDourados(t, w, h)) {
+        if (p.brilho <= 0)
+            continue;
+        const r = Math.max(1.5, h * 0.025) * (0.6 + 0.4 * p.brilho);
+        cr.setSourceRGBA(0.95, 0.8, 0.3, 0.75 * p.brilho);
+        cr.newPath();
+        cr.arc(p.x * w, p.y * h, r, 0, VOLTA);
+        cr.fill();
+    }
+    cr.restore();
+}
+
+// Efeito de época do tema Natal brasileiro: guirlanda com pisca-pisca no topo e linha do mar subindo/descendo embaixo.
+export function efeitoBrasileiro(cr, w, h, t) {
+    cr.save();
+    fioDeLuzinhas(cr, w, h, t, ['#e63946', '#f4d35e', '#2f8f7a']);
+    const onda = marOnda(t);
+    cr.setSourceRGBA(0.2, 0.55, 0.6, 0.35);
+    cr.newPath();
+    cr.moveTo(0, h);
+    cr.lineTo(0, h * 0.92 + onda * h * 0.02);
+    for (let x = 0; x <= w; x += w / 12)
+        cr.lineTo(x, h * 0.92 + Math.sin(x / w * Math.PI * 3 + t / 900) * h * 0.015 + onda * h * 0.02);
+    cr.lineTo(w, h);
+    cr.closePath();
+    cr.fill();
+    cr.restore();
 }
 
 // Quadro de uma folha de sprites (PNG em tira horizontal): `ctx.imagem` é a ImageSurface e `ctx.spec` vem de SPRITES
