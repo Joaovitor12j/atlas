@@ -12,6 +12,7 @@ node --test tests/logica.test.js           # um arquivo
 node --test --test-name-pattern='diasAte' tests/logica.test.js   # um teste
 glib-compile-schemas --strict --dry-run atlas@joaovitor12j.dev/schemas   # valida o schema (CI)
 gjs -m tests/previa-cuco.js /tmp/cuco.png  # prévias PNG dos desenhos Cairo, sem abrir o Shell (previa-*.js)
+gjs -m tests/previa-temas.js /tmp          # docas dos temas de pacote (decoracao.js) para comparar com os protótipos
 ./install.sh                               # symlink em ~/.local/share/gnome-shell/extensions + compila schema
 ./prefs.sh                                 # abre o app de configuração direto via gjs (sem relogin)
 ./tema.sh noite                            # troca tema ao vivo via gsettings
@@ -29,6 +30,7 @@ Tudo fica em `atlas@joaovitor12j.dev/`.
 - **`dock.js`**: classe `Dock` (exportada, ciclo enable/disable, settings, ambientes, Não perturbe, menu do painel) e `DockView` (actors St/Clutter, lente, posição, auto-ocultar, prévia de janelas).
 - **`widgets.js`**: base `Widget` + uma classe por widget, registradas no mapa `CLASSES` e criadas por `criarWidget(id, ...)`. Estado de widgets com tempo (POMO, CRONO, TIMER, ATIV, REDE, CLIP) vive em objetos de módulo, compartilhado entre instâncias/ambientes.
 - **`mascotes.js`**: motor dos mascotes (um único temporizador agenda todos; actor efêmero, destruído ao fim da aparição). Spec e princípios em `docs/MASCOTES.md`.
+- **`decoracao.js`**: vidro, tiles de app, indicadores e efeitos animados dos temas de pacote (Pixel, Materiais, Natal), portados dos protótipos em `docs/design/pacotes-de-temas`; medidas em `geometriaTema` (`logica.js`).
 - **`desenho.js`**: desenho Cairo puro (anéis, gráficos, relógio, mascotes). Sem dependência do Shell, usado por widgets, mascotes, prefs e prévias.
 - **`logica.js`**: lógica pura (formatação, ambientes, DND, agendamento e linha do tempo dos mascotes, easing). Testável com node; mantenha livre de imports `gi://`. Lógica nova deve vir para cá, com teste.
 - **`catalogo.js`**: listas `TEMAS`, `WIDGETS`, `MASCOTES` compartilhadas entre Shell e prefs. Não pode importar St, Clutter ou `resource:///org/gnome/shell` (o `app/` roda em GTK, fora do Shell).

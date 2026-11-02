@@ -1,7 +1,7 @@
 // Desenho dos widgets com Cairo. Só recebe o contexto `cr`, sem St nem Clutter, para poder ser
 // visto fora do Shell (ver tests/previa-desenho.js) e para o parser de cor ser testado com node.
 
-import {brilhosDourados, campoNeve, confete, luzinhasPiscando, marOnda} from './logica.js';
+import {confete} from './logica.js';
 
 const VOLTA = Math.PI * 2;
 
@@ -2195,65 +2195,6 @@ export function papaiNoel(cr, w, h, q) {
     cr.setSourceRGBA(0.97, 0.97, 0.97, 1);
     cr.newPath();
     cr.arc(gw * 0.2, -gh * 0.85, gw * 0.045, 0, VOLTA);
-    cr.fill();
-    cr.restore();
-}
-
-// Fio de luzinhas piscando ao longo do topo do vidro da doca (nevemat e brasileiro).
-function fioDeLuzinhas(cr, w, h, t, cores) {
-    const n = cores.length;
-    const brilhos = luzinhasPiscando(t, n);
-    for (let i = 0; i < n; i++) {
-        const x = w * (0.08 + 0.84 * (i / (n - 1)));
-        const y = h * 0.1 + Math.sin((i / n) * Math.PI) * h * 0.04;
-        cr.setSourceRGBA(...cor(cores[i % cores.length], 0.35 + 0.65 * brilhos[i]));
-        cr.newPath();
-        cr.arc(x, y, Math.max(1.5, h * 0.02), 0, VOLTA);
-        cr.fill();
-    }
-}
-
-// Efeito de época do tema Noite de neve (materiais): neve caindo e fio de luzinhas piscando devagar.
-export function efeitoNeve(cr, w, h, t) {
-    cr.save();
-    fioDeLuzinhas(cr, w, h, t, ['#bfe9ff', '#eaf6ff', '#8fd3e8']);
-    cr.setSourceRGBA(1, 1, 1, 0.85);
-    for (const floco of campoNeve(t, w, h)) {
-        cr.newPath();
-        cr.arc(floco.x, floco.y, floco.r, 0, VOLTA);
-        cr.fill();
-    }
-    cr.restore();
-}
-
-// Efeito de época do tema Vitrine: brilhos dourados espalhados pelo vidro.
-export function efeitoVitrine(cr, w, h, t) {
-    cr.save();
-    for (const p of brilhosDourados(t, w, h)) {
-        if (p.brilho <= 0)
-            continue;
-        const r = Math.max(1.5, h * 0.025) * (0.6 + 0.4 * p.brilho);
-        cr.setSourceRGBA(0.95, 0.8, 0.3, 0.75 * p.brilho);
-        cr.newPath();
-        cr.arc(p.x * w, p.y * h, r, 0, VOLTA);
-        cr.fill();
-    }
-    cr.restore();
-}
-
-// Efeito de época do tema Natal brasileiro: guirlanda com pisca-pisca no topo e linha do mar subindo/descendo embaixo.
-export function efeitoBrasileiro(cr, w, h, t) {
-    cr.save();
-    fioDeLuzinhas(cr, w, h, t, ['#e63946', '#f4d35e', '#2f8f7a']);
-    const onda = marOnda(t);
-    cr.setSourceRGBA(0.2, 0.55, 0.6, 0.35);
-    cr.newPath();
-    cr.moveTo(0, h);
-    cr.lineTo(0, h * 0.92 + onda * h * 0.02);
-    for (let x = 0; x <= w; x += w / 12)
-        cr.lineTo(x, h * 0.92 + Math.sin(x / w * Math.PI * 3 + t / 900) * h * 0.015 + onda * h * 0.02);
-    cr.lineTo(w, h);
-    cr.closePath();
     cr.fill();
     cr.restore();
 }

@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PASSEIOS, SPRITES} from '../atlas@joaovitor12j.dev/logica.js';
+import {PASSEIOS, SPRITES, temaDecorado} from '../atlas@joaovitor12j.dev/logica.js';
 import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
@@ -86,8 +86,11 @@ test('as cores de tema do catálogo (prévia) batem com temas.css', () => {
         const bloco = re => css.match(new RegExp(`\\.atlas-${id} \\.atlas-${re} \\{([^}]*)\\}`))?.[1] ?? '';
         const bg = bloco('bg');
         assert.ok(bg.includes(`background-color: ${c.fundo};`), `fundo de ${id}`);
-        assert.ok(bg.includes(c.borda), `borda de ${id}`);
-        assert.ok(bloco('dot').includes(c.ponto), `ponto de ${id}`);
+        // nos temas de pacote a borda e o indicador são desenhados (decoracao.js), não vêm do CSS
+        if (!temaDecorado(id)) {
+            assert.ok(bg.includes(c.borda), `borda de ${id}`);
+            assert.ok(bloco('dot').includes(c.ponto), `ponto de ${id}`);
+        }
         assert.ok(bloco('sep').includes(c.sep), `separador de ${id}`);
     }
 });

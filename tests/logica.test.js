@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
+import {geometriaTema, temaDecorado, TEMAS_MATERIAIS, TEMAS_PIXEL,
     appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
     decidirDnd, deveAvisarDnd, escalaLente, diasAte, escalaGrafico, formatarFaixa, lerNaoLidas, mudarMes, semanasDoMes, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, textoDoSelo,
 } from '../atlas@joaovitor12j.dev/logica.js';
@@ -254,4 +254,18 @@ test('escalaLente: máxima sob o ponteiro, 1 longe, simétrica e monótona', () 
     assert.ok(escalaLente(40, 1.8, 70) < escalaLente(20, 1.8, 70));
     assert.ok(escalaLente(500, 1.8, 70) - 1 < 1e-6);
     assert.equal(escalaLente(30, 1, 70), 1);
+});
+
+test('geometriaTema: medidas do protótipo proporcionais ao ícone, null nos temas comuns', () => {
+    assert.equal(geometriaTema('noite', 52), null);
+    const pix = geometriaTema('vila', 40);
+    assert.equal(pix.pixel, 2);
+    // vidro pixel tem 36 px de arte: 8 + 20 (tile) + 8
+    assert.equal(pix.padV * 2 + pix.dotArea + 40, 36 * pix.pixel);
+    const mat = geometriaTema('aurora', 58);
+    assert.equal(mat.padV, 14);
+    assert.equal(mat.raio, 28);
+    assert.equal(geometriaTema('carta', 58).dotW, 0); // Carta marca o app aberto no próprio tile
+    for (const id of [...TEMAS_PIXEL, ...TEMAS_MATERIAIS])
+        assert.ok(temaDecorado(id) && geometriaTema(id, 52), id);
 });
