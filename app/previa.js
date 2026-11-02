@@ -7,14 +7,25 @@ import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {CORES_TEMA, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
 import {anel, anelDeTile, iconeTempo, relogioAnalogico} from '../atlas@joaovitor12j.dev/desenho.js';
-import {escalaLente, escolherAmbiente, normalizarAmbientes} from '../atlas@joaovitor12j.dev/logica.js';
+import {escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes} from '../atlas@joaovitor12j.dev/logica.js';
+import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../atlas@joaovitor12j.dev/decoracao.js';
 
 const ALTURA = 218;
 // Mesmos valores do dock real (FIXED em dock.js).
-const GAP = 8;
-const PAD_H = 14; // margem do vidro ao longo da doca
-const PAD_V = 10; // margem do vidro no sentido transversal
-const DOT_AREA = 8; // faixa entre o ícone e a borda para o indicador
+const PADRAO = {
+    GAP: 8,
+    PAD_H: 14, // margem do vidro ao longo da doca
+    PAD_V: 10, // margem do vidro no sentido transversal
+    DOT_AREA: 8, // faixa entre o ícone e a borda para o indicador
+};
+
+// Medidas da doca: as fixas, ou as do protótipo nos temas de pacote (geometriaTema, como em _readConfig do dock.js).
+function medidas(tema, icone) {
+    const g = geometriaTema(tema, icone);
+    if (!g)
+        return {...PADRAO, geo: null};
+    return {GAP: g.gap, PAD_H: g.padH, PAD_V: g.padV, DOT_AREA: g.dotArea, geo: g};
+}
 const SEP_W = 14;
 const MARGEM = 28;
 const MAX_APPS = 12;
@@ -388,6 +399,7 @@ export function desenharMiniDoca(cr, w, h, id, apps) {
     const t = CORES_TEMA[id] ?? CORES_TEMA.noite;
     desenharPapelDeParede(cr, w, h, 9);
     const icone = 52;
+    const {GAP, PAD_H, PAD_V, DOT_AREA, geo} = medidas(id, icone);
     const itens = [...apps.slice(0, 4).map(a => ({tipo: 'app', id: a})), {tipo: 'sep'}, {tipo: 'widget'}, {tipo: 'apps'}];
     const base = itens.map(i => i.tipo === 'sep' ? SEP_W : icone);
     const total = base.reduce((a, b) => a + b, 0) + GAP * (base.length - 1);
@@ -396,8 +408,12 @@ export function desenharMiniDoca(cr, w, h, id, apps) {
     cr.save();
     cr.translate(w / 2, h - 7);
     cr.scale(k, k);
-    desenharVidro(cr, t, -total / 2 - PAD_H, total + 2 * PAD_H, espessura, null);
+    if (geo)
+        desenharDoca(cr, id, -total / 2 - PAD_H, total + 2 * PAD_H, espessura, icone);
+    else
+        desenharVidro(cr, t, -total / 2 - PAD_H, total + 2 * PAD_H, espessura, null);
     let a = -total / 2;
+    let nApp = 0;
     itens.forEach((it, i) => {
         const centro = a + base[i] / 2;
         a += base[i] + GAP;
@@ -413,6 +429,13 @@ export function desenharMiniDoca(cr, w, h, id, apps) {
         cr.translate(centro - icone / 2, y);
         if (it.tipo === 'app') {
             const surf = iconeDoApp(it.id);
+            if (geo) {
+                desenharTile(cr, id, icone, nApp, nApp === 0);
+                const f = fracaoIcone(id);
+                cr.translate(icone * (1 - f) / 2, icone * (1 - f) / 2);
+                cr.scale(f, f);
+                nApp++;
+            }
             if (surf) {
                 cr.scale(icone / LADO_ICONE, icone / LADO_ICONE);
                 cr.setSourceSurface(surf, 0, 0);
@@ -429,7 +452,12 @@ export function desenharMiniDoca(cr, w, h, id, apps) {
             desenharBotaoApps(cr, icone, icone, t);
         }
         cr.restore();
-        if (it.tipo === 'app' && i === 0) {
+        if (it.tipo === 'app' && i === 0 && geo?.dotW) {
+            cr.save();
+            cr.translate(centro - geo.dotW / 2, -geo.dotDepth - geo.dotH / 2);
+            desenharIndicador(cr, id, geo.dotW, geo.dotH);
+            cr.restore();
+        } else if (it.tipo === 'app' && i === 0 && !geo) {
             cor(cr, t.ponto);
             cr.arc(centro, -(DOT_AREA + PAD_V) + 7, 3, 0, 2 * Math.PI);
             cr.fill();
@@ -469,6 +497,7 @@ export function criarPrevia(settings) {
 
     // Geometria no referencial local: eixo "ao longo" em x (centrado em 0), borda do dock em y = 0, "para fora" = -y.
     const geometria = (c, w, h) => {
+        const {GAP, PAD_H, PAD_V, DOT_AREA} = medidas(c.tema, c.icone);
         const vertical = c.pos !== 'baixo';
         const ao = vertical ? h : w;
         const prof = vertical ? w : h;
@@ -499,6 +528,7 @@ export function criarPrevia(settings) {
         if (!ponteiro)
             return alvo;
         const [px, py] = paraLocal(c, g, area.get_width(), area.get_height(), ...ponteiro);
+        const {GAP, PAD_H, PAD_V, DOT_AREA} = medidas(c.tema, c.icone);
         const alcance = c.icone * c.forca + PAD_V + DOT_AREA;
         const dentro = Math.abs(px) <= g.total / 2 && py <= 4 && py >= -(alcance + c.icone);
         if (!dentro)
@@ -543,6 +573,7 @@ export function criarPrevia(settings) {
         const ex = t;
         const g = geometria(c, w, h);
         const itens = montagem.itens;
+        const {GAP, PAD_H, PAD_V, DOT_AREA, geo} = medidas(c.tema, c.icone);
         const amb = normalizarAmbientes(settings.get_string('ambientes'));
         const corAmb = escolherAmbiente(amb, settings.get_string('ambiente-atual'))?.cor;
 
@@ -575,9 +606,13 @@ export function criarPrevia(settings) {
         const bgX = -total / 2 - PAD_H;
         const bgW = total + 2 * PAD_H;
 
-        desenharVidro(cr, t, bgX, bgW, espessura, corAmb);
+        if (geo)
+            desenharDoca(cr, c.tema, bgX, bgW, espessura, c.icone);
+        else
+            desenharVidro(cr, t, bgX, bgW, espessura, corAmb);
 
         let a = -total / 2;
+        let nApp = 0;
         itens.forEach((it, i) => {
             const lar = larguras[i];
             const centro = a + lar / 2;
@@ -598,6 +633,13 @@ export function criarPrevia(settings) {
             cr.translate(-lado / 2, -alto / 2);
             if (it.tipo === 'app') {
                 const surf = iconeDoApp(it.id);
+                cr.save();
+                if (geo) {
+                    desenharTile(cr, c.tema, alto, nApp++, !!it.aberto);
+                    const f = fracaoIcone(c.tema);
+                    cr.translate(lado * (1 - f) / 2, alto * (1 - f) / 2);
+                    cr.scale(f, f);
+                }
                 if (surf) {
                     cr.save();
                     cr.scale(lado / LADO_ICONE, alto / LADO_ICONE);
@@ -610,6 +652,7 @@ export function criarPrevia(settings) {
                     cor(cr, '#2f3a4d');
                     cr.fill();
                 }
+                cr.restore();
             } else if (it.tipo === 'ambiente') {
                 retanguloArredondado(cr, 0, 0, lado, alto, alto * 0.28);
                 cor(cr, it.cor);
@@ -622,7 +665,16 @@ export function criarPrevia(settings) {
                 desenharBotaoApps(cr, lado, alto, ex);
             }
             cr.restore();
-            if (it.aberto && c.indicador !== 'nenhum') {
+            if (it.aberto && c.indicador !== 'nenhum' && geo) {
+                if (geo.dotW) {
+                    cr.save();
+                    cr.translate(centro, -geo.dotDepth);
+                    desvirar();
+                    cr.translate(-geo.dotW / 2, -geo.dotH / 2);
+                    desenharIndicador(cr, c.tema, geo.dotW, geo.dotH);
+                    cr.restore();
+                }
+            } else if (it.aberto && c.indicador !== 'nenhum') {
                 cor(cr, t.ponto);
                 const [dw, dh] = c.dot;
                 const dy = -(DOT_AREA + PAD_V) + 7; // centro do indicador: 7 px abaixo da base do ícone (dotDepth = d0 - 7)

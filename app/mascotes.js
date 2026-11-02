@@ -44,7 +44,7 @@ export function criarMascotes(settings, p, win) {
     linhaEfeito.append(swEfeito);
     principal.append(linhaEfeito);
     principal.append(new Gtk.Label({
-        label: 'Temas do pacote Natal (Noite de neve, Vitrine, Natal brasileiro) trazem neve, brilhos ou luzinhas no vidro da doca; este interruptor desliga o efeito, mantendo o resto do tema.',
+        label: 'Temas de pacote trazem um efeito animado no vidro da doca (vagalumes, estrelas, pétalas, gotas de chuva, neve, luzinhas, brilhos); este interruptor desliga o efeito, mantendo o resto do tema.',
         xalign: 0, wrap: true, css_classes: ['atlas-cartao-sub'], margin_bottom: 6,
     }));
 

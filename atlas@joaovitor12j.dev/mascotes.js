@@ -3,11 +3,12 @@
 // Em repouso o custo é um único temporizador (no máximo a cada 15 min) e só com um mascote ligado; o actor só
 // existe durante a aparição. A lógica de horários e a linha do tempo estão em logica.js, o desenho em desenho.js.
 import Cairo from 'gi://cairo';
+import {EFEITOS_TEMA} from './decoracao.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, efeitoBrasileiro, efeitoNeve, efeitoVitrine, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
+import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
 import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
@@ -87,13 +88,9 @@ const RESIDENTES = {
 };
 const RESIDENTE_QUADRO_MS = 33;
 
-// Efeitos de época (pacote Natal, ligados por padrão via `efeito-epoca-ativo`): campo de partículas em loop,
+// Efeitos dos temas de pacote (decoracao.js, ligados por padrão via `efeito-epoca-ativo`): campo de partículas em loop,
 // desenhado dentro do vidro da doca (não a tela toda). `desenhar(cr, w, h, t)` é puro, sem estado.
-const EFEITOS = {
-    nevemat: efeitoNeve,
-    vitrine: efeitoVitrine,
-    brasileiro: efeitoBrasileiro,
-};
+const EFEITOS = EFEITOS_TEMA;
 
 // No teste manual, dizer por que nada apareceu; nos disparos normais pular em silêncio é o esperado.
 const pular = (forcar, motivo) => {

@@ -13,7 +13,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escalaLente, escolherAmbiente, normalizarAmbientes} from './logica.js';
+import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes} from './logica.js';
+import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from './decoracao.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {pararPonte} from './ponte.js';
 import {pararClima} from './clima.js';
@@ -139,6 +140,11 @@ class DockView {
         this._container = new St.Widget({reactive: false});
         this._bg = new St.Widget({style_class: 'atlas-bg', reactive: true, track_hover: true});
         this._container.add_child(this._bg);
+        // material dos temas de pacote (madeira, papel, neve...), desenhado em Cairo por cima do vidro
+        this._deco = new St.DrawingArea({reactive: false});
+        this._deco.connect('repaint', a => this._pintarDeco(a));
+        this._container.add_child(this._deco);
+        this._decoCaixa = '';
         this._hookScroll(this._bg);
         this._bg.connect('button-press-event', (_a, event) => {
             if (event.get_button() !== Clutter.BUTTON_SECONDARY)
@@ -200,8 +206,6 @@ class DockView {
                 // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica
                 if (key === 'tema' || key === 'ambiente-atual' || key === 'ambientes')
                     this._applyTheme();
-                if (key === 'tema')
-                    return;
                 if (key === 'auto-ocultar') {
                     this._cancelHide();
                     this._hidden = this._c.autoHide;
@@ -241,7 +245,7 @@ class DockView {
         this._hot?.destroy();
         this._tooltip?.destroy();
         this._preview?.destroy();
-        this._container = this._bg = this._hot = this._strut = this._tooltip = this._preview = null;
+        this._container = this._bg = this._deco = this._hot = this._strut = this._tooltip = this._preview = null;
         this._items = [];
     }
 
@@ -275,14 +279,25 @@ class DockView {
         // ponto 6x6; barra fina ao longo da doca
         [c.dotW, c.dotH] = c.indicador === 'barra' ? (vertical ? [3, 16] : [16, 3]) : [6, 6];
         c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
+        // tema do ambiente atual, quando definido e válido; senão o global
+        const doAmb = c.amb?.tema;
+        c.tema = TEMAS.some(t => t[0] === doAmb) ? doAmb : (st?.get_string('tema') ?? 'noite');
+        // temas de pacote: medidas do protótipo (margens, espaço, indicador) e espaço para o que passa do vidro
+        c.geo = geometriaTema(c.tema, c.iconSize);
+        c.sobra = 0;
+        if (c.geo) {
+            Object.assign(c, {padV: c.geo.padV, padH: c.geo.padH, gap: c.geo.gap, dotArea: c.geo.dotArea});
+            c.dotW = c.geo.dotW;
+            c.dotH = c.geo.dotH;
+            c.sobra = Math.max(0, Math.ceil(c.iconSize * 0.6 - (c.maxPx - c.iconSize)));
+        }
         this._c = c;
         this._v = c.pos !== 'baixo'; // doca vertical
     }
 
     _applyTheme() {
         // tema do ambiente atual, quando definido e válido; senão o global
-        const doAmb = this._c.amb?.tema;
-        const tema = TEMAS.some(t => t[0] === doAmb) ? doAmb : (this._settings?.get_string('tema') ?? 'noite');
+        const tema = this._c.tema;
         this._container.style_class = `atlas-${tema}`;
         this._tooltip.style_class = `atlas-tooltip atlas-${tema}`;
         this._preview.style_class = `atlas-preview atlas-${tema}`;
@@ -330,6 +345,8 @@ class DockView {
         this._hidePreview();
         const old = new Map(this._items.filter(i => i.key).map(i => [i.key, i.s]));
         this._destroyItems();
+        this._nTiles = 0;
+        this._decoCaixa = '';
 
         const {favs, running} = this._appList();
         if (this._c.ambientes.length && this._c.seletor) {
@@ -360,7 +377,9 @@ class DockView {
             this._addSeparator();
         this._addAppsButton(old);
 
-        this._bg.style = this._c.amb ? `border-color: ${this._c.amb.cor};` : '';
+        // nos temas de pacote a borda é desenhada (decoracao.js); o raio acompanha o tamanho do ícone
+        this._bg.style = this._c.geo ? `border-radius: ${Math.round(this._c.geo.raio)}px;`
+            : this._c.amb ? `border-color: ${this._c.amb.cor};` : '';
 
         this._layoutGeometry();
         this._applyScales();
@@ -383,6 +402,7 @@ class DockView {
             key: app.get_id(),
             app,
             gicon: app.get_icon(),
+            child: this._c.geo ? this._tileApp(app.get_icon(), this._nTiles++) : null,
             label: app.get_name(),
             onClick: button => this._activate(app, button),
         }, old);
@@ -493,6 +513,32 @@ class DockView {
         }, old);
     }
 
+    // Tile do protótipo atrás do ícone (temas de pacote): moldura desenhada e o ícone menor no centro.
+    _tileApp(gicon, i) {
+        const c = this._c;
+        const caixa = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true});
+        const fundo = new St.DrawingArea({x_expand: true, y_expand: true});
+        fundo._ativo = false;
+        fundo.connect('repaint', a => {
+            const cr = a.get_context();
+            const [w, h] = a.get_surface_size();
+            try {
+                desenharTile(cr, c.tema, Math.min(w, h), i, a._ativo);
+            } catch (e) {
+                console.error(`[atlas] erro ao desenhar o tile: ${e}`);
+            } finally {
+                cr.$dispose();
+            }
+        });
+        caixa.add_child(fundo);
+        caixa.add_child(new St.Icon({
+            gicon, icon_size: Math.round(c.maxPx * fracaoIcone(c.tema)),
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER,
+        }));
+        caixa._fundo = fundo;
+        return caixa;
+    }
+
     // Ícone simbólico num tile: a cor vem do tema (.atlas-apps-icon), senão some em fundos claros.
     _appsTile() {
         const icone = new St.Icon({
@@ -526,11 +572,26 @@ class DockView {
         btn.set_pivot_point(...PIVOT[c.pos]);
         this._container.add_child(btn);
 
-        const dot = new St.Widget({style_class: 'atlas-dot'});
-        dot.set_size(c.dotW, c.dotH);
+        let dot;
+        if (c.geo) {
+            // indicador do tema (coração, folha, floco...) desenhado
+            dot = new St.DrawingArea({reactive: false});
+            dot.connect('repaint', a => {
+                const cr = a.get_context();
+                const [w, h] = a.get_surface_size();
+                try {
+                    desenharIndicador(cr, c.tema, w, h);
+                } finally {
+                    cr.$dispose();
+                }
+            });
+        } else {
+            dot = new St.Widget({style_class: 'atlas-dot'});
+        }
+        dot.set_size(Math.max(1, c.dotW), Math.max(1, c.dotH));
         this._container.add_child(dot);
 
-        const item = {key, app, widget, actor: btn, dot, s: old.get(key) ?? 1, base: c.iconSize * larg};
+        const item = {key, app, widget, actor: btn, dot, tile: child?._fundo ?? null, s: old.get(key) ?? 1, base: c.iconSize * larg};
         btn.connect('clicked', (_b, button) => {
             if (button === Clutter.BUTTON_SECONDARY && item.app)
                 this._openMenu(item, btn);
@@ -907,7 +968,7 @@ class DockView {
         const growth = c.iconSize * (c.maxScale - 1) * 3.2; // sobra máxima da lente ao longo da doca
 
         this._len = Math.ceil(baseLen + growth + c.padH * 2);                  // eixo da doca
-        this._thick = Math.ceil(c.maxPx + c.padV * 2 + c.dotArea);             // eixo transversal
+        this._thick = Math.ceil(c.maxPx + c.padV * 2 + c.dotArea + c.sobra);   // eixo transversal
         this._d0 = c.dotArea + c.padV;                                          // borda da tela até a base dos ícones
         this._cw = this._v ? this._thick : this._len;
         this._ch = this._v ? this._len : this._thick;
@@ -925,6 +986,8 @@ class DockView {
         }
         this._container.set_size(this._cw, this._ch);
         this._container.set_position(Math.round(x), Math.round(y));
+        this._deco.set_size(this._cw, this._ch);
+        this._deco.visible = !!c.geo;
         this._placeHotZone(mon, wa);
         this._placeStrut(mon);
         this._applyHidden(false);
@@ -1070,7 +1133,7 @@ class DockView {
         const total = widths.reduce((a, b) => a + b, 0) + c.gap * Math.max(0, widths.length - 1);
         const start = (this._len - total) / 2;
         const d0 = this._d0;
-        const dotDepth = d0 - 7; // centro do indicador, medido a partir da borda da tela
+        const dotDepth = c.geo?.dotDepth ?? d0 - 7; // centro do indicador, medido a partir da borda da tela
         const sepLen = Math.round(c.iconSize * 0.7);
         let a = start;
 
@@ -1087,7 +1150,13 @@ class DockView {
                 it.actor.set_scale(f, f);
                 const [x, y] = this._boxOrigin(a, d0, max);
                 it.actor.set_position(x, y);
-                it.dot.visible = c.indicador !== 'nenhum' && !!it.app && it.app.get_n_windows() > 0;
+                const aberto = !!it.app && it.app.get_n_windows() > 0;
+                it.dot.visible = c.indicador !== 'nenhum' && aberto && c.dotW > 0;
+                if (it.tile && it.tile._ativo !== aberto) {
+                    it.tile._ativo = aberto; // Carta marca o app aberto no próprio tile
+                    if (c.tema === 'carta')
+                        it.tile.queue_repaint();
+                }
                 const [dx, dy] = this._point(mid, dotDepth, c.dotW, c.dotH);
                 it.dot.set_position(dx, dy);
             }
@@ -1106,6 +1175,38 @@ class DockView {
         } else {
             this._bg.set_position(this._cw - thickBg, bgA);
             this._bg.set_size(thickBg, bgLen);
+        }
+        const caixa = `${bgA}:${bgLen}:${thickBg}`;
+        if (c.geo && caixa !== this._decoCaixa) {
+            this._decoCaixa = caixa;
+            this._decoMedidas = {bgA, bgLen, thickBg};
+            this._deco.queue_repaint();
+        }
+    }
+
+    // Material do tema no referencial de decoracao.js (vidro de y = -esp a 0, borda da tela em y = 0),
+    // girado para as docas laterais.
+    _pintarDeco(area) {
+        const cr = area.get_context();
+        const m = this._decoMedidas;
+        try {
+            if (!m || !this._c.geo)
+                return;
+            const pos = this._c.pos;
+            if (pos === 'baixo') {
+                cr.translate(0, this._ch);
+            } else if (pos === 'esquerda') {
+                cr.rotate(Math.PI / 2);
+            } else {
+                cr.translate(this._cw, 0);
+                cr.rotate(-Math.PI / 2);
+                cr.scale(-1, 1);
+            }
+            desenharDoca(cr, this._c.tema, m.bgA, m.bgLen, m.thickBg, this._c.iconSize);
+        } catch (e) {
+            console.error(`[atlas] erro ao desenhar o tema: ${e}`);
+        } finally {
+            cr.$dispose();
         }
     }
 
