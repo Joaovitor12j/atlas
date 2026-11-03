@@ -36,7 +36,7 @@ atlas@joaovitor12j.dev/
 
 ## Identidade visual
 
-Fonte: `site/DESIGN.md` (carta náutica noturna). A janela vira a versão de mesa da página.
+Direção: carta náutica noturna, a mesma do antigo site do projeto (hoje fora do repositório).
 
 - **Cores** (libadwaita 1.5 usa `@define-color`):
   `window_bg_color` e `sidebar_bg_color` `#0F1B28` (grafite), `card_bg_color` e `view_bg_color` `#16283A`, `window_fg_color` `#DCE7EE`, `accent_bg_color` `#E8A33D` (âmbar) com `accent_fg_color` escuro, divisores `#7899B8` a 22%. `Adw.StyleManager` em `FORCE_DARK`.
@@ -65,7 +65,7 @@ Cada fase fecha num PR que funciona sozinho.
 | 2. Casca | `NavigationSplitView`, barra lateral com marca, grade, Sobre, `--pagina` | visual travado; ver o resultado em captura antes de seguir |
 | 3. Prévia do dock | `previa.js`, lente em `logica.js`, cores dos temas em `catalogo.js` | a prévia muda ao vivo com tema, tamanho e indicador; lente segue o mouse |
 | 4. Páginas | Ambientes em cartões, galeria de widgets, cartões de mascotes, `Adw.Dialog` | sem perda de opção em relação à fase 1 |
-| 5. Acabamento | "Configurar" no clique direito de um widget abre a página certa; CHANGELOG, CLAUDE.md, capturas da seção Configuração do site | |
+| 5. Acabamento | "Configurar" no clique direito de um widget abre a página certa; CHANGELOG, CLAUDE.md | |
 
 ## Testes e CI
 
