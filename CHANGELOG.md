@@ -5,7 +5,11 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Adicionado
+- Licença GPL-3.0-or-later (`LICENSE`), compatível com o extensions.gnome.org.
+
 ### Alterado
+- Os `idle_add` dos menus (doca e painel) passaram a ser removidos no `disable()`, como pede a revisão do extensions.gnome.org. A descrição do `metadata.json` declara o acesso à área de transferência e a consulta ao Open-Meteo.
 - **Empacotamento**: `app/` passou para dentro de `atlas@joaovitor12j.dev/`, então o zip leva o app de configuração e o botão de Configurações funciona fora do clone (antes dependia de `app/` ao lado da extensão e do symlink do `install.sh`). Novo `pack.sh` gera `dist/atlas@joaovitor12j.dev.zip` com um `extension.js` de produção (`empacotar/extension.js`, import direto) no lugar do carregador de desenvolvimento; `--ego` omite o schema compilado. `metadata.json` declara GNOME Shell 46 a 50 e `url`; o app avisa se a libadwaita for anterior à 1.5.
 
 ### Adicionado

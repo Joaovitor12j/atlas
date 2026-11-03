@@ -88,3 +88,6 @@ O histórico de mudanças está no [CHANGELOG](CHANGELOG.md).
 
 ## Próximos passos
 Prateleira de arquivos e calendário.
+
+## Licença
+GPL-3.0-or-later. Veja o arquivo [LICENSE](LICENSE).
