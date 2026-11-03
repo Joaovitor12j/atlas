@@ -5,9 +5,9 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
-import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, sprite, pilha, pinguim, satelite, solArco, tomate} from '../atlas@joaovitor12j.dev/desenho.js';
-import {MOVIMENTOS} from '../atlas@joaovitor12j.dev/catalogo.js';
-import {SPRITES, lerLocais, quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../atlas@joaovitor12j.dev/logica.js';
+import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, sprite, pilha, pinguim, satelite, solArco, tomate} from '../desenho.js';
+import {MOVIMENTOS} from '../catalogo.js';
+import {SPRITES, lerLocais, quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../logica.js';
 
 export class Paginas {
     // Linha com lista de opções ligada a uma chave string.
@@ -71,7 +71,7 @@ export class Paginas {
         try {
             this._folhas ??= {};
             this._folhas[id] ??= imports.cairo.ImageSurface.createFromPNG(
-                GLib.build_filenamev([GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]), '..', 'atlas@joaovitor12j.dev', 'sprites', spec.arquivo]));
+                GLib.build_filenamev([GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]), '..', 'sprites', spec.arquivo]));
             const escala = Math.min(w / spec.fw, h / spec.fh) * 0.95;
             sprite(cr, w, h, {x: w / 2, quadro: 4, dir: 1, escala, pe: 0}, {spec, imagem: this._folhas[id], base: h * 0.5 + spec.chao * escala - spec.fh * escala / 2});
         } catch (e) {

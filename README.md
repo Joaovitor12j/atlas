@@ -36,12 +36,34 @@ Dock com lente de ampliação para GNOME Shell 46 (Wayland/X11).
 As opções são GSettings (`org.gnome.shell.extensions.atlas`); o dock reage ao vivo.
 Depois de um novo login, a engrenagem no app Extensões e `gnome-extensions prefs atlas@joaovitor12j.dev` também abrem a janela.
 
+## Compatibilidade
+| Sistema | GNOME Shell | Situação |
+|---|---|---|
+| Ubuntu 24.04 LTS | 46 | **Testado** (uso diário) |
+| Ubuntu 24.10, 25.04, 25.10, 26.04 | 47 a 50 | Declarado: as APIs usadas foram conferidas no código do GNOME Shell e do mutter, mas ainda **não testado** em sessão real |
+| Fedora 40+, Debian 13, Arch, openSUSE Tumbleweed (com GNOME) | 46 a 50 | Mesmo caso: deve funcionar, não testado |
+| Ubuntu 22.04, Debian 12 | 42 e 43 | **Não suportado** (sem módulos ESM nem libadwaita 1.5) |
+
+Requisitos: GNOME Shell 46 a 50 (Wayland ou X11), `gjs`, libadwaita 1.5+ e GTK 4 para o app de configuração, `libsoup3` (clima) e UPower (widget de bateria). KDE, XFCE e outros desktops não são suportados: a dock é uma extensão do GNOME Shell.
+Se algo falhar na sua versão, abra uma issue com a saída de `journalctl -f -o cat /usr/bin/gnome-shell`.
+
 ## Instalar
+Pelo zip (qualquer usuário):
+```bash
+./pack.sh                                                 # gera dist/atlas@joaovitor12j.dev.zip
+gnome-extensions install --force dist/atlas@joaovitor12j.dev.zip
+# faça logout/login (Wayland) e depois:
+gnome-extensions enable atlas@joaovitor12j.dev
+gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   # evita dois docks
+```
+O zip leva a extensão e o app de configuração (`app/`), que abre pela engrenagem do app Extensões, pelo menu do painel ou pelo clique direito na dock.
+
+Para desenvolver (symlink, alterações valem sem reinstalar):
 ```bash
 ./install.sh                         # symlink em ~/.local/share/gnome-shell/extensions
 gnome-extensions enable atlas@joaovitor12j.dev   # após relogin (Wayland)
-gnome-extensions disable dash-to-dock@micxgx.gmail.com ubuntu-dock@ubuntu.com   # evita dois docks
 ```
+O `extension.js` do repositório é o carregador de desenvolvimento; o `pack.sh` o troca por `empacotar/extension.js` (import direto) no zip. `./pack.sh --ego` gera o zip sem o schema compilado, no formato do extensions.gnome.org.
 
 ## Desenvolvimento sem relogin
 `extension.js` copia `dock.js`, `widgets.js` e `catalogo.js` para uma pasta temporária a cada enable (o GJS ignora `?query` no import e guarda os módulos em cache). Edite esses arquivos, `temas.css` ou `prefs.js` e rode:

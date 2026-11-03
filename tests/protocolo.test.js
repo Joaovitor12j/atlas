@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {INTERFACE, NOME, VERSAO, XML} from '../atlas@joaovitor12j.dev/protocolo.js';
 
 const ponte = readFileSync(new URL('../atlas@joaovitor12j.dev/ponte.js', import.meta.url), 'utf8');
-const daemon = readFileSync(new URL('../app/daemon.js', import.meta.url), 'utf8');
+const daemon = readFileSync(new URL('../atlas@joaovitor12j.dev/app/daemon.js', import.meta.url), 'utf8');
 
 const metodos = [...XML.matchAll(/<method name="(\w+)"/g)].map(m => m[1]);
 const sinais = [...XML.matchAll(/<signal name="(\w+)"/g)].map(m => m[1]);

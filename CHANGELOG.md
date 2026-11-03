@@ -5,6 +5,9 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### Alterado
+- **Empacotamento**: `app/` passou para dentro de `atlas@joaovitor12j.dev/`, então o zip leva o app de configuração e o botão de Configurações funciona fora do clone (antes dependia de `app/` ao lado da extensão e do symlink do `install.sh`). Novo `pack.sh` gera `dist/atlas@joaovitor12j.dev.zip` com um `extension.js` de produção (`empacotar/extension.js`, import direto) no lugar do carregador de desenvolvimento; `--ego` omite o schema compilado. `metadata.json` declara GNOME Shell 46 a 50 e `url`; o app avisa se a libadwaita for anterior à 1.5.
+
 ### Adicionado
 - **Cinco mascotes novos**: **Gato** (sprite desenhado à mão, seis quadros em `sprites/gato.png`, atravessa a doca caminhando ou correndo; os pés são amarrados à distância percorrida, sem escorregar; é o primeiro mascote de sprite, com `quadroSprite` e `SPRITES` em `logica.js`), **Coruja** (de madrugada, sobe dormindo, acorda, pisca e volta a dormir), **Pilha cansada** (bateria descarregando abaixo do limite, via UPower), **Satélite perdido** (a rede caiu por alguns segundos, via `Gio.NetworkMonitor`) e **Tomate** (comemora com confete quando um foco do Pomodoro termina, via `eventos.js`). Cada um com seletor de movimento e botão de teste no app. Os de evento só escutam sinais enquanto ligados.
 

@@ -1579,14 +1579,11 @@ export class Dock {
         this._indicator = null;
     }
 
-    // Abre as preferências: pelo Shell quando ele já conhece o prefs.js; senão, pelo prefs.sh do projeto.
-    // Abre o app de configuração (app/main.js, ao lado da pasta da extensão; segue o symlink do install.sh).
+    // Abre o app de configuração (app/main.js, dentro da pasta da extensão); sem ele, cai no prefs do Shell.
     _openPrefs() {
         try {
             const dir = this._dir();
-            const info = dir.query_info('standard::symlink-target', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
-            const alvo = info.get_symlink_target() ?? dir.get_path();
-            const main = Gio.File.new_for_path(alvo).get_parent().get_child('app').get_child('main.js');
+            const main = dir.get_child('app').get_child('main.js');
             if (main.query_exists(null))
                 Gio.Subprocess.new(['gjs', '-m', main.get_path()], Gio.SubprocessFlags.NONE);
             else if (Main.extensionManager.lookup(dir.get_basename())?.hasPrefs)

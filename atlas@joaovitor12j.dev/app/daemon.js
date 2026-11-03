@@ -3,7 +3,7 @@
 // Uso: gjs -m app/daemon.js
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import {CAMINHO, NOME, VERSAO, XML} from '../atlas@joaovitor12j.dev/protocolo.js';
+import {CAMINHO, NOME, VERSAO, XML} from '../protocolo.js';
 
 const assinantes = new Map(); // id -> contagem
 let timer = 0;

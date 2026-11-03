@@ -6,10 +6,8 @@ import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/ex
 export default class AtlasPrefs extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         try {
-            const alvo = Gio.File.new_for_path(this.path).query_info(
-                'standard::symlink-target', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null).get_symlink_target();
-            const raiz = Gio.File.new_for_path(alvo ?? this.path).get_parent();
-            Gio.Subprocess.new(['gjs', '-m', raiz.get_child('app').get_child('main.js').get_path()], Gio.SubprocessFlags.NONE);
+            const main = Gio.File.new_for_path(this.path).get_child('app').get_child('main.js');
+            Gio.Subprocess.new(['gjs', '-m', main.get_path()], Gio.SubprocessFlags.NONE);
         } catch (e) {
             console.error(`[atlas] não consegui abrir o app de configuração: ${e}`);
         }

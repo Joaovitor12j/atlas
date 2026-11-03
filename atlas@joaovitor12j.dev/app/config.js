@@ -2,8 +2,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-const RAIZ = GLib.path_get_dirname(GLib.path_get_dirname(import.meta.url.replace('file://', '')));
-export const PASTA_EXTENSAO = `${RAIZ}/atlas@joaovitor12j.dev`;
+// O app mora em <extensão>/app/, então a pasta da extensão é a pai desta.
+export const PASTA_EXTENSAO = GLib.path_get_dirname(GLib.path_get_dirname(GLib.filename_from_uri(import.meta.url)[0]));
 const SCHEMA = 'org.gnome.shell.extensions.atlas';
 
 export function abrirConfig() {
