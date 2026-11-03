@@ -230,6 +230,10 @@ class DockView {
             GLib.source_remove(this._rebuildId);
             this._rebuildId = 0;
         }
+        if (this._menuIdleId) {
+            GLib.source_remove(this._menuIdleId);
+            this._menuIdleId = 0;
+        }
         this._cancelHide();
         this._closeMenu();
         this._clearPreviewTimers();
@@ -856,7 +860,10 @@ class DockView {
             if (open)
                 return;
             // destrói depois que o menu termina de fechar, e reavalia o auto-ocultar
-            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            if (this._menuIdleId)
+                GLib.source_remove(this._menuIdleId);
+            this._menuIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this._menuIdleId = 0;
                 if (this._menu === menu)
                     this._closeMenu();
                 return GLib.SOURCE_REMOVE;
@@ -1560,12 +1567,16 @@ export class Dock {
             };
             encher();
             ind.menu.connect('open-state-changed', (_m, aberto) => {
-                if (!aberto)
-                    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                        if (this._indicator === ind)
-                            encher();
-                        return GLib.SOURCE_REMOVE;
-                    });
+                if (aberto)
+                    return;
+                if (this._indicatorIdleId)
+                    GLib.source_remove(this._indicatorIdleId);
+                this._indicatorIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    this._indicatorIdleId = 0;
+                    if (this._indicator === ind)
+                        encher();
+                    return GLib.SOURCE_REMOVE;
+                });
             });
             Main.panel.addToStatusArea('atlas-indicator', ind);
             this._indicator = ind;
@@ -1575,18 +1586,19 @@ export class Dock {
     }
 
     _destroyIndicator() {
+        if (this._indicatorIdleId) {
+            GLib.source_remove(this._indicatorIdleId);
+            this._indicatorIdleId = 0;
+        }
         this._indicator?.destroy();
         this._indicator = null;
     }
 
-    // Abre as preferências: pelo Shell quando ele já conhece o prefs.js; senão, pelo prefs.sh do projeto.
-    // Abre o app de configuração (app/main.js, ao lado da pasta da extensão; segue o symlink do install.sh).
+    // Abre o app de configuração (app/main.js, dentro da pasta da extensão); sem ele, cai no prefs do Shell.
     _openPrefs() {
         try {
             const dir = this._dir();
-            const info = dir.query_info('standard::symlink-target', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
-            const alvo = info.get_symlink_target() ?? dir.get_path();
-            const main = Gio.File.new_for_path(alvo).get_parent().get_child('app').get_child('main.js');
+            const main = dir.get_child('app').get_child('main.js');
             if (main.query_exists(null))
                 Gio.Subprocess.new(['gjs', '-m', main.get_path()], Gio.SubprocessFlags.NONE);
             else if (Main.extensionManager.lookup(dir.get_basename())?.hasPrefs)

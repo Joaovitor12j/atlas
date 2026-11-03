@@ -1,10 +1,11 @@
 {
   "uuid": "atlas@joaovitor12j.dev",
   "name": "ATLAS",
-  "description": "ATLAS (Ambientes, Tarefas, Lançadores, Aplicativos e Sistema): dock com lente de ampliação, ambientes e widgets.",
+  "description": "ATLAS (Ambientes, Tarefas, Lançadores, Aplicativos e Sistema): dock com lente de ampliação, ambientes e widgets. O widget Área de transferência lê o histórico de texto da área de transferência (só os itens fixados pelo usuário ficam salvos). O widget Clima consulta a Open-Meteo e envia apenas as coordenadas da cidade escolhida.",
   "shell-version": [
     "46"
   ],
+  "url": "https://github.com/Joaovitor12j/atlas",
   "version": 3,
   "version-name": "0.3.0",
   "settings-schema": "org.gnome.shell.extensions.atlas"

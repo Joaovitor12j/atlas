@@ -3,8 +3,8 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {CORES_TEMA, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
-import {diasAte} from '../atlas@joaovitor12j.dev/logica.js';
+import {CORES_TEMA, WIDGETS} from '../catalogo.js';
+import {diasAte} from '../logica.js';
 import {cartao} from './aparencia.js';
 import {desenharPapelDeParede, desenharWidget} from './previa.js';
 

@@ -3,3 +3,4 @@ node_modules/
 atlas@joaovitor12j.dev/schemas/gschemas.compiled
 atlas@joaovitor12j.dev/.dock-*.js
 atlas@joaovitor12j.dev/.run-*/
+dist/

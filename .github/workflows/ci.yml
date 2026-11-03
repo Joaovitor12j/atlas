@@ -15,7 +15,7 @@ jobs:
           node-version: 22
       - name: Sintaxe dos módulos
         run: |
-          for f in atlas@joaovitor12j.dev/*.js app/*.js; do
+          for f in atlas@joaovitor12j.dev/*.js atlas@joaovitor12j.dev/app/*.js; do
             node --check --input-type=module < "$f" || { echo "erro de sintaxe em $f"; exit 1; }
           done
       - name: Schema do GSettings
