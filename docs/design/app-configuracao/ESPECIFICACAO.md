@@ -1,7 +1,7 @@
 # ATLAS · App de configuração: direção visual "Palco" (issue #17)
 
 Mockup: `app-configuracao.html` (abrir no navegador; abas, lente, tema, indicador, posição e sliders funcionam). Capturas: `atlas-*.png`.
-Visual novo, independente de `site/DESIGN.md` (nada de grafite/âmbar/grade de coordenadas).
+Visual novo, independente do antigo site do projeto (nada de grafite/âmbar/grade de coordenadas).
 
 ## Princípios
 1. **A doca ao vivo é o herói.** Palco fixo no topo, visível em todas as abas; toda mudança aparece ali na hora.

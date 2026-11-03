@@ -60,8 +60,8 @@ Cada fase é um PR que funciona sozinho; o dock nunca fica quebrado entre fases.
 1. **Instalação local** (`install.sh`). Flatpak fica para depois da fase 7, se um dia houver distribuição.
 2. **Daemon residente**, com só os serviços dos widgets ligados.
 3. **Daemon no ar mesmo sem janela**; sem daemon, o dock fica degradado (favoritos e apps abertos, widgets com o último dado).
-4. **Sem extensions.gnome.org**: distribuição só local. Motivo: o shim depende de um app externo, o que a revisão do site costuma barrar, e o código é fechado. Não bloqueia nada.
-5. **Janela de cor fixa** (carta náutica de `site/DESIGN.md`), não varia com o tema do dock. O id do app passa a `dev.joaovitor12j.Atlas`.
+4. **Sem extensions.gnome.org**: distribuição só local. Motivo: o shim depende de um app externo, o que a revisão do site costuma barrar. Não bloqueia nada.
+5. **Janela de cor fixa** (carta náutica), não varia com o tema do dock. O id do app passa a `dev.joaovitor12j.Atlas`.
 
 ## Resultado da fase 0 (2026-10-31)
 

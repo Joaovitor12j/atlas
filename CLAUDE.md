@@ -49,5 +49,4 @@ Consumo de referência: ~0,14% de um núcleo, zero sem widgets, 2 a 5 MB. Widget
 
 ## Outros
 
-- `site/`: página pública estática (HTML/CSS/JS puros) na Vercel; `site/DESIGN.md` é a fonte de verdade visual. Deploy: `cd site && vercel deploy --prod --yes`.
 - `CHANGELOG.md` segue Keep a Changelog; versões seguem `version-name` do `metadata.json`. Registrar mudanças relevantes em `[Não lançado]`.
