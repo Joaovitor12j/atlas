@@ -10,7 +10,7 @@ Dock com lente de ampliação, ambientes, widgets e mascotes para o GNOME Shell 
 
 [Site](https://atlas.joaovitorsantos.com.br/) · [Changelog](CHANGELOG.md) · [Licença GPL-3.0](LICENSE)
 
-<img src="docs/imagens/tema-noite.png" alt="Dock do ATLAS com o tema Noite: apps, relógio, música, uso de CPU e botão de apps">
+<img src="docs/imagens/temas.png" alt="Dock do ATLAS em quatro temas: Vila, Noite de lua, Aurora e Carta, cada um com seu mascote">
 
 </div>
 
@@ -34,8 +34,6 @@ Dock com lente de ampliação, ambientes, widgets e mascotes para o GNOME Shell 
 ## O que é
 ATLAS é uma extensão do GNOME Shell que troca o dock padrão por uma dock com lente de ampliação. Além dos apps, ela organiza o dia a dia em **ambientes** (conjuntos de apps com nome, cor e tema próprios), mostra **widgets** desenhados na própria dock (relógio, Pomodoro, clima, música, uso de CPU e outros) e tem **mascotes** que aparecem em horas, datas e eventos do sistema.
 
-<p align="center"><img src="docs/imagens/lente.jpg" alt="Lente de ampliação da dock"></p>
-
 Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da dock) e as opções são GSettings, então a dock reage na hora a qualquer mudança.
 
 ## Recursos
@@ -46,8 +44,6 @@ Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da 
 - Clique ativa ou abre o app; botão do meio ou Ctrl+clique abre nova janela
 - Menu de clique direito nos ícones: ações do app, nova janela, fixar ou desafixar, fechar janelas. No vidro da dock ou no seletor de ambientes: menu geral com Configurações
 - Prévia de janelas: miniaturas ao vivo ao parar o mouse num app aberto (clique traz a janela, X ou clique do meio fecha)
-
-  <img src="docs/imagens/previa-janelas.png" alt="Prévia de janelas sobre o ícone do Terminal" width="640">
 
 - Posição embaixo, à esquerda ou à direita, com margem; opção de reservar espaço na tela
 - Auto-ocultar (uma zona de 2 px na borda traz a dock de volta)
@@ -63,8 +59,6 @@ Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da 
 - Não perturbe: um ambiente pode entrar sozinho quando o Não perturbe do GNOME liga, e voltar ao anterior ao desligar
 - Janelas seguem o ambiente (opcional, desligado por padrão): ao trocar, minimiza as janelas dos apps de outros ambientes e as traz de volta ao retornar
 - Cada ambiente tem seus próprios apps, tema e widgets
-
-<p align="center"><img src="docs/imagens/ambientes.jpg" alt="Seletor de ambientes: o ambiente Estudo com seus apps e widgets"></p>
 
 **Widgets e mascotes**
 - 14 widgets desenhados com Cairo (anéis, gráficos, relógio de ponteiros), com painel rico ao clicar e, em alguns, versão larga
@@ -129,6 +123,8 @@ O app de configuração abre de três formas:
 - menu do painel ou clique direito na dock, em **Configurações**;
 - direto do código, sem relogin: `./prefs.sh` (aceita `--pagina=aparencia|ambientes|widgets|mascotes`).
 
+<p align="center"><img src="docs/imagens/app-palco.png" alt="App de configuração: prévia ao vivo da dock, abas e escolha de tema"></p>
+
 Todas as opções são GSettings do schema `org.gnome.shell.extensions.atlas`, então também dá para mexer pelo terminal (a dock reage ao vivo):
 ```bash
 ./tema.sh noite                                   # troca o tema (ids na seção Temas)
@@ -149,17 +145,6 @@ Os atalhos de ambiente são configuráveis no app (aba Ambientes) e cada forma d
 
 ## Temas
 Cada tema define material da dock, borda e sombra, indicador, tile de widget e efeito ambiente. Cada ambiente pode ter o seu. Os temas de pacote (Pixel, Materiais, Natal) são desenhados em Cairo a partir dos protótipos em [docs/design/pacotes-de-temas](docs/design/pacotes-de-temas).
-
-<table>
-<tr>
-<td align="center"><img src="docs/imagens/tema-noite.png" alt="Noite"><br><sub>Noite</sub></td>
-<td align="center"><img src="docs/imagens/tema-papel.png" alt="Papel"><br><sub>Papel</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/imagens/tema-cristal.png" alt="Cristal"><br><sub>Cristal</sub></td>
-<td align="center"><img src="docs/imagens/tema-neon.png" alt="Neon"><br><sub>Neon</sub></td>
-</tr>
-</table>
 
 | Pacote | Temas (id) |
 |---|---|
@@ -188,36 +173,12 @@ Ficam por ambiente; ordem e posição (antes ou depois dos apps) se configuram n
 | Clima ▭ | Open-Meteo: tempo agora, próximas 24 h e 5 dias, com a cidade escolhida por busca |
 | Nota | Um recado fixo na dock, editável pelo clique |
 
-<table>
-<tr>
-<td><img src="docs/imagens/widget-atividade.png" alt="Painel do widget Atividade" width="320"></td>
-<td><img src="docs/imagens/widget-musica.png" alt="Painel do widget Música" width="320"></td>
-</tr>
-<tr>
-<td><img src="docs/imagens/widget-pomodoro.png" alt="Painel do widget Pomodoro" width="320"></td>
-<td><img src="docs/imagens/widget-relogio.png" alt="Painel do widget Relógio" width="320"></td>
-</tr>
-</table>
+<p align="center"><img src="docs/imagens/widgets.png" alt="Widgets Música, Pomodoro, Atividade, Clima e Bateria"></p>
 
 Os widgets pausam com a dock escondida, no Overview e em tela cheia, e só redesenham quando algo muda.
 
 ## Mascotes
 Todos vêm desligados. Cada um tem horários e limites configuráveis, um seletor de movimento (sortear ou fixar) e um botão **Testar agora**. Só aparecem na dock da tela principal e pulam a aparição com a dock escondida, no Overview e com o Não perturbe ligado. Detalhes em [docs/MASCOTES.md](docs/MASCOTES.md).
-
-<table>
-<tr>
-<td align="center"><img src="docs/imagens/mascote-cuco.jpg" alt="Cuco"><br><sub>Cuco</sub></td>
-<td align="center"><img src="docs/imagens/mascote-noel.jpg" alt="Papai Noel"><br><sub>Papai Noel</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/imagens/mascote-boneco.jpg" alt="Boneco de neve"><br><sub>Boneco de neve</sub></td>
-<td align="center"><img src="docs/imagens/mascote-chama.jpg" alt="Chama"><br><sub>Chama</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/imagens/mascote-fantasma.jpg" alt="Fantasma"><br><sub>Fantasma</sub></td>
-<td align="center"><img src="docs/imagens/mascote-esqueleto.jpg" alt="Esqueleto"><br><sub>Esqueleto</sub></td>
-</tr>
-</table>
 
 | Categoria | Mascotes |
 |---|---|
