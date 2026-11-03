@@ -72,13 +72,13 @@ Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da 
 | Sistema | GNOME Shell | Situação |
 |---|---|---|
 | Ubuntu 24.04 LTS | 46 | **Testado** (uso diário) |
-| Ubuntu 24.10, 25.04, 25.10, 26.04 | 47 a 50 | Declarado: as APIs usadas foram conferidas no código do GNOME Shell e do mutter, mas ainda **não testado** em sessão real |
-| Fedora 40+, Debian 13, Arch, openSUSE Tumbleweed (com GNOME) | 46 a 50 | Mesmo caso: deve funcionar, não testado |
+| Ubuntu 24.10, 25.04, 25.10, 26.04 | 47 a 50 | **Ainda não declarado.** As APIs usadas foram conferidas no código do GNOME Shell e do mutter e devem existir, mas falta testar em sessão real. O suporte entra no `metadata.json` depois do teste |
+| Fedora, Debian 13, Arch, openSUSE (com GNOME 47 ou mais novo) | 47 a 50 | Mesmo caso. Com GNOME 46 (ex.: Fedora 40) deve funcionar como no Ubuntu 24.04, mas não foi testado |
 | Ubuntu 22.04, Debian 12 | 42 e 43 | **Não suportado** (sem módulos ESM nem libadwaita 1.5) |
 | KDE, XFCE, Cinnamon e outros desktops | — | **Não suportado**: a dock é uma extensão do GNOME Shell |
 
 **Requisitos**
-- GNOME Shell 46 a 50, sessão Wayland ou X11
+- GNOME Shell 46, sessão Wayland ou X11
 - `gjs`, GTK 4 e libadwaita 1.5 ou mais nova (app de configuração; o app avisa se a versão for anterior)
 - `libsoup3` (widget Clima) e UPower (widget Bateria)
 - Para criar o zip a partir do código: `bash`, `zip`, `node` e `glib-compile-schemas` (pacote `libglib2.0-bin` no Ubuntu)
