@@ -167,8 +167,14 @@ function miniTela(settings) {
 export function criarAparencia(settings, p) {
     const grade = new Gtk.Grid({column_spacing: 16, row_spacing: 16, column_homogeneous: true, css_classes: ['atlas-corpo']});
     const cartoes = [];
+    // Coluna da direita: cartões empilhados com a altura natural, sem esticar para acompanhar o Tema.
+    const direita = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 16, valign: Gtk.Align.START});
+    grade.attach(direita, 7, 0, 5, 1);
     const add = (c, col, lin, larg) => {
-        grade.attach(c, col, lin, larg, 1);
+        if (col === 7)
+            direita.append(c);
+        else
+            grade.attach(c, col, lin, larg, 1);
         cartoes.push(c);
     };
 
@@ -183,12 +189,12 @@ export function criarAparencia(settings, p) {
     const [sForca, vForca] = escala(settings, 'lente-forca', 1, 2.5, 0.05, 2, v => `${v.toFixed(2)}×`);
     const [sLarg, vLarg] = escala(settings, 'lente-largura', 30, 160, 5, 0, v => `${Math.round(v)} px`);
     add(cartao('Ícones e lente', 'Força 1,00 desliga a lente.',
-        linha('Tamanho dos ícones', sTam, vTam), linha('Força da lente', sForca, vForca), linha('Largura da lente', sLarg, vLarg)), 0, 1, 7);
+        linha('Tamanho dos ícones', sTam, vTam), linha('Força da lente', sForca, vForca), linha('Largura da lente', sLarg, vLarg)), 7, 1, 5);
 
     add(cartao('Detalhes', 'Como a doca reage e indica os apps.',
         linha('Indicador de app aberto', segmentado(settings, 'estilo-indicador', [['ponto', 'Ponto'], ['barra', 'Barra'], ['nenhum', 'Nenhum']])),
         linha('Efeito ao passar o mouse', segmentado(settings, 'efeito-hover', [['nenhum', 'Só a lente'], ['brilho', 'Brilho'], ['elevar', 'Sobe']])),
-        linha('Animação de abertura', segmentado(settings, 'animacao-abertura', [['nenhuma', 'Nenhuma'], ['deslizar', 'Deslizar'], ['surgir', 'Surgir']]))), 7, 1, 5);
+        linha('Animação de abertura', segmentado(settings, 'animacao-abertura', [['nenhuma', 'Nenhuma'], ['deslizar', 'Deslizar'], ['surgir', 'Surgir']]))), 7, 2, 5);
 
     const lista = new Gtk.ListBox({selection_mode: Gtk.SelectionMode.NONE, css_classes: ['boxed-list']});
     const linhas = [
@@ -202,7 +208,7 @@ export function criarAparencia(settings, p) {
         lista.append(l);
     const comp = cartao('Comportamento', 'Quando a doca aparece e em quais telas.', lista);
     comp._texto += ` ${linhas.map(l => `${l.title} ${l.subtitle ?? ''}`).join(' ').toLowerCase()}`;
-    add(comp, 0, 2, 12);
+    add(comp, 0, 1, 12);
 
     const rolagem = new Gtk.ScrolledWindow({child: grade, hscrollbar_policy: Gtk.PolicyType.NEVER, vexpand: true});
     rolagem._filtrar = q => {
