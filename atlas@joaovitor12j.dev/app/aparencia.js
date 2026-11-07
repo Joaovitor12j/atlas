@@ -208,7 +208,7 @@ export function criarAparencia(settings, p) {
         lista.append(l);
     const comp = cartao('Comportamento', 'Quando a doca aparece e em quais telas.', lista);
     comp._texto += ` ${linhas.map(l => `${l.title} ${l.subtitle ?? ''}`).join(' ').toLowerCase()}`;
-    add(comp, 0, 1, 12);
+    add(comp, 7, 3, 5);
 
     const rolagem = new Gtk.ScrolledWindow({child: grade, hscrollbar_policy: Gtk.PolicyType.NEVER, vexpand: true});
     rolagem._filtrar = q => {
