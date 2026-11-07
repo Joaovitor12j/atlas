@@ -1105,10 +1105,14 @@ class DockView {
             it.widget?.pausar(hide); // escondida, os widgets não gastam desenho
         const [tx, ty] = hide ? this._hideShift() : [0, 0];
         this._hot.visible = hide;
+        // Escondida, a doca desliza para fora da borda da tela e, com telas empilhadas ou lado a lado, apareceria na
+        // vizinha: some junto (opacidade) em vez de depender de a borda cortar.
+        const op = hide ? 0 : 255;
         if (animate) {
             this._container.ease({
                 translation_x: tx,
                 translation_y: ty,
+                opacity: op,
                 duration: 180,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
@@ -1116,6 +1120,7 @@ class DockView {
             this._container.remove_all_transitions();
             this._container.translation_x = tx;
             this._container.translation_y = ty;
+            this._container.opacity = op;
         }
     }
 
