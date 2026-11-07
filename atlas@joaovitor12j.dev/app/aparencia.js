@@ -192,16 +192,15 @@ export function criarAparencia(settings, p) {
 
     const lista = new Gtk.ListBox({selection_mode: Gtk.SelectionMode.NONE, css_classes: ['boxed-list']});
     const linhas = [
-        p._switch(settings, 'auto-ocultar', 'Auto-ocultar', 'Esconde a doca e mostra ao encostar na borda da tela'),
         p._switch(settings, 'reservar-espaco', 'Reservar espaço', 'Janelas maximizadas terminam acima da doca (não vale com auto-ocultar)'),
         p._switch(settings, 'previa-janelas', 'Prévia de janelas', 'Miniaturas das janelas ao parar o mouse num app aberto'),
         p._switch(settings, 'no-overview', 'ATLAS na tela de aplicativos', 'Mantém a doca visível ao abrir todos os aplicativos e esconde o dock original do GNOME'),
         p._switch(settings, 'mostrar-icone-painel', 'Ícone no painel superior', 'Menu do ATLAS na barra de cima; também dá para ocultar pelo próprio menu'),
-        p._combo(settings, 'monitores', 'Telas', p._opcoesTelas()),
+        ...p._linhasTelas(settings),
     ];
     for (const l of linhas)
         lista.append(l);
-    const comp = cartao('Comportamento', 'Quando a doca aparece e onde.', lista);
+    const comp = cartao('Comportamento', 'Quando a doca aparece e em quais telas.', lista);
     comp._texto += ` ${linhas.map(l => `${l.title} ${l.subtitle ?? ''}`).join(' ').toLowerCase()}`;
     add(comp, 0, 2, 12);
 

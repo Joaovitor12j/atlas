@@ -91,6 +91,11 @@
       <summary>Telas</summary>
       <description>Onde a doca aparece: "principal", "todas" ou "tela-N" (N = posição da tela, da esquerda para a direita).</description>
     </key>
+    <key name="telas" type="s">
+      <default>""</default>
+      <summary>Docas por tela</summary>
+      <description>JSON {"1": {"ativa": true, "auto": false}, ...}: a chave é a posição da tela (da esquerda para a direita), "ativa" diz se ela tem doca e "auto" se a doca se esconde sozinha. Vazio = ainda não migrado das chaves "monitores" e "auto-ocultar".</description>
+    </key>
     <key name="ambientes" type="s">
       <default>"[]"</default>
       <summary>Ambientes</summary>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {geometriaTema, temaDecorado, TEMAS_MATERIAIS, TEMAS_PIXEL,
-    appsDoAmbiente, bissexto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
+    appsDoAmbiente, bissexto, definirAutoTodas, definirTela, ordemTelas, resolverTelas, todasAuto, calcularProgresso, duracao, escolherAmbiente, formatarCrono, formatarTaxa,
     decidirDnd, deveAvisarDnd, escalaLente, diasAte, escalaGrafico, formatarFaixa, lerNaoLidas, mudarMes, semanasDoMes, normalizarAmbientes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, textoDoSelo,
 } from '../atlas@joaovitor12j.dev/logica.js';
 
@@ -268,4 +268,28 @@ test('geometriaTema: medidas do protótipo proporcionais ao ícone, null nos tem
     assert.equal(geometriaTema('carta', 58).dotW, 0); // Carta marca o app aberto no próprio tile
     for (const id of [...TEMAS_PIXEL, ...TEMAS_MATERIAIS])
         assert.ok(temaDecorado(id) && geometriaTema(id, 52), id);
+});
+
+test('telas: legado, JSON e edição por tela', () => {
+    const base = {n: 3, principal: 1};
+    assert.deepEqual(resolverTelas({...base, texto: ''}).map(t => t.ativa), [false, true, false]);
+    assert.deepEqual(resolverTelas({...base, texto: '', legado: 'todas', autoGlobal: true}).map(t => [t.ativa, t.auto]), [[true, true], [true, true], [true, true]]);
+    assert.deepEqual(resolverTelas({...base, texto: '', legado: 'tela-3'}).map(t => t.ativa), [false, false, true]);
+    assert.deepEqual(resolverTelas({...base, texto: 'lixo'}).map(t => t.ativa), [false, true, false]);
+
+    let txt = definirTela('', 0, 'ativa', true);
+    txt = definirTela(txt, 2, 'ativa', true);
+    txt = definirTela(txt, 2, 'auto', true);
+    assert.deepEqual(resolverTelas({...base, texto: txt}), [{ativa: true, auto: false}, {ativa: false, auto: false}, {ativa: true, auto: true}]);
+    assert.equal(todasAuto(txt), false);
+    assert.equal(todasAuto(definirAutoTodas(txt, true)), true);
+    assert.equal(todasAuto(definirAutoTodas(txt, false)), false);
+    assert.equal(todasAuto('{}'), false);
+    // nenhuma tela ativa é válido
+    assert.deepEqual(resolverTelas({...base, texto: '{}'}).map(t => t.ativa), [false, false, false]);
+});
+
+test('ordemTelas: esquerda para a direita, depois de cima para baixo', () => {
+    assert.deepEqual(ordemTelas([{x: 1920, y: 0}, {x: 0, y: 0}, {x: 3840, y: 0}]), [1, 0, 2]);
+    assert.deepEqual(ordemTelas([{x: 0, y: 1080}, {x: 0, y: 0}]), [1, 0]);
 });

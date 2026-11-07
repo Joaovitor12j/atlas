@@ -6,6 +6,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ## [Não lançado]
 
 ### Adicionado
+- **Doca por tela**: em Comportamento, cada tela tem o próprio interruptor (uma, várias ou nenhuma) e o próprio Auto-ocultar. Nova chave `telas` (JSON); a configuração antiga (`monitores` + `auto-ocultar`) é migrada na primeira execução. O interruptor do menu do painel vale para todas as telas com doca.
 - Licença GPL-3.0-or-later (`LICENSE`), compatível com o extensions.gnome.org.
 
 ### Alterado

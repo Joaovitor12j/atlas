@@ -7,7 +7,7 @@ import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, sprite, pilha, pinguim, satelite, solArco, tomate} from '../desenho.js';
 import {MOVIMENTOS} from '../catalogo.js';
-import {SPRITES, lerLocais, quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal} from '../logica.js';
+import {SPRITES, lerLocais, quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal, definirTela, lerTelas} from '../logica.js';
 
 export class Paginas {
     // Linha com lista de opções ligada a uma chave string.
@@ -326,9 +326,9 @@ export class Paginas {
         busca.grab_focus();
     }
 
-    // Opções de tela: principal, todas e cada monitor, na mesma ordem usada pelo dock (esquerda para a direita).
-    _opcoesTelas() {
-        const opcoes = [['principal', 'Só na tela principal'], ['todas', 'Em todas as telas']];
+    // Uma linha por tela (mesma ordem do dock: esquerda para a direita, depois de cima para baixo): o interruptor
+    // da linha liga a doca naquela tela e, dentro dela, o auto-ocultar vale só para ela. Desligar todas = sem doca.
+    _linhasTelas(settings) {
         const lista = Gdk.Display.get_default()?.get_monitors();
         const mons = [];
         for (let i = 0; lista && i < lista.get_n_items(); i++) {
@@ -337,8 +337,35 @@ export class Paginas {
             mons.push({x: g.x, y: g.y, w: g.width, h: g.height, nome: m.get_connector() ?? m.get_model() ?? ''});
         }
         mons.sort((a, b) => a.x - b.x || a.y - b.y);
-        mons.forEach((m, i) => opcoes.push([`tela-${i + 1}`, `Só na tela ${i + 1}: ${m.nome} (${m.w}×${m.h})`]));
-        return opcoes;
+        const entrada = pos => lerTelas(settings.get_string('telas'))?.[String(pos + 1)];
+        return mons.map((m, pos) => {
+            const linha = new Adw.ExpanderRow({
+                title: `Tela ${pos + 1}`,
+                subtitle: `${m.nome} (${m.w}×${m.h})`,
+                show_enable_switch: true,
+            });
+            const auto = new Adw.SwitchRow({title: 'Auto-ocultar', subtitle: 'Esconde a doca desta tela e mostra ao encostar na borda'});
+            linha.add_row(auto);
+            let atualizando = false;
+            const sync = () => {
+                atualizando = true;
+                const e = entrada(pos);
+                linha.enable_expansion = e?.ativa === true;
+                auto.active = e?.auto === true;
+                atualizando = false;
+            };
+            sync();
+            linha.connect('notify::enable-expansion', () => {
+                if (!atualizando)
+                    settings.set_string('telas', definirTela(settings.get_string('telas'), pos, 'ativa', linha.enable_expansion));
+            });
+            auto.connect('notify::active', () => {
+                if (!atualizando)
+                    settings.set_string('telas', definirTela(settings.get_string('telas'), pos, 'auto', auto.active));
+            });
+            settings.connect('changed::telas', sync);
+            return linha;
+        });
     }
 
     // Linha com interruptor ligada a uma chave booleana.

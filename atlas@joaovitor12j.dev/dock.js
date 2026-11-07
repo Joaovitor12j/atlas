@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes} from './logica.js';
+import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
 import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from './decoracao.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {pararPonte} from './ponte.js';
@@ -82,8 +82,9 @@ function preencherMenu(menu, st, abrirPrefs, ocultarIcone) {
         menu.addMenuItem(mi);
     }
 
-    const auto = new PopupMenu.PopupSwitchMenuItem('Auto-ocultar', st.get_boolean('auto-ocultar'));
-    auto.connect('toggled', (_i, estado) => st.set_boolean('auto-ocultar', estado));
+    // vale para todas as telas que têm doca; o ajuste por tela fica nas configurações
+    const auto = new PopupMenu.PopupSwitchMenuItem('Auto-ocultar', todasAuto(st.get_string('telas')));
+    auto.connect('toggled', (_i, estado) => st.set_string('telas', definirAutoTodas(st.get_string('telas'), estado)));
     menu.addMenuItem(auto);
 
     menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -105,6 +106,23 @@ const FIXED = {
 
 // Ponto de ancoragem (pivô) da ampliação: o ícone cresce a partir da borda da tela.
 const PIVOT = {baixo: [0, 1], esquerda: [0, 0], direita: [1, 0]};
+
+// Estado das telas: `lista` por posição (esquerda para a direita), `porIndice` por índice do monitor no Shell e
+// `ativos` com os índices que têm doca.
+function telasDoShell(st) {
+    const mons = Main.layoutManager.monitors;
+    const ordem = ordemTelas(mons);
+    const lista = resolverTelas({
+        texto: st?.get_string('telas') ?? '',
+        legado: st?.get_string('monitores') ?? 'principal',
+        autoGlobal: st?.get_boolean('auto-ocultar') ?? false,
+        n: mons.length,
+        principal: ordem.indexOf(Main.layoutManager.primaryIndex),
+    });
+    const porIndice = new Map();
+    ordem.forEach((idx, pos) => porIndice.set(idx, lista[pos]));
+    return {lista, porIndice, ativos: ordem.filter(idx => porIndice.get(idx).ativa)};
+}
 
 // Uma doca em um monitor. O gerenciador `Dock` (no fim do arquivo) cria uma por tela.
 class DockView {
@@ -202,11 +220,12 @@ class DockView {
                 if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' ||
                     /^(cuco|fantasma|esqueleto|chama|noel|boneco|gato|coruja|pilha|satelite|tomate)-/.test(key))
                     return;
+                const autoAntes = this._c?.autoHide;
                 this._readConfig();
                 // o tema pode vir do ambiente atual, então trocar de ambiente também reaplica
                 if (key === 'tema' || key === 'ambiente-atual' || key === 'ambientes')
                     this._applyTheme();
-                if (key === 'auto-ocultar') {
+                if ((key === 'auto-ocultar' || key === 'telas') && autoAntes !== this._c.autoHide) {
                     this._cancelHide();
                     this._hidden = this._c.autoHide;
                 }
@@ -253,6 +272,15 @@ class DockView {
         this._items = [];
     }
 
+    // Auto-ocultar desta tela (chave `telas`; sem ela vale o `auto-ocultar` antigo, global).
+    _autoDaTela() {
+        const st = this._settings;
+        if (!st)
+            return false;
+        const t = telasDoShell(st);
+        return t.porIndice.get(this._monIdx)?.auto ?? false;
+    }
+
     // Junta as opções da janela de preferências com os valores fixos.
     _readConfig() {
         const st = this._settings;
@@ -263,7 +291,7 @@ class DockView {
             lensWidth: st?.get_int('lente-largura') ?? 70,
             pos: st?.get_string('posicao') ?? 'baixo',
             margin: st?.get_int('margem') ?? 8,
-            autoHide: st?.get_boolean('auto-ocultar') ?? false,
+            autoHide: this._autoDaTela(),
             preview: st?.get_boolean('previa-janelas') ?? true,
         };
         c.maxPx = Math.ceil(c.iconSize * c.maxScale);
@@ -1361,6 +1389,15 @@ export class Dock {
         }
         if (this._settings)
             this._connect(this._settings, 'changed::monitores', () => this._buildViews());
+        if (this._settings) {
+            this._migrarTelas();
+            // só recria as docas se mudou quais telas têm doca; o auto-ocultar cada doca resolve sozinha
+            this._connect(this._settings, 'changed::telas', () => {
+                const quer = this._monitorIndexes().join();
+                if (quer !== this._views.map(v => v._monIdx).join())
+                    this._buildViews();
+            });
+        }
         // Não perturbe (GNOME): show-banners = false. O ambiente marcado com `naoperturbe` entra sozinho.
         this._dndMemoria = null;
         try {
@@ -1508,21 +1545,22 @@ export class Dock {
         }
     }
 
-    // "todas", "principal" ou "tela-N" (N = posição da esquerda para a direita, depois de cima para baixo).
+    // Primeira vez com o recurso: grava em `telas` o que as chaves antigas (`monitores`, `auto-ocultar`) diziam.
+    _migrarTelas() {
+        const st = this._settings;
+        if (st.get_string('telas'))
+            return;
+        const t = telasDoShell(st);
+        const obj = {};
+        t.lista.forEach((e, i) => {
+            obj[String(i + 1)] = {ativa: e.ativa, auto: e.auto};
+        });
+        st.set_string('telas', JSON.stringify(obj));
+    }
+
+    // Índices dos monitores do Shell que têm doca.
     _monitorIndexes() {
-        const mons = Main.layoutManager.monitors;
-        const valor = this._settings?.get_string('monitores') ?? 'principal';
-        if (valor === 'todas')
-            return mons.map((_m, i) => i);
-        const m = /^tela-(\d+)$/.exec(valor);
-        if (m) {
-            const ordem = mons.map((mon, i) => ({i, x: mon.x, y: mon.y}))
-                .sort((a, b) => a.x - b.x || a.y - b.y);
-            const alvo = ordem[Number(m[1]) - 1];
-            if (alvo)
-                return [alvo.i];
-        }
-        return [Main.layoutManager.primaryIndex];
+        return telasDoShell(this._settings).ativos;
     }
 
     // O dock original do GNOME (no Overview) fica escondido enquanto o ATLAS ocupa o lugar dele.
