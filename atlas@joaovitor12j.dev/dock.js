@@ -1679,12 +1679,29 @@ export class Dock {
     _loadThemeCss() {
         this._themeCss = this._dir().get_child('temas.css');
         this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        // Nunca duas entradas do mesmo arquivo no mesmo tema: descarregar uma delas deixa a outra
+        // apontando para um GFile já liberado e o próximo Main.loadTheme() derruba o Shell.
+        // unload_stylesheet não faz nada se o arquivo não estiver carregado.
+        this._theme.unload_stylesheet(this._themeCss);
         this._theme.load_stylesheet(this._themeCss);
     }
 
+    // O Shell troca o St.Theme ao bloquear/desbloquear a tela (Main.loadTheme) e copia os estilos
+    // customizados para o novo. Descarregar só do tema guardado deixava o temas.css no tema novo
+    // e o gnome-shell caía com SIGSEGV em st_theme_get_custom_stylesheets. Descarrega dos dois.
     _unloadThemeCss() {
-        if (this._theme && this._themeCss)
-            this._theme.unload_stylesheet(this._themeCss);
+        if (this._themeCss) {
+            const atual = St.ThemeContext.get_for_stage(global.stage).get_theme();
+            for (const tema of new Set([this._theme, atual])) {
+                if (!tema)
+                    continue;
+                try {
+                    tema.unload_stylesheet(this._themeCss);
+                } catch (e) {
+                    console.error(`[atlas] falha ao descarregar temas.css: ${e}`);
+                }
+            }
+        }
         this._theme = this._themeCss = null;
     }
 }
