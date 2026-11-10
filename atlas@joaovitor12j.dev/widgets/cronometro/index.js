@@ -1,11 +1,11 @@
 // Widget Cronômetro com voltas.
 
-// ----- Cronômetro (estado fora da classe, como o pomodoro) -----
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anelDeTile, cor} from '../../nucleo/desenho.js';
 import {agoraMs, COR, linha, Widget} from '../base.js';
 import {formatarCrono} from '../formato.js';
 
+// ----- Cronômetro (estado fora da classe, como o pomodoro) -----
 const CRONO = {inicio: 0, acumulado: 0, voltas: []};
 
 const cronoMs = () => CRONO.acumulado + (CRONO.inicio ? agoraMs() - CRONO.inicio : 0);

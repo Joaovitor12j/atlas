@@ -1,10 +1,10 @@
 // Mascote Satélite (sem rede): desenho em Cairo e linha do tempo.
 
-// Satélite perdido procurando sinal. `q` vem de quadroSatelite: {sobe, giro, sinal, perdido}.
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {passeio, quadroSobeDesce} from '../movimento.js';
 
+// Satélite perdido procurando sinal. `q` vem de quadroSatelite: {sobe, giro, sinal, perdido}.
 export function satelite(cr, w, h, q) {
     const s = Math.min(w * 0.45, h * 0.4);
     const corpoY = h - s * 0.9 * q.sobe + (1 - q.sobe) * s;

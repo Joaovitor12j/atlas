@@ -1,10 +1,10 @@
 // Mascote Boneco de neve (Natal): desenho em Cairo e linha do tempo.
 
-// Boneco de neve no retângulo (0, 0, w, h): sobe de trás da borda de baixo e balança ao vento.
-// `q` vem de quadroBoneco (logica.js): {sobe, balanco, vento}. Quem chama recorta no retângulo.
 import {olhar} from '../desenho.js';
 import {passeio, quadroSobeDesce} from '../movimento.js';
 
+// Boneco de neve no retângulo (0, 0, w, h): sobe de trás da borda de baixo e balança ao vento.
+// `q` vem de quadroBoneco (logica.js): {sobe, balanco, vento}. Quem chama recorta no retângulo.
 export function boneco(cr, w, h, q) {
     const alt = h * 0.92;
     const a = alt / 7.2;

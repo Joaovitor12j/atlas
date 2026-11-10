@@ -1,10 +1,10 @@
 // Gatilho de memória alta (chama): o amostrador de /proc/meminfo e as regras puras de quando chamar o mascote.
 
-// Uso de memória em % (0 a 100) a partir do texto de /proc/meminfo; null se não der para ler.
 import GLib from 'gi://GLib';
 import {agendar} from '../../../nucleo/perf.js';
 import {memoriaPedeAparicao, rearmarMemoria, usoMemoria} from './logica.js';
 
+// Uso de memória em % (0 a 100) a partir do texto de /proc/meminfo; null se não der para ler.
 const AMOSTRA_MS = 15_000;
 
 // `motor` é o Mascotes (index.js): {settings, ativo(id), disparar(id)}.

@@ -1,8 +1,8 @@
 // Lógica pura do clima (Open-Meteo): URLs, leitura da resposta, validade do cache e textos. Sem gi://, testável com node.
 
-// Código WMO (`weather_code`) -> [ícone, texto]. Os ícones são os que desenho.js sabe desenhar.
 import {num} from '../nucleo/matematica.js';
 
+// Código WMO (`weather_code`) -> [ícone, texto]. Os ícones são os que clima/desenho.js sabe desenhar.
 const TEMPO_WMO = [
     [[0], 'limpo', 'Céu limpo'],
     [[1], 'poucas-nuvens', 'Poucas nuvens'],

@@ -1,9 +1,5 @@
 // Widget Slack: selo de mensagens não lidas (item de bandeja).
 
-// ----- Slack: ícone com selo quando há mensagens não lidas -----
-// O Slack publica um item de bandeja (StatusNotifierItem) cujo tooltip diz "Nenhuma mensagem não lida" ou o
-// que está pendente. É o mesmo sinal do ícone da barra superior, lido direto pelo D-Bus. Funciona com qualquer
-// app que use a bandeja; aqui o filtro é o Id do item começar com "Slack".
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
@@ -12,6 +8,10 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {AL, Widget} from '../base.js';
 import {lerNaoLidas, textoDoSelo} from './logica.js';
 
+// ----- Slack: ícone com selo quando há mensagens não lidas -----
+// O Slack publica um item de bandeja (StatusNotifierItem) cujo tooltip diz "Nenhuma mensagem não lida" ou o
+// que está pendente. É o mesmo sinal do ícone da barra superior, lido direto pelo D-Bus. Funciona com qualquer
+// app que use a bandeja; aqui o filtro é o Id do item começar com "Slack".
 export class Slack extends Widget {
     // Os sinais do D-Bus avisam das mudanças; isto é só uma rede de segurança.
     get intervalo() {

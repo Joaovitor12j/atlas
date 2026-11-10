@@ -1,6 +1,5 @@
 // Widget Música (MPRIS).
 
-// ----- Música (MPRIS) -----
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
@@ -10,6 +9,7 @@ import {barra, cor} from '../../nucleo/desenho.js';
 import {AL, Camada, COR, linha, Widget} from '../base.js';
 import {formatarFaixa} from './logica.js';
 
+// ----- Música (MPRIS) -----
 const MPRIS = 'org.mpris.MediaPlayer2.';
 
 const ICONE_MUSICA = 'audio-x-generic-symbolic';

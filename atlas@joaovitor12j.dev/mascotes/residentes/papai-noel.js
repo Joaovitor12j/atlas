@@ -1,8 +1,8 @@
 // Mascote residente: Papai Noel (tema Natal brasileiro). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Papai Noel (mascote residente do tema Natal brasileiro): casaco vermelho, barba, braço que acena e barriga que ri.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Papai Noel (mascote residente do tema Natal brasileiro): casaco vermelho, barba, braço que acena e barriga que ri.
 export function papaiNoel(cr, w, h, q) {
     const gw = w * 0.5, gh = h * 0.72;
     cr.save();

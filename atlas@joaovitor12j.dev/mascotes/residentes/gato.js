@@ -1,8 +1,8 @@
 // Mascote residente: Gato ilustrado (tema Jardim). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Gato ilustrado (mascote residente do tema Jardim): corpo, cabeça, orelhas, rabo e pernas articuladas.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Gato ilustrado (mascote residente do tema Jardim): corpo, cabeça, orelhas, rabo e pernas articuladas.
 export function gatoIlustrado(cr, w, h, q) {
     const gw = w * 0.52, gh = h * 0.4;
     cr.save();

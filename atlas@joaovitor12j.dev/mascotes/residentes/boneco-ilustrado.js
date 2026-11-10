@@ -1,8 +1,8 @@
 // Mascote residente: Boneco de neve ilustrado (tema Noite de neve, materiais). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Boneco de neve ilustrado (mascote residente dos temas de neve): três bolas, braços, cachecol e cenoura.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Boneco de neve ilustrado (mascote residente dos temas de neve): três bolas, braços, cachecol e cenoura.
 export function bonecoIlustrado(cr, w, h, q) {
     const gw = w * 0.5, gh = h * 0.78;
     cr.save();

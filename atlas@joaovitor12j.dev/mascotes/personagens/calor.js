@@ -1,11 +1,11 @@
 // Mascote Calor (picolé e sol, quando a temperatura sobe): desenho em Cairo e linha do tempo.
 
-// Sol com rosto. `oculos` põe óculos escuros; `giro` gira os raios.
 import {cor, retanguloArredondado} from '../../nucleo/desenho.js';
 import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, rampa, VOLTA} from '../../nucleo/matematica.js';
 import {comAlfa, easeIn, gota, rosto} from '../desenho.js';
 import {atravessa, movimento} from '../movimento.js';
 
+// Sol com rosto. `oculos` põe óculos escuros; `giro` gira os raios.
 function solRosto(cr, cx, cy, r, giro, {oculos = true, boca = 'sorriso'} = {}) {
     cr.save();
     cr.translate(cx, cy);

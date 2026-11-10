@@ -1,8 +1,8 @@
 // Campos de partículas puros dos efeitos de época (neve, luzinhas, brilhos, mar). Hoje só os testes os usam.
 
-// Flocos de neve caindo continuamente (nevemat): {x, y, r} em px, período de 4 a 7 s por floco.
 import {sorteioFixo} from '../nucleo/matematica.js';
 
+// Flocos de neve caindo continuamente (nevemat): {x, y, r} em px, período de 4 a 7 s por floco.
 export function campoNeve(t, largura, altura, n = 14) {
     const flocos = [];
     for (let i = 0; i < n; i++) {

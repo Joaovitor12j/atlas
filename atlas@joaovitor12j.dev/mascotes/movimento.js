@@ -1,14 +1,14 @@
 // Movimentos dos mascotes: subir da doca (mola, esticada, finais sorteados) e atravessar a doca (passeios). Puro.
 
+import {easeInCubic, easeInOut, limitar01, molaAmortecida, rampa} from '../nucleo/matematica.js';
+import {passear} from './desenho.js';
+import {quadroSprite, sprite, SPRITES} from './sprites.js';
+
 // Sobe de trás da borda, fica e desce, com os princípios de animação aplicados num lugar só (os mascotes que sobem da
 // doca usam): subida em mola com esticada (rápido = alto e fino), assentada com esmagada, respiração enquanto fica e,
 // antes de descer, uma preparação (sobe um pouco, encolhe) seguida da queda esticada.
 // Devolve {sobe, esmaga: {sx, sy}}: `sobe` de 0 a 1 (passa um pouco no overshoot) e `esmaga` é a escala em torno da
 // borda da doca. `t` fora de [0, duração) devolve o estado escondido.
-import {easeInCubic, easeInOut, limitar01, molaAmortecida, rampa} from '../nucleo/matematica.js';
-import {passear} from './desenho.js';
-import {quadroSprite, sprite, SPRITES} from './sprites.js';
-
 const FRAC_PREPARO = 0.22;
 
 export const FINAIS = ['cai', 'afunda', 'espia', 'some'];

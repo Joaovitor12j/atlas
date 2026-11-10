@@ -1,8 +1,8 @@
 // Leitura de /proc e séries curtas de amostras, usadas pelos widgets Atividade e Rede.
 
-// ----- Atividade (CPU e memória, via /proc) -----
 import GLib from 'gi://GLib';
 
+// ----- Atividade (CPU e memória, via /proc) -----
 export function lerProc(caminho) {
     try {
         const [ok, bytes] = GLib.file_get_contents(caminho);

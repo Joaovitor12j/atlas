@@ -1,7 +1,6 @@
 // Mascote Cuco (a cada hora; casinha, passeio e voo): desenho em Cairo e linha do tempo.
 import {arco, cor, poligono} from '../../nucleo/desenho.js';
-import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, VOLTA} from '../../nucleo/matematica.js';
-import {TOPO} from '../desenho.js';
+import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, TOPO, VOLTA} from '../../nucleo/matematica.js';
 import {atravessa, movimento, passeio} from '../movimento.js';
 
 const MADEIRA = {

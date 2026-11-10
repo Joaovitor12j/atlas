@@ -1,11 +1,11 @@
 // Mascote Frio (pinguim, neve e pendurado, quando a temperatura cai): desenho em Cairo e linha do tempo.
 
-// Pinguim deslizando de barriga pela doca, com o pulinho no fim.
 import {cor, poligono, retanguloArredondado} from '../../nucleo/desenho.js';
 import {easeInCubic, easeOutBack, easeOutCubic, limitar01, rampa, sorteioFixo, VOLTA} from '../../nucleo/matematica.js';
 import {comAlfa, rosto} from '../desenho.js';
 import {atravessa, movimento} from '../movimento.js';
 
+// Pinguim deslizando de barriga pela doca, com o pulinho no fim.
 export function pinguim(cr, w, h, q, {base, icone}) {
     const a = icone;
     const L = a * 0.95, A = a * 0.4;

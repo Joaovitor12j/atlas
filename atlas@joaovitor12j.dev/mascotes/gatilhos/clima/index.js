@@ -1,8 +1,5 @@
 // Gatilho de clima (calor e frio): confere a temperatura da previsão e as regras puras de quando chamar o mascote.
 
-// Qual mascote do clima aparece agora: 'calor', 'frio' ou null. `temp` em °C (null sem previsão); `ligados`,
-// `limiares`, `ultimos` (ms da última aparição) e `esperas` (ms) são {frio, calor}. Enquanto o tempo segue quente
-// (ou frio), a espera é o que espaça as aparições.
 import GLib from 'gi://GLib';
 import {buscarClima, CLIMA} from '../../../clima/servico.js';
 import {agendar} from '../../../nucleo/perf.js';

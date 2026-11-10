@@ -6,7 +6,8 @@ import test from 'node:test';
 import {SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
 import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/nucleo/catalogo.js';
 import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
-import {fonte, modulos} from './auxiliar.js';
+import {dirname, relative, resolve} from 'node:path';
+import {fonte, modulos, RAIZ} from './auxiliar.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
@@ -117,4 +118,21 @@ test('as folhas de sprites existem e batem com SPRITES', () => {
         assert.equal(png.readUInt32BE(16), spec.fw * spec.quadros, `${id}: largura da tira`);
         assert.equal(png.readUInt32BE(20), spec.fh, `${id}: altura`);
     }
+});
+
+test('o que o app de configuração importa não depende do Shell (ele roda em GTK, fora do Shell)', () => {
+    const visitados = new Set();
+    const visitar = arq => {
+        if (visitados.has(arq))
+            return;
+        visitados.add(arq);
+        const src = fonte(arq);
+        assert.doesNotMatch(src, /from 'gi:\/\/(St|Clutter|Meta|Shell)\b/, `${arq} importa algo do Shell`);
+        assert.doesNotMatch(src, /from 'resource:\/\/\/org\/gnome\/shell/, `${arq} importa algo do Shell`);
+        for (const m of src.matchAll(/from '(\.[^']+)'/g))
+            visitar(relative(RAIZ, resolve(RAIZ, dirname(arq), m[1])));
+    };
+    for (const arq of modulos('app'))
+        visitar(arq);
+    assert.ok(visitados.size > 10);
 });

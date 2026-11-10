@@ -1,11 +1,11 @@
 // Mascote Chama (memória alta): desenho em Cairo e linha do tempo.
 
-// Chama no retângulo (0, 0, w, h): sobe de trás da borda de baixo e dança, com cara de quem não aguenta o calor.
-// `q` vem de quadroChama (logica.js): {sobe, fase, aflicao}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {faseSobeDesce, passeio} from '../movimento.js';
 
+// Chama no retângulo (0, 0, w, h): sobe de trás da borda de baixo e dança, com cara de quem não aguenta o calor.
+// `q` vem de quadroChama (logica.js): {sobe, fase, aflicao}. Quem chama recorta no retângulo.
 export function chama(cr, w, h, q) {
     const gw = w * 0.74, gh = h * 0.88;
     // contorno da chama com a ponta dançando; `k` a encolhe em direção à base

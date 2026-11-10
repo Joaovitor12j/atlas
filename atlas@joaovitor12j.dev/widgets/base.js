@@ -5,7 +5,6 @@
 // Ciclo de vida: construir() -> iniciar() -> atualizar() a cada `intervalo` ms -> destruir().
 // O estado que precisa sobreviver à reconstrução da doca (pomodoro, histórico de CPU...) fica fora da classe.
 
-// GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
@@ -14,6 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anel, cor} from '../nucleo/desenho.js';
 import {agendar, agora, registrar} from '../nucleo/perf.js';
 
+// GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
 export let CFG = null;
 export const definirCfg = settings => {
     CFG = settings;

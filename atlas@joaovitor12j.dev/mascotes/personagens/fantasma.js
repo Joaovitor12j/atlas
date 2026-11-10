@@ -1,11 +1,11 @@
 // Mascote Fantasma (Halloween): desenho em Cairo e linha do tempo.
 
-// Fantasma no retângulo (0, 0, w, h): sobe de trás da borda de baixo (y = h) e dá um "bu!".
-// `q` vem de quadroFantasma (logica.js): {sobe, balanco, susto, fase}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {faseSobeDesce, passeio} from '../movimento.js';
 
+// Fantasma no retângulo (0, 0, w, h): sobe de trás da borda de baixo (y = h) e dá um "bu!".
+// `q` vem de quadroFantasma (logica.js): {sobe, balanco, susto, fase}. Quem chama recorta no retângulo.
 export function fantasma(cr, w, h, q) {
     const gw = w * 0.62, gh = h * 0.84, r = gw / 2;
     const d = gw * 0.07;

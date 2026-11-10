@@ -1,8 +1,8 @@
 // Mascote residente: Sapo (tema Chuva). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Sapo (mascote residente do tema Chuva): salto com agachar/esticar, papo que infla ao coaxar e guarda-chuva.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Sapo (mascote residente do tema Chuva): salto com agachar/esticar, papo que infla ao coaxar e guarda-chuva.
 export function sapo(cr, w, h, q) {
     const gw = w * 0.5, gh = h * 0.36;
     cr.save();

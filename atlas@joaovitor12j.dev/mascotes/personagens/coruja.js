@@ -1,10 +1,10 @@
 // Mascote Coruja: desenho em Cairo e linha do tempo.
 
-// Coruja marrom. `q` vem de quadroCoruja: {sobe, sono, olhos, cabeca}. Dormindo, os olhos viram traços e sobem "z".
 import {limitar01, rampa, VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {passeio, piscada, quadroSobeDesce} from '../movimento.js';
 
+// Coruja marrom. `q` vem de quadroCoruja: {sobe, sono, olhos, cabeca}. Dormindo, os olhos viram traços e sobem "z".
 export function coruja(cr, w, h, q) {
     const gw = Math.min(w * 0.7, h * 0.75);
     const pe = h + (1 - q.sobe) * h;

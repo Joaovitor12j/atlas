@@ -1,11 +1,11 @@
 // Widget Nota rápida.
 
-// ----- Nota -----
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {CFG, Widget} from '../base.js';
 
+// ----- Nota -----
 export class Nota extends Widget {
     static FONTES = [0.17, 0.2, 0.1];
 

@@ -1,10 +1,10 @@
 // Mascote Pilha (bateria baixa): desenho em Cairo e linha do tempo.
 
-// Pilha cansada pedindo tomada. `q` vem de quadroPilha: {sobe, nivel, cansaco, suspiro}.
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {passeio, quadroSobeDesce} from '../movimento.js';
 
+// Pilha cansada pedindo tomada. `q` vem de quadroPilha: {sobe, nivel, cansaco, suspiro}.
 export function pilha(cr, w, h, q) {
     const pw = Math.min(w * 0.55, h * 0.5), ph = pw * 1.55;
     const pe = h + (1 - q.sobe) * h;

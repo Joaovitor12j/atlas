@@ -1,10 +1,9 @@
 // Primitivas de desenho Cairo usadas por mais de uma funcionalidade (anéis, barras, gráficos, relógio de ponteiros).
 // Sem dependência do Shell: roda no dock, no app de configuração e nas prévias PNG.
 
-// "#e0654f" -> [r, g, b, alfa] com canais de 0 a 1.
-import {limitar, TOPO} from '../mascotes/desenho.js';
-import {VOLTA} from './matematica.js';
+import {limitar, TOPO, VOLTA} from './matematica.js';
 
+// "#e0654f" -> [r, g, b, alfa] com canais de 0 a 1.
 export function cor(hex, alfa = 1) {
     const n = parseInt(String(hex).replace('#', ''), 16);
     return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, alfa];

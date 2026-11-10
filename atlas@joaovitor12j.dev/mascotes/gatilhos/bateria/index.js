@@ -1,11 +1,11 @@
 // Gatilho de bateria baixa (pilha): escuta o UPower e as regras puras de quando chamar o mascote.
 
-// Bateria baixa: deve aparecer agora? Só descarregando (estado 2 do UPower), no limiar ou abaixo, armado (já carregou
-// ou subiu 5 pontos desde a última) e depois de `esperaMs` da aparição anterior.
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import {bateriaPedeAparicao, rearmarBateria} from './logica.js';
 
+// Bateria baixa: deve aparecer agora? Só descarregando (estado 2 do UPower), no limiar ou abaixo, armado (já carregou
+// ou subiu 5 pontos desde a última) e depois de `esperaMs` da aparição anterior.
 // Escuta o UPower só enquanto o mascote da pilha está ligado: sem temporizador em repouso.
 // `motor` é o Mascotes (index.js): {settings, ativo(id), disparar(id)}.
 export class GatilhoBateria {

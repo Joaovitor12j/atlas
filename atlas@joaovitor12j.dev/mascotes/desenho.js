@@ -1,8 +1,8 @@
 // Peças de desenho Cairo que mais de um mascote usa (rosto, gota, grupo com transparência, passeio).
 
-// Desenha `fn` num grupo e pinta com `alfa` (sumir de uma vez, sem mexer em cada cor).
 import {VOLTA} from '../nucleo/matematica.js';
 
+// Desenha `fn` num grupo e pinta com `alfa` (sumir de uma vez, sem mexer em cada cor).
 export function comAlfa(cr, alfa, fn) {
     if (alfa >= 0.999) {
         fn();
@@ -69,9 +69,5 @@ export function passear(cr, w, h, q, ctx, fig, desenhar, quadroFig) {
 }
 
 export const olhar = q => q.olhar ?? {x: 0, y: 0};
-
-export const TOPO = -Math.PI / 2;
-
-export const limitar = f => Math.max(0, Math.min(1, Number.isFinite(f) ? f : 0));
 
 export const easeIn = x => Math.max(0, Math.min(1, x)) ** 2;

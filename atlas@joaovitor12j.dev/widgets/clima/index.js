@@ -1,7 +1,5 @@
 // Widget Clima (Open-Meteo).
 
-// ----- Clima (Open-Meteo, sem conta nem chave) -----
-// A previsão é um serviço do módulo clima.js, dividido com os mascotes de frio e calor.
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -11,6 +9,8 @@ import {buscarClima, CLIMA, localDoClima} from '../../clima/servico.js';
 import {cor, grafico} from '../../nucleo/desenho.js';
 import {AL, Camada, CFG, COR, FG_MENU, linha, Widget} from '../base.js';
 
+// ----- Clima (Open-Meteo, sem conta nem chave) -----
+// A previsão é um serviço do módulo clima.js, dividido com os mascotes de frio e calor.
 const climaLocal = () => localDoClima(CFG);
 
 const climaBuscar = (forcar = false) => buscarClima(CFG, forcar);

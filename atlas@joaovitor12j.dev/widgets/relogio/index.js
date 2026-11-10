@@ -1,6 +1,5 @@
 // Widget Relógio: de ponteiros no tile quadrado, digital no largo; calendário do mês no painel.
 
-// ----- Relógio: de ponteiros no tile quadrado, digital no largo; calendário do mês no painel -----
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
@@ -10,6 +9,7 @@ import {obterPonte} from '../../nucleo/ponte.js';
 import {AL, CFG, COR, linha, Widget} from '../base.js';
 import {DIAS_SEMANA, MESES, mudarMes, semanasDoMes} from './logica.js';
 
+// ----- Relógio: de ponteiros no tile quadrado, digital no largo; calendário do mês no painel -----
 export class Relogio extends Widget {
     static FONTES = [0.14, 0.32, 0.14];
     static LARGURA = 2.2;

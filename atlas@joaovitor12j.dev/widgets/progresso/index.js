@@ -1,6 +1,5 @@
 // Widget Progresso do dia, da semana, do mês e do ano.
 
-// ----- Progresso do tempo: quatro anéis concêntricos (dia, semana, mês, ano) -----
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -9,6 +8,7 @@ import {AL, Camada, COR, Widget} from '../base.js';
 import {pct} from '../formato.js';
 import {calcularProgresso} from './logica.js';
 
+// ----- Progresso do tempo: quatro anéis concêntricos (dia, semana, mês, ano) -----
 const PROGRESSO = [
     ['Dia', 'dia', COR.foco],
     ['Semana', 'semana', COR.ambar],

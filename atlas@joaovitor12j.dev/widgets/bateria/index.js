@@ -1,12 +1,12 @@
 // Widget Bateria (UPower).
 
-// ----- Bateria (UPower) -----
 import Gio from 'gi://Gio';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {anelDeTile, cor} from '../../nucleo/desenho.js';
 import {COR, linha, Widget} from '../base.js';
 import {duracao} from '../formato.js';
 
+// ----- Bateria (UPower) -----
 export class Bateria extends Widget {
     static FONTES = [0.2, 0.27, 0.17];
 

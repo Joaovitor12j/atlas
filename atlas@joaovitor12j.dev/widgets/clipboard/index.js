@@ -1,9 +1,5 @@
 // Widget Área de transferência: histórico e itens fixados.
 
-// ----- Área de transferência -----
-// O histórico fica só na memória e é perdido ao desligar a extensão; só os fixados vão para o GSettings.
-// O monitor é um serviço do módulo (os widgets são recriados a cada reconstrução da doca) e para sozinho
-// quando nenhum widget o usa, para não registrar o que você copia sem ninguém ver.
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
@@ -13,6 +9,10 @@ import {agendar} from '../../nucleo/perf.js';
 import {AL, CFG, linha, Widget} from '../base.js';
 import {registrarCopia, resumirTexto} from './logica.js';
 
+// ----- Área de transferência -----
+// O histórico fica só na memória e é perdido ao desligar a extensão; só os fixados vão para o GSettings.
+// O monitor é um serviço do módulo (os widgets são recriados a cada reconstrução da doca) e para sozinho
+// quando nenhum widget o usa, para não registrar o que você copia sem ninguém ver.
 const CLIP = {historico: [], sel: null, selId: 0, usos: 0, paradaId: 0, ouvintes: new Set()};
 
 function clipLer() {

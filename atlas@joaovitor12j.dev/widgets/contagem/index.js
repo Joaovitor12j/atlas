@@ -1,11 +1,11 @@
 // Widget Contagem regressiva até uma data.
 
-// ----- Contagem regressiva -----
 import GLib from 'gi://GLib';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {CFG, linha, Widget} from '../base.js';
 import {diasAte} from './logica.js';
 
+// ----- Contagem regressiva -----
 export class Contagem extends Widget {
     static FONTES = [0.17, 0.3, 0.17];
 

@@ -1,10 +1,10 @@
 // Mascote Tomate (fim do foco do Pomodoro): desenho em Cairo e linha do tempo.
 
-// Tomate do pomodoro, comemorando com confete. `q` vem de quadroTomate: {sobe, pulo, confete}; `confete(i, n, s)` (logica.js).
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {passeio, quadroSobeDesce} from '../movimento.js';
 
+// Tomate do pomodoro, comemorando com confete. `q` vem de quadroTomate: {sobe, pulo, confete}; `confete(i, n, s)` (logica.js).
 export function tomate(cr, w, h, q) {
     const r = Math.min(w * 0.3, h * 0.28);
     const pe = h + (1 - q.sobe) * h;

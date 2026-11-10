@@ -1,11 +1,11 @@
 // Mascote Esqueleto (Halloween): desenho em Cairo e linha do tempo.
 
-// Esqueleto no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e bate o queixo.
-// `q` vem de quadroEsqueleto (logica.js): {sobe, balanco, aceno, mandibula}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
 import {faseSobeDesce, passeio} from '../movimento.js';
 
+// Esqueleto no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e bate o queixo.
+// `q` vem de quadroEsqueleto (logica.js): {sobe, balanco, aceno, mandibula}. Quem chama recorta no retângulo.
 export function esqueleto(cr, w, h, q) {
     const alt = h * 0.9;
     const r = Math.min(w * 0.28, alt / 5.6);

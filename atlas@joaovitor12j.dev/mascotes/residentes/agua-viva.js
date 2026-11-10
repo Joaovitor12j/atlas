@@ -1,9 +1,9 @@
 // Mascote residente: Água-viva (tema Aurora). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Água-viva (mascote residente do tema Aurora): sino translúcido pulsando e 5 tentáculos ondulando. `q` vem de
-// quadroAguaViva (logica.js): {sino, tentaculos, dormindo, brilho}. Flutua centrada no actor, sem tocar o chão.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Água-viva (mascote residente do tema Aurora): sino translúcido pulsando e 5 tentáculos ondulando. `q` vem de
+// quadroAguaViva (logica.js): {sino, tentaculos, dormindo, brilho}. Flutua centrada no actor, sem tocar o chão.
 export function aguaViva(cr, w, h, q) {
     const gw = w * 0.56, gh = h * 0.42;
     cr.save();

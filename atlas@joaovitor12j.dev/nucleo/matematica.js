@@ -29,3 +29,7 @@ export const sorteioFixo = i => {
     const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
     return x - Math.floor(x);
 };
+
+export const TOPO = -Math.PI / 2;
+
+export const limitar = f => Math.max(0, Math.min(1, Number.isFinite(f) ? f : 0));

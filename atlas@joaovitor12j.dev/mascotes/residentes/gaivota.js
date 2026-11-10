@@ -1,8 +1,8 @@
 // Mascote residente: Gaivota (tema Carta). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Gaivota (mascote residente do tema Carta): corpo oval, bico, pernas e asas que batem voando.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Gaivota (mascote residente do tema Carta): corpo oval, bico, pernas e asas que batem voando.
 export function gaivota(cr, w, h, q) {
     const gw = w * 0.5, gh = h * 0.3;
     cr.save();

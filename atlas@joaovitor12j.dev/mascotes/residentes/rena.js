@@ -1,8 +1,8 @@
 // Mascote residente: Rena (tema Vitrine). Mora na doca do tema e nunca sai; desenho, linha do tempo e estados num lugar só.
 
-// Rena (mascote residente do tema Vitrine): corpo, chifres, pernas trotando e sino balançando no pescoço.
 import {VOLTA} from '../../nucleo/matematica.js';
 
+// Rena (mascote residente do tema Vitrine): corpo, chifres, pernas trotando e sino balançando no pescoço.
 export function rena(cr, w, h, q) {
     const gw = w * 0.56, gh = h * 0.34;
     cr.save();

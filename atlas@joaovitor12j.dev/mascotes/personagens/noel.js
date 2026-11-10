@@ -1,10 +1,10 @@
 // Mascote Papai Noel (Natal): desenho em Cairo e linha do tempo.
 
-// Papai Noel no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e ri com a barriga.
-// `q` vem de quadroNoel (logica.js): {sobe, balanco, aceno, riso}. Quem chama recorta no retângulo.
 import {olhar} from '../desenho.js';
 import {passeio, quadroSobeDesce} from '../movimento.js';
 
+// Papai Noel no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e ri com a barriga.
+// `q` vem de quadroNoel (logica.js): {sobe, balanco, aceno, riso}. Quem chama recorta no retângulo.
 export function noel(cr, w, h, q) {
     const alt = h * 0.92;
     const a = Math.min(w * 0.2, alt / 7);
