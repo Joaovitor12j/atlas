@@ -1,6 +1,6 @@
 // Confere a consistência entre o catálogo, o schema e os temas, que o compilador não pega.
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import test from 'node:test';
 import {PASSEIOS, SPRITES} from '../atlas@joaovitor12j.dev/logica.js';
 import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/nucleo/catalogo.js';
@@ -10,7 +10,7 @@ import {fonte, modulos} from './auxiliar.js';
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
 const css = readFileSync(new URL('temas.css', raiz), 'utf8');
-const widgetsJs = readFileSync(new URL('widgets.js', raiz), 'utf8');
+const widgetsJs = readFileSync(new URL('widgets/index.js', raiz), 'utf8');
 const mascotesJs = readFileSync(new URL('mascotes.js', raiz), 'utf8');
 const ARQUIVOS_APP = ['paginas', 'aparencia', 'widgets', 'ambientes', 'mascotes', 'janela', 'previa'].map(n => `../atlas@joaovitor12j.dev/app/${n}.js`);
 const paginasJs = ARQUIVOS_APP.map(a => readFileSync(new URL(a, import.meta.url), 'utf8')).join('\n');
@@ -39,9 +39,11 @@ test('as cores de widgets e do botão de apps (prévia) batem com temas.css', ()
     }
 });
 
-test('todo widget do catálogo tem classe em widgets.js', () => {
-    for (const [id] of WIDGETS)
-        assert.match(widgetsJs, new RegExp(`\\b${id}: [A-Z]`), `widgets.js sem a classe de ${id}`);
+test('todo widget do catálogo tem pasta própria e entrada no registro (widgets/index.js)', () => {
+    for (const [id] of WIDGETS) {
+        assert.match(widgetsJs, new RegExp(`\\b${id}: [A-Z]`), `widgets/index.js sem a classe de ${id}`);
+        assert.ok(existsSync(new URL(`widgets/${id}/index.js`, raiz)), `falta widgets/${id}/index.js`);
+    }
 });
 
 test('ids de temas e widgets são únicos', () => {

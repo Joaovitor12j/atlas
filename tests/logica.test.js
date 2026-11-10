@@ -3,11 +3,17 @@ import test from 'node:test';
 import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from '../atlas@joaovitor12j.dev/ambientes/logica.js';
 import {escalaLente} from '../atlas@joaovitor12j.dev/dock/lente.js';
 import {definirAutoTodas, definirTela, ordemTelas, resolverTelas, todasAuto} from '../atlas@joaovitor12j.dev/dock/telas.js';
-import {
-    bissexto, calcularProgresso, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa, formatarTaxa, lerNaoLidas, mudarMes, pct,
-    percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
-} from '../atlas@joaovitor12j.dev/logica.js';
 import {geometriaTema, temaDecorado, temaEfetivo, TEMAS_MATERIAIS, TEMAS_PIXEL} from '../atlas@joaovitor12j.dev/temas/logica.js';
+import {percentualCpu} from '../atlas@joaovitor12j.dev/widgets/atividade/logica.js';
+import {registrarCopia, resumirTexto} from '../atlas@joaovitor12j.dev/widgets/clipboard/logica.js';
+import {diasAte} from '../atlas@joaovitor12j.dev/widgets/contagem/logica.js';
+import {duracao, formatarCrono, pct} from '../atlas@joaovitor12j.dev/widgets/formato.js';
+import {formatarFaixa} from '../atlas@joaovitor12j.dev/widgets/musica/logica.js';
+import {proximaFase} from '../atlas@joaovitor12j.dev/widgets/pomodoro/logica.js';
+import {bissexto, calcularProgresso} from '../atlas@joaovitor12j.dev/widgets/progresso/logica.js';
+import {escalaGrafico, formatarTaxa} from '../atlas@joaovitor12j.dev/widgets/rede/logica.js';
+import {mudarMes, semanasDoMes} from '../atlas@joaovitor12j.dev/widgets/relogio/logica.js';
+import {lerNaoLidas, textoDoSelo} from '../atlas@joaovitor12j.dev/widgets/slack/logica.js';
 
 test('duracao: minutos e horas', () => {
     assert.equal(duracao(0), '0 min');

@@ -3,7 +3,7 @@ import Adw from 'gi://Adw';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {CORES_TEMA, WIDGETS} from '../nucleo/catalogo.js';
-import {diasAte} from '../logica.js';
+import {diasAte} from '../widgets/contagem/logica.js';
 import {cartao} from './aparencia.js';
 import {desenharPapelDeParede, desenharWidget} from './previa.js';
 

@@ -19,7 +19,7 @@ import {TEMAS, WIDGETS} from '../nucleo/catalogo.js';
 import {agendar, perfilar} from '../nucleo/perf.js';
 import {pararPonte} from '../nucleo/ponte.js';
 import {geometriaTema, temaEfetivo} from '../temas/logica.js';
-import {criarWidget, pararClipboard} from '../widgets.js';
+import {criarWidget, pararWidgets} from '../widgets/index.js';
 import {escalaLente} from './lente.js';
 import {definirAutoTodas, ordemTelas, resolverTelas, todasAuto} from './telas.js';
 
@@ -1457,7 +1457,7 @@ export class Dock {
         this._mascotes?.disable();
         this._mascotes = null;
         perfilar(false);
-        pararClipboard();
+        pararWidgets();
         pararPonte();
         pararClima();
         this._notif = null;
