@@ -47,7 +47,7 @@ Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da 
 
 - Posição embaixo, à esquerda ou à direita, com margem; opção de reservar espaço na tela
 - Auto-ocultar (uma zona de 2 px na borda traz a dock de volta)
-- Telas: só na principal, em todas, ou só em uma tela específica
+- Telas: cada tela tem o próprio interruptor (uma, várias ou nenhuma) e o próprio auto-ocultar
 - Esconde sozinha no Overview e em tela cheia
 - Efeito ao passar o mouse (brilho ou ícone que sobe) e animação de abertura (deslizar ou surgir)
 - Ícone do ATLAS no painel superior, com menu de ambientes, temas, auto-ocultar e Configurações (pode ser ocultado)
@@ -62,7 +62,7 @@ Tudo é configurado por um app próprio (janela "Palco", com prévia ao vivo da 
 
 **Widgets e mascotes**
 - 14 widgets desenhados com Cairo (anéis, gráficos, relógio de ponteiros), com painel rico ao clicar e, em alguns, versão larga
-- 12 mascotes (hora, datas, eventos do sistema e clima), todos desligados por padrão
+- 13 mascotes (hora, datas, eventos do sistema e clima), todos desligados por padrão
 
 **App de configuração**
 - Janela com prévia ao vivo da dock sobre o seu papel de parede, abas Aparência, Ambientes, Widgets e Mascotes, busca de opções e botão de restaurar padrões
@@ -220,6 +220,10 @@ Estrutura (tudo em `atlas@joaovitor12j.dev/`):
 | `desenho.js` | Desenho Cairo puro (anéis, gráficos, relógio, mascotes) |
 | `logica.js` | Lógica pura, testável com Node |
 | `catalogo.js` | Listas de temas, widgets e mascotes compartilhadas com o app |
+| `clima.js` | Previsão do tempo (Open-Meteo), dividida entre o widget Clima e os mascotes de frio e calor |
+| `perf.js` | Medidor opt-in (`perfil-ativo`) e o `agendar()` usado pelos temporizadores |
+| `eventos.js` | Avisos entre módulos (fim de foco do Pomodoro para o mascote do tomate) |
+| `ponte.js`, `protocolo.js` | Cliente e contrato D-Bus do daemon do app nativo (fase 0, `app/daemon.js`) |
 | `app/` | App de configuração (gjs + GTK4 + libadwaita), em processo próprio |
 | `schemas/` | Schema GSettings `org.gnome.shell.extensions.atlas` |
 

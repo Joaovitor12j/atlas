@@ -10,6 +10,12 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - Licença GPL-3.0-or-later (`LICENSE`), compatível com o extensions.gnome.org.
 
 ### Corrigido
+- **Restaurar padrões** (app) esvaziava a chave `telas` e a extensão só a regravava no próximo `enable`: o app mostrava todas as telas desligadas e ligar uma apagava a doca das outras. A extensão agora regrava a chave na hora.
+- Mascote residente do tema nascia com o tamanho de um ícone de 48 px (era criado antes da doca) e não acompanhava a mudança do tamanho dos ícones.
+- Mexer nas opções dos mascotes Calor e Frio, no mascote residente ou no efeito de época reconstruía a doca inteira sem necessidade.
+- Widget do Slack: um aviso da bandeja que chegasse no meio de uma leitura era descartado e o selo só se corrigia no ciclo de 30 s.
+- Widget Música refazia a lista de players a cada app que entrava ou saía do barramento D-Bus; agora só reage a nomes MPRIS.
+- Schema: "Papai Papai Noel" nos resumos das chaves do Noel.
 - **Widget do Slack** não mostrava o selo de não lidas: o Slack (Electron) se registra na bandeja com nome D-Bus único (`:1.N`), e a busca só olhava nomes `org.*.StatusNotifierItem-*`. Agora a lista vem do `StatusNotifierWatcher`.
 
 ### Alterado

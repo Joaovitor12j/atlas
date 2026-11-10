@@ -52,7 +52,7 @@ test('as chaves que o código lê existem no schema', () => {
     // de schemas do GNOME, não do ATLAS: favoritos (prefs), Não perturbe (dock) e papel de parede (palco do app)
     for (const externa of ['favorite-apps', 'show-banners', 'picture-uri', 'picture-uri-dark'])
         chaves.add(externa);
-    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', ...ARQUIVOS_APP]) {
+    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', 'clima.js', ...ARQUIVOS_APP]) {
         const src = readFileSync(new URL(arq, raiz), 'utf8');
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
             assert.ok(chaves.has(m[1]), `${arq} usa a chave ${m[1]}, que não está no schema`);

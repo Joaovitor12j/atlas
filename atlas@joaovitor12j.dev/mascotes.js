@@ -343,7 +343,7 @@ const IMPL = {
         },
     },
 };
-// os de horário (cuco, fantasma, esqueleto, noel, boneco) dividem o temporizador de disparos; a chama tem o amostrador
+// os de horário (cuco, gato, coruja e os sazonais) dividem o temporizador de disparos; a chama tem o amostrador
 // de memória e os do clima conferem a previsão (que só é buscada de novo a cada 30 min, ver clima.js)
 const HORARIOS = Object.keys(IMPL).filter(id => !IMPL[id].gatilho);
 const DO_CLIMA = Object.keys(IMPL).filter(id => IMPL[id].gatilho === 'clima');
@@ -355,7 +355,8 @@ const AMOSTRA_CLIMA_MS = 5 * 60_000;
 const naData = (impl, ms) => !impl.temporada || naTemporada(new Date(ms), impl.temporada.ini, impl.temporada.fim);
 
 export class Mascotes {
-    // `ganchos`: {doca: () => DockView da tela principal, naoPerturbe: () => bool}; só são chamados na hora de usar.
+    // `ganchos`: {pasta: () => Gio.File da extensão, doca: () => DockView da tela principal, naoPerturbe: () => bool};
+    // só são chamados na hora de usar.
     constructor(settings, ganchos) {
         this._settings = settings;
         this._ganchos = ganchos;
@@ -805,11 +806,6 @@ export class Mascotes {
         return GLib.SOURCE_CONTINUE;
     }
 
-    _parar() {
-        this._quadroId = 0;
-        return GLib.SOURCE_REMOVE;
-    }
-
     // Destrói o actor e o temporizador de quadros; entre aparições não sobra nada vivo.
     _encerrar() {
         if (this._quadroId) {
@@ -836,13 +832,14 @@ export class Mascotes {
 
     _iniciarResidente(spec) {
         const anc = this._ganchos.doca()?.ancoraMascote();
-        const tam = spec.tamanho(anc?.icone ?? 48);
+        const icone = anc?.icone ?? 48;
+        const tam = spec.tamanho(icone);
         const actor = new St.DrawingArea({reactive: false, clip_to_allocation: true});
         actor.set_size(tam.w, tam.h);
         actor.set_position(-tam.w, -tam.h);
         const [faixaMin, faixaMax] = spec.duracaoMs[spec.estados[0][0]];
         this._resid = {
-            spec, tam, actor,
+            spec, tam, actor, icone,
             estado: spec.estados[0][0],
             t0: GLib.get_monotonic_time(),
             trocaEm: faixaMin + Math.random() * (faixaMax - faixaMin),
@@ -875,6 +872,12 @@ export class Mascotes {
         if (!anc || Main.overview.visible) {
             r.actor.visible = false;
             return GLib.SOURCE_CONTINUE;
+        }
+        // o residente nasce antes da doca (tamanho padrão) e o tamanho do ícone pode mudar depois: acompanha
+        if (r.icone !== anc.icone) {
+            r.icone = anc.icone;
+            r.tam = r.spec.tamanho(anc.icone);
+            r.actor.set_size(r.tam.w, r.tam.h);
         }
         const dx = Math.round(anc.caixa.w / 2 - r.tam.w / 2 - anc.icone * 0.15);
         const pos = posicionarMascote(anc.caixa, r.tam, anc.topoUtil, dx);
