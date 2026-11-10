@@ -3,11 +3,13 @@
 // Cada linha é um movimento; a faixa escura embaixo de cada quadro é a doca.
 import cairo from 'gi://cairo';
 import System from 'system';
-import {neve, pendurado, picole, pinguim, solArco, solLeque} from '../atlas@joaovitor12j.dev/desenho.js';
+import {tamanhoMascoteClima} from '../atlas@joaovitor12j.dev/logica.js';
 import {
-    duracaoNeve, duracaoPendurado, duracaoPicole, duracaoPinguim, duracaoSolArco, duracaoSolLeque, flocosDeNeve,
-    quadroNeve, quadroPendurado, quadroPicole, quadroPinguim, quadroSolArco, quadroSolLeque, tamanhoMascoteClima,
-} from '../atlas@joaovitor12j.dev/logica.js';
+    duracaoPicole, duracaoSolArco, duracaoSolLeque, picole, quadroPicole, quadroSolArco, quadroSolLeque, solArco, solLeque,
+} from '../atlas@joaovitor12j.dev/mascotes/personagens/calor.js';
+import {
+    duracaoNeve, duracaoPendurado, duracaoPinguim, flocosDeNeve, neve, pendurado, pinguim, quadroNeve, quadroPendurado, quadroPinguim,
+} from '../atlas@joaovitor12j.dev/mascotes/personagens/frio.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-mascotes-clima.png';
 const ICONE = 48;

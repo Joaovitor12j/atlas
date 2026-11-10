@@ -6,12 +6,20 @@ import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {lerLocais, urlBuscaLocal} from '../clima/logica.js';
-import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, pilha, pinguim, satelite, solArco, sprite, tomate} from '../desenho.js';
 import {definirTela, lerTelas} from '../dock/telas.js';
-import {
-    quadroBoneco, quadroChama, quadroCoruja, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, quadroPilha, quadroPinguim, quadroSatelite,
-    quadroSolArco, quadroTomate, SPRITES,
-} from '../logica.js';
+import {boneco, quadroBoneco} from '../mascotes/personagens/boneco.js';
+import {quadroSolArco, solArco} from '../mascotes/personagens/calor.js';
+import {chama, quadroChama} from '../mascotes/personagens/chama.js';
+import {coruja, quadroCoruja} from '../mascotes/personagens/coruja.js';
+import {cuco, quadroCuco} from '../mascotes/personagens/cuco.js';
+import {esqueleto, quadroEsqueleto} from '../mascotes/personagens/esqueleto.js';
+import {fantasma, quadroFantasma} from '../mascotes/personagens/fantasma.js';
+import {pinguim, quadroPinguim} from '../mascotes/personagens/frio.js';
+import {noel, quadroNoel} from '../mascotes/personagens/noel.js';
+import {pilha, quadroPilha} from '../mascotes/personagens/pilha.js';
+import {quadroSatelite, satelite} from '../mascotes/personagens/satelite.js';
+import {quadroTomate, tomate} from '../mascotes/personagens/tomate.js';
+import {sprite, SPRITES} from '../mascotes/sprites.js';
 import {MOVIMENTOS} from '../nucleo/catalogo.js';
 
 export class Paginas {

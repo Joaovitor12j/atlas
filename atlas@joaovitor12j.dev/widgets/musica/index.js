@@ -6,7 +6,7 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {barra, cor} from '../../desenho.js';
+import {barra, cor} from '../../nucleo/desenho.js';
 import {AL, Camada, COR, linha, Widget} from '../base.js';
 import {formatarFaixa} from './logica.js';
 

@@ -21,3 +21,11 @@ export const molaAmortecida = x => (x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos
 
 // Rampa de 0 a 1 entre `a` e `b` ms (com easeInOut); antes 0, depois 1.
 export const rampa = (t, a, b) => easeInOut(limitar01((t - a) / (b - a)));
+
+export const VOLTA = Math.PI * 2;
+
+// Pseudoaleatório fixo por índice (o mesmo floco cai sempre no mesmo lugar), em [0, 1).
+export const sorteioFixo = i => {
+    const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+    return x - Math.floor(x);
+};

@@ -4,7 +4,7 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anel, barra, cor} from '../../desenho.js';
+import {anel, barra, cor} from '../../nucleo/desenho.js';
 import {AL, Camada, COR, Widget} from '../base.js';
 import {pct} from '../formato.js';
 import {calcularProgresso} from './logica.js';

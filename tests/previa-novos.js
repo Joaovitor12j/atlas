@@ -2,11 +2,10 @@
 //   gjs -m tests/previa-novos.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {coruja, pilha, satelite, tomate} from '../atlas@joaovitor12j.dev/desenho.js';
-import {
-    duracaoCoruja, duracaoPilha, duracaoSatelite, duracaoTomate,
-    quadroCoruja, quadroPilha, quadroSatelite, quadroTomate,
-} from '../atlas@joaovitor12j.dev/logica.js';
+import {coruja, duracaoCoruja, quadroCoruja} from '../atlas@joaovitor12j.dev/mascotes/personagens/coruja.js';
+import {duracaoPilha, pilha, quadroPilha} from '../atlas@joaovitor12j.dev/mascotes/personagens/pilha.js';
+import {duracaoSatelite, quadroSatelite, satelite} from '../atlas@joaovitor12j.dev/mascotes/personagens/satelite.js';
+import {duracaoTomate, quadroTomate, tomate} from '../atlas@joaovitor12j.dev/mascotes/personagens/tomate.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-novos.png';
 const ICONE = 64;

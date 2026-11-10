@@ -3,7 +3,7 @@
 // ----- Rede (bytes por segundo, via /proc/net/dev) -----
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {cor, grafico} from '../../desenho.js';
+import {cor, grafico} from '../../nucleo/desenho.js';
 import {empilhar, lerProc, ultimo} from '../amostras.js';
 import {agoraMs, AL, Camada, COR, Widget} from '../base.js';
 import {escalaGrafico, formatarBps, formatarTaxa} from './logica.js';

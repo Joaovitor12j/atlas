@@ -3,7 +3,7 @@
 // ----- Bateria (UPower) -----
 import Gio from 'gi://Gio';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anelDeTile, cor} from '../../desenho.js';
+import {anelDeTile, cor} from '../../nucleo/desenho.js';
 import {COR, linha, Widget} from '../base.js';
 import {duracao} from '../formato.js';
 

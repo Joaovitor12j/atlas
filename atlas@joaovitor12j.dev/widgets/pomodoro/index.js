@@ -2,7 +2,7 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anelDeTile, cor} from '../../desenho.js';
+import {anelDeTile, cor} from '../../nucleo/desenho.js';
 import {AO_CONCLUIR_FOCO} from '../../nucleo/eventos.js';
 import {agoraMs, CFG, COR, MIN, Widget} from '../base.js';
 import {formatarCrono} from '../formato.js';

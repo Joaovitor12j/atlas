@@ -11,7 +11,7 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anel, cor} from '../desenho.js';
+import {anel, cor} from '../nucleo/desenho.js';
 import {agendar, agora, registrar} from '../nucleo/perf.js';
 
 export let CFG = null;

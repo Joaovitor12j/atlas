@@ -1,13 +1,30 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, confete, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama,
-    duracaoCoruja, duracaoCuco, duracaoEsqueleto, duracaoFantasma, duracaoNoel, duracaoPasseio, duracaoPilha, duracaoSatelite, duracaoTomate,
-    escolherAparicao, esperaAte, faseSobeDesce, FINAIS, memoriaPedeAparicao, naJanela, naTemporada, PASSEIOS, posicionarMascote, proximoDisparo,
-    proximoEstadoResidente, quadroAguaViva, quadroBoneco, quadroBonecoIlustrado, quadroChama, quadroCoruja, quadroCuco, quadroEsqueleto,
-    quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNoel, quadroPapaiNoel, quadroPasseio, quadroPilha, quadroRena, quadroSapo,
-    quadroSatelite, quadroSprite, quadroTomate, rearmarBateria, rearmarMemoria, SPRITES, tamanhoPasseio, usoMemoria,
-} from '../atlas@joaovitor12j.dev/logica.js';
+import {PASSEIOS} from '../atlas@joaovitor12j.dev/logica.js';
+import {avaliarDisparo, esperaAte, naJanela, naTemporada, proximoDisparo} from '../atlas@joaovitor12j.dev/mascotes/agenda.js';
+import {bateriaPedeAparicao, rearmarBateria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/bateria.js';
+import {memoriaPedeAparicao, rearmarMemoria, usoMemoria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/memoria.js';
+import {duracaoPasseio, faseSobeDesce, FINAIS, quadroPasseio, tamanhoPasseio} from '../atlas@joaovitor12j.dev/mascotes/movimento.js';
+import {deslocamentoAleatorio, deslocamentosLado, escolherAparicao, posicionarMascote} from '../atlas@joaovitor12j.dev/mascotes/palco.js';
+import {duracaoBoneco, quadroBoneco} from '../atlas@joaovitor12j.dev/mascotes/personagens/boneco.js';
+import {duracaoChama, quadroChama} from '../atlas@joaovitor12j.dev/mascotes/personagens/chama.js';
+import {duracaoCoruja, quadroCoruja} from '../atlas@joaovitor12j.dev/mascotes/personagens/coruja.js';
+import {batidasDoDisparo, duracaoCuco, quadroCuco} from '../atlas@joaovitor12j.dev/mascotes/personagens/cuco.js';
+import {duracaoEsqueleto, quadroEsqueleto} from '../atlas@joaovitor12j.dev/mascotes/personagens/esqueleto.js';
+import {duracaoFantasma, quadroFantasma} from '../atlas@joaovitor12j.dev/mascotes/personagens/fantasma.js';
+import {duracaoNoel, quadroNoel} from '../atlas@joaovitor12j.dev/mascotes/personagens/noel.js';
+import {duracaoPilha, quadroPilha} from '../atlas@joaovitor12j.dev/mascotes/personagens/pilha.js';
+import {duracaoSatelite, quadroSatelite} from '../atlas@joaovitor12j.dev/mascotes/personagens/satelite.js';
+import {confete, duracaoTomate, quadroTomate} from '../atlas@joaovitor12j.dev/mascotes/personagens/tomate.js';
+import {quadroAguaViva} from '../atlas@joaovitor12j.dev/mascotes/residentes/agua-viva.js';
+import {quadroBonecoIlustrado} from '../atlas@joaovitor12j.dev/mascotes/residentes/boneco-ilustrado.js';
+import {proximoEstadoResidente} from '../atlas@joaovitor12j.dev/mascotes/residentes/estado.js';
+import {quadroGaivota} from '../atlas@joaovitor12j.dev/mascotes/residentes/gaivota.js';
+import {quadroGatoIlustrado} from '../atlas@joaovitor12j.dev/mascotes/residentes/gato.js';
+import {quadroPapaiNoel} from '../atlas@joaovitor12j.dev/mascotes/residentes/papai-noel.js';
+import {quadroRena} from '../atlas@joaovitor12j.dev/mascotes/residentes/rena.js';
+import {quadroSapo} from '../atlas@joaovitor12j.dev/mascotes/residentes/sapo.js';
+import {quadroSprite, SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
 import {brilhosDourados, campoNeve, luzinhasPiscando, marOnda} from '../atlas@joaovitor12j.dev/temas/particulas.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();

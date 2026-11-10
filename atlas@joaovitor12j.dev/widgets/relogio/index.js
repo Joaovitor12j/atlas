@@ -5,7 +5,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {barra, cor, relogioAnalogico} from '../../desenho.js';
+import {barra, cor, relogioAnalogico} from '../../nucleo/desenho.js';
 import {obterPonte} from '../../nucleo/ponte.js';
 import {AL, CFG, COR, linha, Widget} from '../base.js';
 import {DIAS_SEMANA, MESES, mudarMes, semanasDoMes} from './logica.js';

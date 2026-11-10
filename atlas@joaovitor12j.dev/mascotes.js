@@ -10,21 +10,41 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {escolherAmbiente, normalizarAmbientes} from './ambientes/logica.js';
 import {buscarClima, CLIMA} from './clima/servico.js';
 import {EFEITOS_TEMA} from './decoracao.js';
+import {PASSEIOS, tamanhoMascoteClima} from './logica.js';
+import {avaliarDisparo, esperaAte, naJanela, naTemporada, proximoDisparo} from './mascotes/agenda.js';
+import {passear} from './mascotes/desenho.js';
+import {bateriaPedeAparicao, rearmarBateria} from './mascotes/gatilhos/bateria.js';
+import {mascoteDoClima} from './mascotes/gatilhos/clima.js';
+import {memoriaPedeAparicao, rearmarMemoria, usoMemoria} from './mascotes/gatilhos/memoria.js';
+import {duracaoPasseio, quadroPasseio, tamanhoPasseio} from './mascotes/movimento.js';
+import {deslocamentoAleatorio, deslocamentosLado, escolherAparicao, escolherVariante, posicionarMascote} from './mascotes/palco.js';
+import {boneco, duracaoBoneco, quadroBoneco} from './mascotes/personagens/boneco.js';
 import {
-    aguaViva, boneco, bonecoIlustrado, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear,
-    pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate,
-} from './desenho.js';
+    duracaoPicole, duracaoSolArco, duracaoSolCorre, duracaoSolLeque, duracaoSolNasce, duracaoSolQuica, picole, quadroPicole, quadroSolArco,
+    quadroSolCorre, quadroSolLeque, quadroSolNasce, quadroSolQuica, solArco, solLeque,
+} from './mascotes/personagens/calor.js';
+import {chama, duracaoChama, quadroChama} from './mascotes/personagens/chama.js';
+import {coruja, duracaoCoruja, quadroCoruja} from './mascotes/personagens/coruja.js';
+import {batidasDoDisparo, cuco, cucoVoa, duracaoCuco, duracaoCucoVoa, quadroCuco, quadroCucoVoa} from './mascotes/personagens/cuco.js';
+import {duracaoEsqueleto, esqueleto, quadroEsqueleto} from './mascotes/personagens/esqueleto.js';
+import {duracaoFantasma, fantasma, quadroFantasma} from './mascotes/personagens/fantasma.js';
 import {
-    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCoruja,
-    duracaoCuco, duracaoCucoVoa, duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPasseio, duracaoPendurado, duracaoPicole,
-    duracaoPilha, duracaoPinguim, duracaoPinguimAnda, duracaoPinguimPula, duracaoSatelite, duracaoSolArco, duracaoSolCorre, duracaoSolLeque,
-    duracaoSolNasce, duracaoSolQuica, duracaoTomate, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima, memoriaPedeAparicao,
-    naJanela, naTemporada, PASSEIOS, posicionarMascote, proximoDisparo, proximoEstadoResidente, quadroAguaViva, quadroBoneco, quadroBonecoIlustrado,
-    quadroChama, quadroCoruja, quadroCuco, quadroCucoVoa, quadroEsqueleto, quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNeve, quadroNoel,
-    quadroPapaiNoel, quadroPasseio, quadroPendurado, quadroPicole, quadroPilha, quadroPinguim, quadroPinguimAnda, quadroPinguimPula, quadroRena,
-    quadroSapo, quadroSatelite, quadroSolArco, quadroSolCorre, quadroSolLeque, quadroSolNasce, quadroSolQuica, quadroSprite, quadroTomate,
-    rearmarBateria, rearmarMemoria, SPRITES, tamanhoMascoteClima, tamanhoPasseio, usoMemoria,
-} from './logica.js';
+    duracaoNeve, duracaoPendurado, duracaoPinguim, duracaoPinguimAnda, duracaoPinguimPula, flocosDeNeve, neve, pendurado, pinguim, quadroNeve,
+    quadroPendurado, quadroPinguim, quadroPinguimAnda, quadroPinguimPula,
+} from './mascotes/personagens/frio.js';
+import {duracaoNoel, noel, quadroNoel} from './mascotes/personagens/noel.js';
+import {duracaoPilha, pilha, quadroPilha} from './mascotes/personagens/pilha.js';
+import {duracaoSatelite, quadroSatelite, satelite} from './mascotes/personagens/satelite.js';
+import {duracaoTomate, quadroTomate, tomate} from './mascotes/personagens/tomate.js';
+import {aguaViva, quadroAguaViva} from './mascotes/residentes/agua-viva.js';
+import {bonecoIlustrado, quadroBonecoIlustrado} from './mascotes/residentes/boneco-ilustrado.js';
+import {proximoEstadoResidente} from './mascotes/residentes/estado.js';
+import {gaivota, quadroGaivota} from './mascotes/residentes/gaivota.js';
+import {gatoIlustrado, quadroGatoIlustrado} from './mascotes/residentes/gato.js';
+import {papaiNoel, quadroPapaiNoel} from './mascotes/residentes/papai-noel.js';
+import {quadroRena, rena} from './mascotes/residentes/rena.js';
+import {quadroSapo, sapo} from './mascotes/residentes/sapo.js';
+import {quadroSprite, sprite, SPRITES} from './mascotes/sprites.js';
 import {TEMAS} from './nucleo/catalogo.js';
 import {AO_CONCLUIR_FOCO} from './nucleo/eventos.js';
 import {agendar, agora, registrar} from './nucleo/perf.js';

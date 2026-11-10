@@ -5,9 +5,8 @@
 // tela em y = 0 e "para fora" em -y. O que passa do vidro (grama, telhados, neve, laço) fica em y < -esp.
 
 import Cairo from 'gi://cairo';
+import {VOLTA} from './nucleo/matematica.js';
 import {geometriaTema, TEMAS_PIXEL} from './temas/logica.js';
-
-const VOLTA = Math.PI * 2;
 
 // '#rrggbb' ou 'rgba(r, g, b, a)' -> [r, g, b, a] de 0 a 1.
 function rgba(css, alfa = 1) {

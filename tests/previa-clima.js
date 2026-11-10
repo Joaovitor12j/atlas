@@ -3,7 +3,7 @@
 // Linhas: dia em fundo escuro, noite em fundo escuro, dia em fundo claro (tema Papel).
 import cairo from 'gi://cairo';
 import System from 'system';
-import {iconeTempo} from '../atlas@joaovitor12j.dev/desenho.js';
+import {iconeTempo} from '../atlas@joaovitor12j.dev/clima/desenho.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-clima.png';
 const ICONES = ['limpo', 'poucas-nuvens', 'nublado', 'nevoeiro', 'garoa', 'chuva', 'neve', 'trovoada'];

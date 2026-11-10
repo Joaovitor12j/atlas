@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-boneco.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {boneco} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoBoneco, quadroBoneco} from '../atlas@joaovitor12j.dev/logica.js';
+import {boneco, duracaoBoneco, quadroBoneco} from '../atlas@joaovitor12j.dev/mascotes/personagens/boneco.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-boneco.png';
 const ICONE = 64;

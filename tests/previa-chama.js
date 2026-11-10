@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-chama.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {chama} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoChama, quadroChama} from '../atlas@joaovitor12j.dev/logica.js';
+import {chama, duracaoChama, quadroChama} from '../atlas@joaovitor12j.dev/mascotes/personagens/chama.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-chama.png';
 const ICONE = 64;

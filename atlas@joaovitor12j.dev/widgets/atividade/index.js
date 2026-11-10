@@ -3,7 +3,7 @@
 // Amostras compartilhadas: o gráfico não zera quando a doca é reconstruída nem quando há uma doca por tela.
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {anel, cor, grafico} from '../../desenho.js';
+import {anel, cor, grafico} from '../../nucleo/desenho.js';
 import {empilhar, lerProc, ultimo} from '../amostras.js';
 import {agoraMs, Camada, COR, Widget} from '../base.js';
 import {percentualCpu} from './logica.js';

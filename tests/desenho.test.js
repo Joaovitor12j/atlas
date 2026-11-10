@@ -1,6 +1,6 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cor} from '../atlas@joaovitor12j.dev/desenho.js';
+import test from 'node:test';
+import {cor} from '../atlas@joaovitor12j.dev/nucleo/desenho.js';
 
 test('cor: hex para RGBA de 0 a 1', () => {
     assert.deepEqual(cor('#000000'), [0, 0, 0, 1]);

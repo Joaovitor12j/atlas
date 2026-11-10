@@ -5,9 +5,10 @@
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {iconeTempo} from '../../clima/desenho.js';
 import {descreverTempo, diaCurto, formatarTemp} from '../../clima/logica.js';
 import {buscarClima, CLIMA, localDoClima} from '../../clima/servico.js';
-import {cor, grafico, iconeTempo} from '../../desenho.js';
+import {cor, grafico} from '../../nucleo/desenho.js';
 import {AL, Camada, CFG, COR, FG_MENU, linha, Widget} from '../base.js';
 
 const climaLocal = () => localDoClima(CFG);

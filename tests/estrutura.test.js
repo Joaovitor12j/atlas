@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import {existsSync, readFileSync} from 'node:fs';
 import test from 'node:test';
-import {PASSEIOS, SPRITES} from '../atlas@joaovitor12j.dev/logica.js';
+import {PASSEIOS} from '../atlas@joaovitor12j.dev/logica.js';
+import {SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
 import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/nucleo/catalogo.js';
 import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
 import {fonte, modulos} from './auxiliar.js';
