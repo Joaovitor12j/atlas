@@ -1776,8 +1776,6 @@ class AreaTransferencia extends Widget {
 // O Slack publica um item de bandeja (StatusNotifierItem) cujo tooltip diz "Nenhuma mensagem não lida" ou o
 // que está pendente. É o mesmo sinal do ícone da barra superior, lido direto pelo D-Bus. Funciona com qualquer
 // app que use a bandeja; aqui o filtro é o Id do item começar com "Slack".
-const SNI = 'org.freedesktop.StatusNotifierItem-';
-
 class Slack extends Widget {
     // Os sinais do D-Bus avisam das mudanças; isto é só uma rede de segurança.
     get intervalo() {
@@ -1834,18 +1832,25 @@ class Slack extends Widget {
     }
 
     // Procura os itens de bandeja do Slack e junta o estado: qualquer um com mensagens vale.
+    // A lista vem do StatusNotifierWatcher: o Slack (Electron) se registra com o nome único (":1.96") e não com
+    // um nome conhecido "org.*.StatusNotifierItem-*", então ListNames não o enxerga.
     _ler() {
         if (this._lendo || this._destruido)
             return;
         this._lendo = true;
         const bus = Gio.DBus.session;
-        bus.call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus', 'ListNames', null,
-            new GLib.VariantType('(as)'), Gio.DBusCallFlags.NONE, 1000, null, (conn, res) => {
-                let nomes = [];
+        bus.call('org.kde.StatusNotifierWatcher', '/StatusNotifierWatcher', 'org.freedesktop.DBus.Properties', 'Get',
+            new GLib.Variant('(ss)', ['org.kde.StatusNotifierWatcher', 'RegisteredStatusNotifierItems']),
+            new GLib.VariantType('(v)'), Gio.DBusCallFlags.NONE, 1000, null, (conn, res) => {
+                let registrados = [];
                 try {
-                    [nomes] = conn.call_finish(res).deepUnpack();
-                } catch (_e) { /* sem lista: tratado abaixo */ }
-                const itens = nomes.filter(n => n.startsWith(SNI));
+                    [registrados] = conn.call_finish(res).recursiveUnpack();
+                } catch (_e) { /* sem watcher: tratado abaixo */ }
+                // cada entrada é "destino@/caminho" ou só o destino (caminho padrão)
+                const itens = registrados.map(r => {
+                    const i = String(r).indexOf('@');
+                    return i < 0 ? [String(r), '/StatusNotifierItem'] : [r.slice(0, i), r.slice(i + 1)];
+                });
                 const resultados = [];
                 let faltam = itens.length;
                 const fim = () => {
@@ -1858,15 +1863,15 @@ class Slack extends Widget {
                     fim();
                     return;
                 }
-                for (const nome of itens) {
-                    bus.call(nome, '/StatusNotifierItem', 'org.freedesktop.DBus.Properties', 'GetAll',
+                for (const [nome, caminho] of itens) {
+                    bus.call(nome, caminho, 'org.freedesktop.DBus.Properties', 'GetAll',
                         new GLib.Variant('(s)', ['org.kde.StatusNotifierItem']), new GLib.VariantType('(a{sv})'),
                         Gio.DBusCallFlags.NONE, 1000, null, (c, r) => {
                             try {
                                 const [p] = c.call_finish(r).recursiveUnpack();
                                 if (String(p.Id ?? '').toLowerCase().startsWith('slack'))
                                     resultados.push({texto: String(p.ToolTip?.[2] ?? ''), status: p.Status});
-                            } catch (_e) { /* o item pode ter saído */ }
+                            } catch (_e) { /* o item pode ter saído ou ser de outra interface */ }
                             if (--faltam === 0)
                                 fim();
                         });

@@ -9,6 +9,9 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 - **Doca por tela**: em Comportamento, cada tela tem o próprio interruptor (uma, várias ou nenhuma) e o próprio Auto-ocultar. Nova chave `telas` (JSON); a configuração antiga (`monitores` + `auto-ocultar`) é migrada na primeira execução. O interruptor do menu do painel vale para todas as telas com doca.
 - Licença GPL-3.0-or-later (`LICENSE`), compatível com o extensions.gnome.org.
 
+### Corrigido
+- **Widget do Slack** não mostrava o selo de não lidas: o Slack (Electron) se registra na bandeja com nome D-Bus único (`:1.N`), e a busca só olhava nomes `org.*.StatusNotifierItem-*`. Agora a lista vem do `StatusNotifierWatcher`.
+
 ### Alterado
 - Os `idle_add` dos menus (doca e painel) passaram a ser removidos no `disable()`, como pede a revisão do extensions.gnome.org. A descrição do `metadata.json` declara o acesso à área de transferência e a consulta ao Open-Meteo.
 - **Empacotamento**: `app/` passou para dentro de `atlas@joaovitor12j.dev/`, então o zip leva o app de configuração e o botão de Configurações funciona fora do clone (antes dependia de `app/` ao lado da extensão e do symlink do `install.sh`). Novo `pack.sh` gera `dist/atlas@joaovitor12j.dev.zip` com um `extension.js` de produção (`empacotar/extension.js`, import direto) no lugar do carregador de desenvolvimento; `--ego` omite o schema compilado. `metadata.json` declara GNOME Shell 46 (a única versão testada) e `url`; o app avisa se a libadwaita for anterior à 1.5.
