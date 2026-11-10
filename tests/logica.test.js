@@ -293,3 +293,12 @@ test('ordemTelas: esquerda para a direita, depois de cima para baixo', () => {
     assert.deepEqual(ordemTelas([{x: 1920, y: 0}, {x: 0, y: 0}, {x: 3840, y: 0}]), [1, 0, 2]);
     assert.deepEqual(ordemTelas([{x: 0, y: 1080}, {x: 0, y: 0}]), [1, 0]);
 });
+
+test('temaEfetivo: o tema do ambiente vence o global quando é válido', async () => {
+    const {temaEfetivo} = await import('../atlas@joaovitor12j.dev/logica.js');
+    const validos = ['noite', 'aurora', 'chuva'];
+    assert.equal(temaEfetivo({tema: 'aurora'}, 'noite', validos), 'aurora');
+    assert.equal(temaEfetivo({tema: ''}, 'chuva', validos), 'chuva');
+    assert.equal(temaEfetivo({tema: 'halloween'}, 'noite', validos), 'noite'); // tema removido do catálogo
+    assert.equal(temaEfetivo(null, 'noite', validos), 'noite'); // sem ambientes
+});

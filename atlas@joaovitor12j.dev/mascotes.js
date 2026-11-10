@@ -3,6 +3,7 @@
 // Em repouso o custo é um único temporizador (no máximo a cada 15 min) e só com um mascote ligado; o actor só
 // existe durante a aparição. A lógica de horários e a linha do tempo estão em logica.js, o desenho em desenho.js.
 import Cairo from 'gi://cairo';
+import {TEMAS} from './catalogo.js';
 import {EFEITOS_TEMA} from './decoracao.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -13,7 +14,7 @@ import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
 import {
-    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
+    avaliarDisparo, bateriaPedeAparicao, escolherAmbiente, normalizarAmbientes, temaEfetivo, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
     quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCuco,
     duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPendurado, duracaoPicole, duracaoPinguim,
     duracaoCucoVoa, duracaoPasseio, duracaoPinguimAnda, duracaoPinguimPula, duracaoSolCorre, duracaoSolNasce, duracaoSolQuica,
@@ -343,7 +344,7 @@ const IMPL = {
         },
     },
 };
-// os de horário (cuco, fantasma, esqueleto, noel, boneco) dividem o temporizador de disparos; a chama tem o amostrador
+// os de horário (cuco, gato, coruja e os sazonais) dividem o temporizador de disparos; a chama tem o amostrador
 // de memória e os do clima conferem a previsão (que só é buscada de novo a cada 30 min, ver clima.js)
 const HORARIOS = Object.keys(IMPL).filter(id => !IMPL[id].gatilho);
 const DO_CLIMA = Object.keys(IMPL).filter(id => IMPL[id].gatilho === 'clima');
@@ -355,7 +356,8 @@ const AMOSTRA_CLIMA_MS = 5 * 60_000;
 const naData = (impl, ms) => !impl.temporada || naTemporada(new Date(ms), impl.temporada.ini, impl.temporada.fim);
 
 export class Mascotes {
-    // `ganchos`: {doca: () => DockView da tela principal, naoPerturbe: () => bool}; só são chamados na hora de usar.
+    // `ganchos`: {pasta: () => Gio.File da extensão, doca: () => DockView da tela principal, naoPerturbe: () => bool};
+    // só são chamados na hora de usar.
     constructor(settings, ganchos) {
         this._settings = settings;
         this._ganchos = ganchos;
@@ -385,9 +387,14 @@ export class Mascotes {
         for (const chave of ['mascotes-ativos', 'clima-cidade', ...HORARIOS.map(id => `${IMPL[id].prefixo}-intervalo`)])
             this._sinais.push([st, st.connect(`changed::${chave}`, () => this._reagendar())]);
         this._sinais.push([st, st.connect('changed::mascote-teste', () => this._teste())]);
-        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarResidente())]);
+        // o tema pode vir do ambiente atual, então trocar de ambiente (ou editar o tema dele) também reavalia
+        for (const chave of ['tema', 'ambiente-atual', 'ambientes']) {
+            this._sinais.push([st, st.connect(`changed::${chave}`, () => {
+                this._atualizarResidente();
+                this._atualizarEfeito();
+            })]);
+        }
         this._sinais.push([st, st.connect('changed::mascote-residente-ativo', () => this._atualizarResidente())]);
-        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarEfeito())]);
         this._sinais.push([st, st.connect('changed::efeito-epoca-ativo', () => this._atualizarEfeito())]);
         this._sinais.push([Main.overview, Main.overview.connect('showing', () => this._encerrar())]);
         this._reagendar();
@@ -805,11 +812,6 @@ export class Mascotes {
         return GLib.SOURCE_CONTINUE;
     }
 
-    _parar() {
-        this._quadroId = 0;
-        return GLib.SOURCE_REMOVE;
-    }
-
     // Destrói o actor e o temporizador de quadros; entre aparições não sobra nada vivo.
     _encerrar() {
         if (this._quadroId) {
@@ -821,9 +823,16 @@ export class Mascotes {
         this._atuais = [];
     }
 
+    // O tema que a doca está mostrando: o do ambiente atual, quando ele tem um; senão o global (como em dock.js).
+    _tema() {
+        const st = this._settings;
+        const amb = escolherAmbiente(normalizarAmbientes(st.get_string('ambientes')), st.get_string('ambiente-atual'));
+        return temaEfetivo(amb, st.get_string('tema'), TEMAS.map(t => t[0]));
+    }
+
     // Religa ou desliga o mascote residente ao trocar de tema ou de chave; o tema atual decide qual (ou nenhum).
     _atualizarResidente() {
-        const spec = RESIDENTES[this._settings.get_string('tema')];
+        const spec = RESIDENTES[this._tema()];
         if (!spec || !this._settings.get_boolean('mascote-residente-ativo')) {
             this._pararResidente();
             return;
@@ -836,13 +845,14 @@ export class Mascotes {
 
     _iniciarResidente(spec) {
         const anc = this._ganchos.doca()?.ancoraMascote();
-        const tam = spec.tamanho(anc?.icone ?? 48);
+        const icone = anc?.icone ?? 48;
+        const tam = spec.tamanho(icone);
         const actor = new St.DrawingArea({reactive: false, clip_to_allocation: true});
         actor.set_size(tam.w, tam.h);
         actor.set_position(-tam.w, -tam.h);
         const [faixaMin, faixaMax] = spec.duracaoMs[spec.estados[0][0]];
         this._resid = {
-            spec, tam, actor,
+            spec, tam, actor, icone,
             estado: spec.estados[0][0],
             t0: GLib.get_monotonic_time(),
             trocaEm: faixaMin + Math.random() * (faixaMax - faixaMin),
@@ -876,6 +886,12 @@ export class Mascotes {
             r.actor.visible = false;
             return GLib.SOURCE_CONTINUE;
         }
+        // o residente nasce antes da doca (tamanho padrão) e o tamanho do ícone pode mudar depois: acompanha
+        if (r.icone !== anc.icone) {
+            r.icone = anc.icone;
+            r.tam = r.spec.tamanho(anc.icone);
+            r.actor.set_size(r.tam.w, r.tam.h);
+        }
         const dx = Math.round(anc.caixa.w / 2 - r.tam.w / 2 - anc.icone * 0.15);
         const pos = posicionarMascote(anc.caixa, r.tam, anc.topoUtil, dx);
         if (!pos) {
@@ -906,7 +922,7 @@ export class Mascotes {
 
     // Religa ou desliga o efeito de época ao trocar de tema ou de chave; cobre todo o vidro da doca (não a tela).
     _atualizarEfeito() {
-        const desenhar = EFEITOS[this._settings.get_string('tema')];
+        const desenhar = EFEITOS[this._tema()];
         if (!desenhar || !this._settings.get_boolean('efeito-epoca-ativo')) {
             this._pararEfeito();
             return;

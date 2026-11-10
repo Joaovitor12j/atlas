@@ -826,8 +826,10 @@ class Musica extends Widget {
     }
 
     iniciar() {
+        // só os nomes de players: sem o filtro, qualquer app entrando ou saindo do barramento refazia a lista
         this._sub = Gio.DBus.session.signal_subscribe('org.freedesktop.DBus', 'org.freedesktop.DBus',
-            'NameOwnerChanged', '/org/freedesktop/DBus', null, Gio.DBusSignalFlags.NONE, () => this._listar());
+            'NameOwnerChanged', '/org/freedesktop/DBus', MPRIS.slice(0, -1), Gio.DBusSignalFlags.MATCH_ARG0_NAMESPACE,
+            () => this._listar());
         this.atualizar();
         this._listar();
         super.iniciar();
@@ -1835,8 +1837,12 @@ class Slack extends Widget {
     // A lista vem do StatusNotifierWatcher: o Slack (Electron) se registra com o nome único (":1.96") e não com
     // um nome conhecido "org.*.StatusNotifierItem-*", então ListNames não o enxerga.
     _ler() {
-        if (this._lendo || this._destruido)
+        if (this._destruido)
             return;
+        if (this._lendo) {
+            this._relerDepois = true; // o sinal chegou no meio de uma leitura, que pode ter pego o valor antigo
+            return;
+        }
         this._lendo = true;
         const bus = Gio.DBus.session;
         bus.call('org.kde.StatusNotifierWatcher', '/StatusNotifierWatcher', 'org.freedesktop.DBus.Properties', 'Get',
@@ -1858,6 +1864,10 @@ class Slack extends Widget {
                     if (this._destruido)
                         return;
                     this._aplicar(resultados.filter(Boolean));
+                    if (this._relerDepois) {
+                        this._relerDepois = false;
+                        this._ler();
+                    }
                 };
                 if (!faltam) {
                     fim();

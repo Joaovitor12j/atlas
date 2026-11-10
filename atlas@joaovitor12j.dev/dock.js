@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
+import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, temaEfetivo, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
 import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from './decoracao.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {pararPonte} from './ponte.js';
@@ -175,11 +175,11 @@ class DockView {
             trackFullscreen: true,
         });
 
-        // Zona fina na borda da tela que traz a doca de volta no modo auto-ocultar.
         // Faixa transparente que reserva espaço (strut) para as janelas maximizadas não ficarem sob a doca.
         this._strut = new St.Widget({reactive: false});
         this._strutAtivo = false;
 
+        // Zona fina na borda da tela que traz a doca de volta no modo auto-ocultar.
         this._hot = new St.Widget({reactive: true, visible: false});
         Main.layoutManager.addChrome(this._hot, {affectsStruts: false, trackFullscreen: true});
         this._hot.connect('enter-event', () => {
@@ -218,7 +218,8 @@ class DockView {
             this._connect(this._settings, 'changed', (_s, key) => {
                 // os mascotes têm o próprio motor; mexer neles não reconstrói a doca
                 if (key === 'monitores' || key === 'mascotes-ativos' || key === 'mascote-teste' ||
-                    /^(cuco|fantasma|esqueleto|chama|noel|boneco|gato|coruja|pilha|satelite|tomate)-/.test(key))
+                    key === 'mascote-residente-ativo' || key === 'efeito-epoca-ativo' ||
+                    /^(cuco|fantasma|esqueleto|chama|noel|boneco|gato|coruja|pilha|satelite|tomate|calor|frio)-/.test(key))
                     return;
                 const autoAntes = this._c?.autoHide;
                 this._readConfig();
@@ -312,8 +313,7 @@ class DockView {
         [c.dotW, c.dotH] = c.indicador === 'barra' ? (vertical ? [3, 16] : [16, 3]) : [6, 6];
         c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
         // tema do ambiente atual, quando definido e válido; senão o global
-        const doAmb = c.amb?.tema;
-        c.tema = TEMAS.some(t => t[0] === doAmb) ? doAmb : (st?.get_string('tema') ?? 'noite');
+        c.tema = temaEfetivo(c.amb, st?.get_string('tema') ?? 'noite', TEMAS.map(t => t[0]));
         // temas de pacote: medidas do protótipo (margens, espaço, indicador) e espaço para o que passa do vidro
         c.geo = geometriaTema(c.tema, c.iconSize);
         c.sobra = 0;
@@ -1046,7 +1046,7 @@ class DockView {
         const c = this._c;
         this._setStrut(c.reserve && !c.autoHide);
         const t = Math.ceil(this._d0 + c.iconSize + c.padV + c.margin);
-        const [cx, cy] = [this._container.x, this._container.y];
+        const cy = this._container.y;
         if (c.pos === 'baixo') {
             this._strut.set_size(mon.width - 2, t);
             this._strut.set_position(mon.x + 1, mon.y + mon.height - t);
@@ -1349,7 +1349,7 @@ class DockView {
     }
 }
 
-// Gerenciador: carrega configuração e CSS uma vez e cria uma doca por tela conforme a opção "monitores".
+// Gerenciador: carrega configuração e CSS uma vez e cria uma doca por tela conforme a chave `telas`.
 export class Dock {
     // `dir`: pasta da extensão, dada pelo extension.js (os módulos rodam de uma cópia temporária).
     constructor(dir) {
@@ -1398,6 +1398,12 @@ export class Dock {
             this._migrarTelas();
             // só recria as docas se mudou quais telas têm doca; o auto-ocultar cada doca resolve sozinha
             this._connect(this._settings, 'changed::telas', () => {
+                // "Restaurar padrões" do app esvazia a chave: regrava na hora, senão o app mostra todas as telas
+                // desligadas e ligar uma delas apagaria a doca das outras
+                if (!this._settings.get_string('telas')) {
+                    this._migrarTelas();
+                    return; // a gravação acima dispara este sinal de novo
+                }
                 const quer = this._monitorIndexes().join();
                 if (quer !== this._views.map(v => v._monIdx).join())
                     this._buildViews();

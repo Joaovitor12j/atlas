@@ -11,7 +11,7 @@ trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/$UUID" "$RAIZ/dist"
 cp -r "$RAIZ/$UUID/." "$TMP/$UUID/"
 cp "$RAIZ/empacotar/extension.js" "$TMP/$UUID/extension.js"
-rm -rf "$TMP/$UUID"/.run-* "$TMP/$UUID"/.dock-*.js "$TMP/$UUID/schemas/gschemas.compiled"
+rm -rf "$TMP/$UUID"/.run-* "$TMP/$UUID/schemas/gschemas.compiled"
 find "$TMP/$UUID" -name '__pycache__' -prune -exec rm -rf {} +
 
 for f in "$TMP/$UUID"/*.js "$TMP/$UUID"/app/*.js; do

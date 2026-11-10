@@ -405,7 +405,7 @@
         <choice value="meia-hora"/>
       </choices>
       <default>"hora"</default>
-      <summary>Papai Papai Noel: com que frequência aparece</summary>
+      <summary>Papai Noel: com que frequência aparece</summary>
       <description>Na temporada (1 a 25 de dezembro) o Papai Noel aparece nas horas cheias, ou também nas meias horas.</description>
     </key>
     <key name="noel-movimento" type="s">
@@ -422,14 +422,14 @@
     <key name="noel-das" type="i">
       <range min="0" max="23"/>
       <default>8</default>
-      <summary>Papai Papai Noel: primeira hora do dia</summary>
-      <description>O noel só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
+      <summary>Papai Noel: primeira hora do dia</summary>
+      <description>O Papai Noel só aparece a partir desta hora (inclusive). Se for maior que a última hora, a janela cruza a meia-noite.</description>
     </key>
     <key name="noel-ate" type="i">
       <range min="0" max="23"/>
       <default>23</default>
-      <summary>Papai Papai Noel: última hora do dia</summary>
-      <description>O noel só aparece até esta hora (inclusive).</description>
+      <summary>Papai Noel: última hora do dia</summary>
+      <description>O Papai Noel só aparece até esta hora (inclusive).</description>
     </key>
     <key name="boneco-intervalo" type="s">
       <choices>

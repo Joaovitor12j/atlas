@@ -73,8 +73,6 @@ scale trough { background: #31565f; min-height: 4px; }
 scale trough highlight { background: #ff6b4a; }
 scale slider { background: #ff6b4a; border: 2px solid #2a0d06; min-width: 14px; min-height: 14px; }
 
-.atlas-mini-tela { border-radius: 12px; }
-
 /* Listas e linhas dentro dos cartões (páginas feitas com libadwaita) */
 .atlas-cartao list, .atlas-cartao .boxed-list { background: transparent; border: none; box-shadow: none; }
 .atlas-cartao row { background: transparent; border-top: 1px solid #25424b; }

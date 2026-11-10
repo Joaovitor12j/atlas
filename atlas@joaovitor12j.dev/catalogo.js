@@ -1,5 +1,5 @@
 // Listas compartilhadas entre o dock (Shell) e a janela de preferências (GTK).
-// Não importe nada de gi://St, Clutter ou resource:///org/gnome/shell aqui: o prefs.js roda fora do Shell.
+// Não importe nada de gi://St, Clutter ou resource:///org/gnome/shell aqui: o app de configuração roda fora do Shell.
 
 // [id, nome, descrição]
 export const TEMAS = [

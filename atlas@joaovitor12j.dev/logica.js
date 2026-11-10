@@ -79,6 +79,11 @@ export function escolherAmbiente(lista, id) {
     return lista.find(a => a.id === id) ?? lista[0] ?? null;
 }
 
+// Tema que a doca mostra: o do ambiente atual, quando definido e válido (`validos` = ids do catálogo); senão o global.
+export function temaEfetivo(amb, temaGlobal, validos) {
+    return validos.includes(amb?.tema) ? amb.tema : temaGlobal;
+}
+
 // Apps que pertencem a um ambiente: os fixados e os das coleções.
 export function appsDoAmbiente(amb) {
     return new Set([...amb.apps, ...amb.colecoes.flatMap(c => c.apps)]);

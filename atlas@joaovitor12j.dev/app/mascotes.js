@@ -9,8 +9,7 @@ import {retanguloArredondado} from './previa.js';
 
 export function criarMascotes(settings, p, win) {
     const {miniaturas, opcoes} = p._mascotesDados(settings);
-    const cartoes = [];
-    const itens = []; // [texto, widget] para a busca
+    const itens = []; // cartões de mascote, para a busca
 
     const principal = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, css_classes: ['atlas-cartao']});
     principal.append(new Gtk.Label({label: 'Mascotes', xalign: 0, css_classes: ['atlas-cartao-titulo']}));
@@ -18,7 +17,6 @@ export function criarMascotes(settings, p, win) {
         label: 'Aparecem sozinhos na doca, em horas, datas e eventos certos. Desligados, não gastam nada. Não aparecem com a doca escondida, no Overview nem com o Não perturbe ligado.',
         xalign: 0, wrap: true, css_classes: ['atlas-cartao-sub'],
     }));
-    cartoes.push(principal);
 
     // Mascote residente: mora na doca do tema atual (ex.: água-viva no Aurora); sem lista própria, é um interruptor só.
     const linhaResidente = new Gtk.Box({spacing: 12, margin_top: 10});
