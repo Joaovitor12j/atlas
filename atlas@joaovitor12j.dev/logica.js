@@ -2,6 +2,8 @@
 // Fica separada para poder ser testada com `node --test` fora do GNOME Shell.
 
 // Segundos -> "2h 05" ou "42 min".
+import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, molaAmortecida, rampa} from './nucleo/matematica.js';
+
 export function duracao(segundos) {
     const h = Math.floor(segundos / 3600);
     const m = Math.floor((segundos % 3600) / 60);
@@ -58,53 +60,6 @@ export function percentualCpu(ant, agora) {
     return Math.round((1 - (agora.ocioso - ant.ocioso) / dt) * 100);
 }
 
-// Lê o JSON do GSettings: descarta o que não tem id/apps e preenche widgets e coleções.
-export function normalizarAmbientes(texto) {
-    try {
-        const v = JSON.parse(texto ?? '[]');
-        return Array.isArray(v)
-            ? v.filter(a => a && a.id && Array.isArray(a.apps)).map(a => ({
-                ...a,
-                widgets: Array.isArray(a.widgets) ? a.widgets : [],
-                colecoes: Array.isArray(a.colecoes) ? a.colecoes.filter(c => c && c.id && Array.isArray(c.apps)) : [],
-            }))
-            : [];
-    } catch (_e) {
-        return [];
-    }
-}
-
-// O ambiente com esse id, ou o primeiro da lista.
-export function escolherAmbiente(lista, id) {
-    return lista.find(a => a.id === id) ?? lista[0] ?? null;
-}
-
-// Tema que a doca mostra: o do ambiente atual, quando definido e válido (`validos` = ids do catálogo); senão o global.
-export function temaEfetivo(amb, temaGlobal, validos) {
-    return validos.includes(amb?.tema) ? amb.tema : temaGlobal;
-}
-
-// Apps que pertencem a um ambiente: os fixados e os das coleções.
-export function appsDoAmbiente(amb) {
-    return new Set([...amb.apps, ...amb.colecoes.flatMap(c => c.apps)]);
-}
-
-// Não perturbe: decide para qual ambiente ir quando o modo liga ou desliga.
-// `dnd` é true com o modo ligado; `memoria` é {de, para} do que esta função devolveu na ida, ou null.
-// Na ida vai ao ambiente marcado com `naoperturbe`; na volta só retorna se o usuário ainda estiver nele.
-export function decidirDnd(lista, atualId, dnd, memoria) {
-    if (dnd) {
-        const alvo = lista.find(a => a.naoperturbe);
-        if (!alvo || alvo.id === atualId)
-            return {ir: null, memoria};
-        return {ir: alvo.id, memoria: {de: atualId, para: alvo.id}};
-    }
-    if (!memoria)
-        return {ir: null, memoria: null};
-    const volta = lista.find(a => a.id === memoria.de);
-    return {ir: volta && atualId === memoria.para ? volta.id : null, memoria: null};
-}
-
 // Dias de `hoje` ({ano, mes, dia}) até `alvo` ("AAAA-MM-DD"): positivo é no futuro, 0 é hoje.
 // null quando o texto não é uma data real (inclui 31/02).
 export function diasAte(hoje, alvo) {
@@ -116,11 +71,6 @@ export function diasAte(hoje, alvo) {
     if (dt.getUTCFullYear() !== a || dt.getUTCMonth() !== mes - 1 || dt.getUTCDate() !== d)
         return null;
     return Math.round((dt.getTime() - Date.UTC(hoje.ano, hoje.mes - 1, hoje.dia)) / 86400000);
-}
-
-// Quando avisar (uma vez) que o Não perturbe não faz nada por falta de um ambiente marcado.
-export function deveAvisarDnd(lista, dnd, jaAvisou) {
-    return dnd && !jaAvisou && lista.length > 0 && !lista.some(a => a.naoperturbe);
 }
 
 // Histórico da área de transferência: o texto mais recente primeiro, sem repetir, no máximo `max` itens.
@@ -196,112 +146,6 @@ export function textoDoSelo(n) {
 
 // ----- Clima (Open-Meteo) -----
 
-// Código WMO (`weather_code`) -> [ícone, texto]. Os ícones são os que desenho.js sabe desenhar.
-const TEMPO_WMO = [
-    [[0], 'limpo', 'Céu limpo'],
-    [[1], 'poucas-nuvens', 'Poucas nuvens'],
-    [[2], 'poucas-nuvens', 'Parcialmente nublado'],
-    [[3], 'nublado', 'Nublado'],
-    [[45, 48], 'nevoeiro', 'Nevoeiro'],
-    [[51, 53, 55, 56, 57], 'garoa', 'Garoa'],
-    [[61, 63, 66, 80, 81], 'chuva', 'Chuva'],
-    [[65, 67, 82], 'chuva', 'Chuva forte'],
-    [[71, 73, 75, 77, 85, 86], 'neve', 'Neve'],
-    [[95, 96, 99], 'trovoada', 'Trovoada'],
-];
-
-export function descreverTempo(codigo) {
-    const t = typeof codigo === 'number' && TEMPO_WMO.find(([cods]) => cods.includes(codigo));
-    return t ? {icone: t[1], texto: t[2]} : {icone: 'nublado', texto: 'Sem dados'};
-}
-
-const num = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-const coordValida = (lat, lon) => num(lat) !== null && num(lon) !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-
-// URL da previsão: agora, as próximas horas e 5 dias, no fuso do lugar.
-export function urlClima(lat, lon) {
-    if (!coordValida(lat, lon))
-        return null;
-    return 'https://api.open-meteo.com/v1/forecast' +
-        `?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}` +
-        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m' +
-        '&hourly=temperature_2m,precipitation_probability' +
-        '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
-        '&forecast_days=5&timezone=auto';
-}
-
-// Resposta da previsão -> {temp, sensacao, umidade, vento, codigo, dia, hora, horas: [{hora, temp, chuva}], dias:
-// [{data, codigo, max, min, chuva}]}. `horas` são as `nHoras` a partir da hora atual. null se faltar o essencial.
-export function lerClima(json, nHoras = 24) {
-    const c = json?.current;
-    if (!c || num(c.temperature_2m) === null || typeof c.time !== 'string')
-        return null;
-    const horas = [];
-    const h = json.hourly;
-    if (Array.isArray(h?.time)) {
-        const agora = c.time.slice(0, 13); // "AAAA-MM-DDTHH"
-        const i0 = h.time.findIndex(t => t.slice(0, 13) >= agora);
-        for (let i = Math.max(0, i0); i0 >= 0 && i < h.time.length && horas.length < nHoras; i++) {
-            if (num(h.temperature_2m?.[i]) !== null)
-                horas.push({hora: Number(h.time[i].slice(11, 13)), temp: h.temperature_2m[i], chuva: num(h.precipitation_probability?.[i])});
-        }
-    }
-    const d = json.daily;
-    const dias = Array.isArray(d?.time) ? d.time.map((data, i) => ({
-        data, codigo: num(d.weather_code?.[i]), max: num(d.temperature_2m_max?.[i]), min: num(d.temperature_2m_min?.[i]),
-        chuva: num(d.precipitation_probability_max?.[i]),
-    })).filter(x => x.max !== null && x.min !== null) : [];
-    return {
-        temp: c.temperature_2m, sensacao: num(c.apparent_temperature), umidade: num(c.relative_humidity_2m),
-        vento: num(c.wind_speed_10m), codigo: num(c.weather_code), dia: c.is_day !== 0, hora: c.time, horas, dias,
-    };
-}
-
-// 27.6 -> "28°"; -0.4 -> "0°" (sem "-0").
-export function formatarTemp(t) {
-    if (num(t) === null)
-        return '--';
-    const r = Math.round(t);
-    return `${r === 0 ? 0 : r}°`;
-}
-
-// Hora de buscar de novo? Dados com mais de `validadeMs`; depois de uma falha, tenta a cada `esperaErroMs`.
-export function climaVencido(agoraMs, buscadoEm, {erro = false, validadeMs = 30 * 60_000, esperaErroMs = 5 * 60_000} = {}) {
-    if (!buscadoEm)
-        return true;
-    return agoraMs - buscadoEm >= (erro ? esperaErroMs : validadeMs);
-}
-
-// "AAAA-MM-DD" -> "seg", "ter"...; `hoje` (mesmo formato) vira "hoje".
-export function diaCurto(data, hoje) {
-    if (data === hoje)
-        return 'hoje';
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(data ?? '');
-    if (!m)
-        return '';
-    return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][new Date(Date.UTC(+m[1], m[2] - 1, +m[3])).getUTCDay()];
-}
-
-// Busca de cidade (geocodificação do Open-Meteo).
-export function urlBuscaLocal(nome, n = 8) {
-    const t = String(nome ?? '').trim();
-    if (t.length < 2)
-        return null;
-    return `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(t)}&count=${n}&language=pt&format=json`;
-}
-
-// Resposta da busca -> [{nome, rotulo, lat, lon}]; `rotulo` junta estado e país para distinguir homônimos.
-export function lerLocais(json) {
-    if (!Array.isArray(json?.results))
-        return [];
-    return json.results.filter(r => typeof r?.name === 'string' && coordValida(r.latitude, r.longitude)).map(r => ({
-        nome: r.name,
-        rotulo: [r.name, r.admin1, r.country].filter((x, i, a) => x && a.indexOf(x) === i).join(', '),
-        lat: r.latitude,
-        lon: r.longitude,
-    }));
-}
-
 // ----- Mascotes -----
 
 // Cuco: quantas vezes canta. `hora` (0..23) vira 1..12, limitado por `max`; na meia hora é uma só.
@@ -337,19 +181,6 @@ export function avaliarDisparo(agoraMs, alvoMs, toleranciaMs = 90_000) {
 export function esperaAte(agoraMs, alvoMs, teto = 15 * 60_000, folgaMs = 200) {
     return Math.max(folgaMs, Math.min(alvoMs - agoraMs + folgaMs, teto));
 }
-
-const limitar01 = x => Math.max(0, Math.min(1, x));
-const easeOutCubic = x => 1 - (1 - x) ** 3;
-const easeInCubic = x => x ** 3;
-const easeInOut = x => (x < 0.5 ? 2 * x * x : 1 - ((-2 * x + 2) ** 2) / 2);
-const easeOutBack = x => {
-    const c1 = 1.70158;
-    const c3 = c1 + 1;
-    return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
-};
-
-// Mola amortecida de 0 a 1: passa uns 12% do alvo, volta e assenta (x de 0 a 1; vale 1 a partir do fim).
-const molaAmortecida = x => (x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(x * 9));
 
 // Sobe de trás da borda, fica e desce, com os princípios de animação aplicados num lugar só (os mascotes que sobem da
 // doca usam): subida em mola com esticada (rápido = alto e fino), assentada com esmagada, respiração enquanto fica e,
@@ -633,9 +464,6 @@ export function escolherVariante(valor, variantes, r) {
     return variantes[Math.min(variantes.length - 1, Math.floor(r * variantes.length))];
 }
 
-// Rampa de 0 a 1 entre `a` e `b` ms (com easeInOut); antes 0, depois 1.
-const rampa = (t, a, b) => easeInOut(limitar01((t - a) / (b - a)));
-
 // Picolé: sobe da doca, pinga pela borda, derrete numa poça e a poça evapora.
 const PICOLE = {sobe: 450, pinga: 3000, derrete: 1300, evapora: 900};
 export const duracaoPicole = () => PICOLE.sobe + PICOLE.pinga + PICOLE.derrete + PICOLE.evapora;
@@ -743,7 +571,7 @@ export function quadroNeve(t) {
 }
 
 // Pseudoaleatório fixo por índice (o mesmo floco cai sempre no mesmo lugar), em [0, 1).
-const sorteioFixo = i => {
+export const sorteioFixo = i => {
     const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
     return x - Math.floor(x);
 };
@@ -1123,11 +951,6 @@ export function bateriaPedeAparicao(pct, estado, limiar, armado, agoraMs, ultimo
 // Rearma quando a bateria carrega ou passa 5 pontos do limiar.
 export const rearmarBateria = (pct, estado, limiar, armado) => armado || estado !== 2 || (pct !== null && pct > limiar + 5);
 
-// Escala de um ícone a `distancia` px do ponteiro: gaussiana entre 1 (longe) e `forca` (embaixo do ponteiro).
-export function escalaLente(distancia, forca, largura) {
-    return 1 + (forca - 1) * Math.exp(-(distancia * distancia) / (2 * largura * largura));
-}
-
 // Mascote residente (mora na doca do tema atual, nunca sai): `estados` é [[id, peso]], peso maior = mais comum
 // ("parado" costuma pesar mais). `r` em [0, 1) escolhe o próximo estado por roleta ponderada.
 export function proximoEstadoResidente(estados, r) {
@@ -1228,133 +1051,5 @@ export function quadroPapaiNoel(t, estado) {
 // `largura`/`altura` em px do actor; `t` em ms desde que o efeito começou. Cada partícula sempre no mesmo lugar
 // e período (sorteioFixo), só a fase avança com `t`, então dá pra entrar e sair do efeito sem salto visual.
 
-// Flocos de neve caindo continuamente (nevemat): {x, y, r} em px, período de 4 a 7 s por floco.
-export function campoNeve(t, largura, altura, n = 14) {
-    const flocos = [];
-    for (let i = 0; i < n; i++) {
-        const periodo = 4000 + sorteioFixo(i + 300) * 3000;
-        const fase = ((t + sorteioFixo(i) * periodo) % periodo) / periodo;
-        const x = sorteioFixo(i + 60) * largura + Math.sin(fase * 6 + i) * 6;
-        flocos.push({x, y: fase * altura, r: 1.2 + sorteioFixo(i + 120) * 1.6});
-    }
-    return flocos;
-}
-
-// Brilho (0 a 1) de cada luzinha de um fio: pisca devagar (2,2 a 3,6 s por luz), nunca mais de 1 vez por segundo.
-export function luzinhasPiscando(t, n = 8) {
-    return Array.from({length: n}, (_, i) => {
-        const periodo = 2200 + sorteioFixo(i + 500) * 1400;
-        const fase = ((t + sorteioFixo(i + 10) * periodo) % periodo) / periodo;
-        return 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(fase * Math.PI * 2));
-    });
-}
-
-// Pontos de brilho dourado espalhados (vitrine): {x, y} de 0 a 1 (fração da largura/altura) e `brilho` de 0 a 1.
-export function brilhosDourados(t, n = 8) {
-    return Array.from({length: n}, (_, i) => {
-        const periodo = 1800 + sorteioFixo(i + 700) * 1600;
-        const fase = ((t + sorteioFixo(i + 20) * periodo) % periodo) / periodo;
-        return {x: sorteioFixo(i + 80), y: sorteioFixo(i + 140), brilho: Math.max(0, Math.sin(fase * Math.PI * 2))};
-    });
-}
-
-// Mar subindo e descendo (Natal brasileiro): deslocamento de -1 a 1, ciclo de 2,6 s.
-export function marOnda(t) {
-    return Math.sin(t / 2600 * Math.PI * 2);
-}
-
 // ----- Temas de pacote (Pixel, Materiais, Natal): o material da doca é desenhado em Cairo (decoracao.js) -----
 
-// Temas pixel: a arte da doca tem 36 px de altura e o tile de app tem 20 px (protótipo em docs/design/pacotes-de-temas).
-export const TEMAS_PIXEL = ['vila', 'floresta', 'lua', 'praia', 'nevepixel'];
-// Temas de materiais: tile de 58 px, margem de 14 px e 18 px nas pontas.
-export const TEMAS_MATERIAIS = ['aurora', 'carta', 'jardim', 'chuva', 'nevemat', 'vitrine', 'brasileiro'];
-export const temaDecorado = id => TEMAS_PIXEL.includes(id) || TEMAS_MATERIAIS.includes(id);
-
-// Centro do indicador abaixo do tile, em px do protótipo (materiais) e tamanho [largura, altura] dele.
-const INDICADOR_MAT = {
-    aurora: [6.5, 14, 14], carta: [7, 0, 0], jardim: [7, 12, 8], chuva: [7.5, 22, 10],
-    nevemat: [12, 22, 22], vitrine: [8, 16, 20], brasileiro: [6.5, 20, 20],
-};
-
-// Medidas da doca de um tema decorado, proporcionais ao ícone, para bater com o protótipo: margens do vidro,
-// espaço entre ícones, onde fica o indicador (distância da borda da tela até o centro dele) e o tamanho dele.
-// `pixel` é o tamanho de um pixel da arte (temas pixel). Tema comum devolve null.
-export function geometriaTema(id, icone) {
-    if (TEMAS_PIXEL.includes(id)) {
-        const p = icone / 20;
-        return {
-            pixel: p, padV: 8 * p, padH: 10 * p, gap: 5 * p, dotArea: 0,
-            dotDepth: 4.5 * p, dotW: Math.round(5 * p), dotH: Math.round(5 * p), raio: 0,
-        };
-    }
-    const ind = INDICADOR_MAT[id];
-    if (!ind)
-        return null;
-    const k = icone / 58;
-    return {
-        pixel: 0, padV: 14 * k, padH: 18 * k, gap: 14 * k, dotArea: 0,
-        dotDepth: (14 - ind[0]) * k, dotW: Math.round(ind[1] * k), dotH: Math.round(ind[2] * k),
-        raio: {aurora: 28, carta: 6, jardim: 30, chuva: 22, nevemat: 22, vitrine: 16, brasileiro: 24}[id] * k,
-    };
-}
-
-// ----- Telas da doca -----
-// A chave `telas` guarda um JSON {"1": {ativa, auto}, "2": {...}}: a chave é a posição da tela (da esquerda para a
-// direita, depois de cima para baixo), `ativa` diz se tem doca e `auto` se ela se esconde sozinha. Tela sem entrada
-// fica sem doca. Texto vazio ou inválido = ainda não migrado.
-export function lerTelas(texto) {
-    try {
-        const obj = JSON.parse(texto);
-        return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : null;
-    } catch (_e) {
-        return null;
-    }
-}
-
-// Estado de cada tela (por posição, 0-based). Sem `telas` valem as chaves antigas `monitores` ("principal", "todas",
-// "tela-N") e `auto-ocultar` (global). `principal` é a posição da tela principal.
-export function resolverTelas({texto, legado = 'principal', autoGlobal = false, n, principal = 0}) {
-    const obj = lerTelas(texto);
-    const saida = [];
-    for (let i = 0; i < n; i++) {
-        if (obj) {
-            const e = obj[String(i + 1)];
-            saida.push({ativa: e?.ativa === true, auto: e?.auto === true});
-            continue;
-        }
-        const m = /^tela-(\d+)$/.exec(legado);
-        const ativa = legado === 'todas' ? true : m ? Number(m[1]) - 1 === i : i === principal;
-        saida.push({ativa, auto: autoGlobal});
-    }
-    return saida;
-}
-
-// JSON com a tela `pos` (0-based) alterada em `campo` ("ativa" ou "auto"); preserva as demais entradas.
-export function definirTela(texto, pos, campo, valor) {
-    const obj = lerTelas(texto) ?? {};
-    const k = String(pos + 1);
-    obj[k] = {ativa: false, auto: false, ...obj[k], [campo]: valor};
-    return JSON.stringify(obj);
-}
-
-// JSON com o auto-ocultar ligado/desligado em todas as telas que têm doca.
-export function definirAutoTodas(texto, valor) {
-    const obj = lerTelas(texto) ?? {};
-    for (const k of Object.keys(obj)) {
-        if (obj[k]?.ativa)
-            obj[k] = {...obj[k], auto: valor};
-    }
-    return JSON.stringify(obj);
-}
-
-// Verdadeiro se há ao menos uma tela com doca e todas elas se escondem sozinhas.
-export function todasAuto(texto) {
-    const ativas = Object.values(lerTelas(texto) ?? {}).filter(e => e?.ativa);
-    return ativas.length > 0 && ativas.every(e => e.auto);
-}
-
-// Índices dos monitores do Shell na ordem de posição (esquerda para a direita, depois de cima para baixo).
-export function ordemTelas(monitores) {
-    return monitores.map((m, i) => ({i, x: m.x, y: m.y})).sort((a, b) => a.x - b.x || a.y - b.y).map(o => o.i);
-}

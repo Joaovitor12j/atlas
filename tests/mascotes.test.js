@@ -1,13 +1,14 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import {
-    SPRITES, quadroSprite, bateriaPedeAparicao, confete, duracaoCoruja, duracaoPilha, duracaoSatelite, duracaoTomate,
-    quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria,
-    avaliarDisparo, batidasDoDisparo, duracaoCuco, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoNoel, quadroBoneco, quadroNoel, duracaoChama, memoriaPedeAparicao, quadroChama, rearmarMemoria, usoMemoria, duracaoEsqueleto, duracaoFantasma, escolherAparicao, esperaAte, naJanela, naTemporada, posicionarMascote,
-    FINAIS, PASSEIOS, duracaoPasseio, quadroPasseio, tamanhoPasseio, faseSobeDesce, proximoDisparo, quadroCuco, quadroEsqueleto, quadroFantasma,
-    proximoEstadoResidente, quadroAguaViva, quadroGaivota, quadroGatoIlustrado, quadroSapo, quadroBonecoIlustrado, quadroRena, quadroPapaiNoel,
-    campoNeve, luzinhasPiscando, brilhosDourados, marOnda,
+    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, confete, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama,
+    duracaoCoruja, duracaoCuco, duracaoEsqueleto, duracaoFantasma, duracaoNoel, duracaoPasseio, duracaoPilha, duracaoSatelite, duracaoTomate,
+    escolherAparicao, esperaAte, faseSobeDesce, FINAIS, memoriaPedeAparicao, naJanela, naTemporada, PASSEIOS, posicionarMascote, proximoDisparo,
+    proximoEstadoResidente, quadroAguaViva, quadroBoneco, quadroBonecoIlustrado, quadroChama, quadroCoruja, quadroCuco, quadroEsqueleto,
+    quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNoel, quadroPapaiNoel, quadroPasseio, quadroPilha, quadroRena, quadroSapo,
+    quadroSatelite, quadroSprite, quadroTomate, rearmarBateria, rearmarMemoria, SPRITES, tamanhoPasseio, usoMemoria,
 } from '../atlas@joaovitor12j.dev/logica.js';
+import {brilhosDourados, campoNeve, luzinhasPiscando, marOnda} from '../atlas@joaovitor12j.dev/temas/particulas.js';
 
 const local = (h, m, s = 0) => new Date(2026, 9, 19, h, m, s).getTime();
 

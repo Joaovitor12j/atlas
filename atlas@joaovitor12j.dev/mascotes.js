@@ -3,27 +3,32 @@
 // Em repouso o custo é um único temporizador (no máximo a cada 15 min) e só com um mascote ligado; o actor só
 // existe durante a aparição. A lógica de horários e a linha do tempo estão em logica.js, o desenho em desenho.js.
 import Cairo from 'gi://cairo';
-import {TEMAS} from './catalogo.js';
-import {EFEITOS_TEMA} from './decoracao.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {aguaViva, bonecoIlustrado, boneco, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear, pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate} from './desenho.js';
-import {AO_CONCLUIR_FOCO} from './eventos.js';
-import {CLIMA, buscarClima} from './clima.js';
-import {agendar, agora, registrar} from './perf.js';
+import {escolherAmbiente, normalizarAmbientes} from './ambientes/logica.js';
+import {buscarClima, CLIMA} from './clima/servico.js';
+import {EFEITOS_TEMA} from './decoracao.js';
 import {
-    avaliarDisparo, bateriaPedeAparicao, escolherAmbiente, normalizarAmbientes, temaEfetivo, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
-    quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCuco,
-    duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPendurado, duracaoPicole, duracaoPinguim,
-    duracaoCucoVoa, duracaoPasseio, duracaoPinguimAnda, duracaoPinguimPula, duracaoSolCorre, duracaoSolNasce, duracaoSolQuica,
-    quadroCucoVoa, quadroPinguimAnda, quadroPinguimPula, quadroSolCorre, quadroSolNasce, quadroSolQuica, duracaoSolArco, duracaoSolLeque, PASSEIOS, quadroPasseio, tamanhoPasseio, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima,
-    memoriaPedeAparicao, naJanela, naTemporada, posicionarMascote, proximoDisparo, proximoEstadoResidente, quadroAguaViva,
-    quadroBoneco, quadroBonecoIlustrado, quadroChama, quadroCuco,
-    quadroEsqueleto, quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNeve, quadroNoel, quadroPapaiNoel, quadroPendurado, quadroPicole, quadroPinguim, quadroRena, quadroSapo, quadroSolArco,
-    quadroSolLeque, rearmarMemoria, tamanhoMascoteClima, usoMemoria,
+    aguaViva, boneco, bonecoIlustrado, chama, coruja, cuco, cucoVoa, esqueleto, fantasma, gaivota, gatoIlustrado, neve, noel, papaiNoel, passear,
+    pendurado, picole, pilha, pinguim, rena, sapo, satelite, solArco, solLeque, sprite, tomate,
+} from './desenho.js';
+import {
+    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCoruja,
+    duracaoCuco, duracaoCucoVoa, duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPasseio, duracaoPendurado, duracaoPicole,
+    duracaoPilha, duracaoPinguim, duracaoPinguimAnda, duracaoPinguimPula, duracaoSatelite, duracaoSolArco, duracaoSolCorre, duracaoSolLeque,
+    duracaoSolNasce, duracaoSolQuica, duracaoTomate, escolherAparicao, escolherVariante, esperaAte, flocosDeNeve, mascoteDoClima, memoriaPedeAparicao,
+    naJanela, naTemporada, PASSEIOS, posicionarMascote, proximoDisparo, proximoEstadoResidente, quadroAguaViva, quadroBoneco, quadroBonecoIlustrado,
+    quadroChama, quadroCoruja, quadroCuco, quadroCucoVoa, quadroEsqueleto, quadroFantasma, quadroGaivota, quadroGatoIlustrado, quadroNeve, quadroNoel,
+    quadroPapaiNoel, quadroPasseio, quadroPendurado, quadroPicole, quadroPilha, quadroPinguim, quadroPinguimAnda, quadroPinguimPula, quadroRena,
+    quadroSapo, quadroSatelite, quadroSolArco, quadroSolCorre, quadroSolLeque, quadroSolNasce, quadroSolQuica, quadroSprite, quadroTomate,
+    rearmarBateria, rearmarMemoria, SPRITES, tamanhoMascoteClima, tamanhoPasseio, usoMemoria,
 } from './logica.js';
+import {TEMAS} from './nucleo/catalogo.js';
+import {AO_CONCLUIR_FOCO} from './nucleo/eventos.js';
+import {agendar, agora, registrar} from './nucleo/perf.js';
+import {temaEfetivo} from './temas/logica.js';
 
 // Mascotes residentes: moram na doca do tema atual (ligados por `mascote-residente-ativo`) e nunca saem, diferente
 // dos mascotes por horário/data/evento acima. `estados` é [[id, peso]] para proximoEstadoResidente (logica.js);

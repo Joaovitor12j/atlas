@@ -13,15 +13,16 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {descreverTempo, diaCurto, formatarTemp} from './clima/logica.js';
+import {buscarClima, CLIMA, localDoClima} from './clima/servico.js';
 import {anel, anelDeTile, barra, cor, grafico, iconeTempo, relogioAnalogico} from './desenho.js';
-import {AO_CONCLUIR_FOCO} from './eventos.js';
-import {agendar, agora, registrar} from './perf.js';
-import {CLIMA, buscarClima, localDoClima} from './clima.js';
-import {obterPonte} from './ponte.js';
 import {
-    DIAS_SEMANA, MESES, calcularProgresso, descreverTempo, diaCurto, diasAte, duracao, escalaGrafico,
-    formatarCrono, formatarFaixa, formatarTaxa, formatarTemp, lerNaoLidas, mudarMes, pct, percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
+    calcularProgresso, DIAS_SEMANA, diasAte, duracao, escalaGrafico, formatarCrono, formatarFaixa, formatarTaxa, lerNaoLidas, MESES, mudarMes, pct,
+    percentualCpu, proximaFase, registrarCopia, resumirTexto, semanasDoMes, textoDoSelo,
 } from './logica.js';
+import {AO_CONCLUIR_FOCO} from './nucleo/eventos.js';
+import {agendar, agora, registrar} from './nucleo/perf.js';
+import {obterPonte} from './nucleo/ponte.js';
 
 // GSettings da extensão, passado por criarWidget; as opções dos widgets são lidas a cada uso.
 let CFG = null;

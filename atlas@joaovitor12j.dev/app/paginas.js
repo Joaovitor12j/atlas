@@ -1,13 +1,18 @@
 // Páginas da janela de configuração do ATLAS. As mudanças valem ao vivo: o dock escuta o GSettings.
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
-import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
-import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, sprite, pilha, pinguim, satelite, solArco, tomate} from '../desenho.js';
-import {MOVIMENTOS} from '../catalogo.js';
-import {SPRITES, lerLocais, quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, quadroBoneco, quadroPinguim, quadroSolArco, quadroChama, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, urlBuscaLocal, definirTela, lerTelas} from '../logica.js';
+import {lerLocais, urlBuscaLocal} from '../clima/logica.js';
+import {boneco, chama, coruja, cuco, esqueleto, fantasma, noel, pilha, pinguim, satelite, solArco, sprite, tomate} from '../desenho.js';
+import {definirTela, lerTelas} from '../dock/telas.js';
+import {
+    quadroBoneco, quadroChama, quadroCoruja, quadroCuco, quadroEsqueleto, quadroFantasma, quadroNoel, quadroPilha, quadroPinguim, quadroSatelite,
+    quadroSolArco, quadroTomate, SPRITES,
+} from '../logica.js';
+import {MOVIMENTOS} from '../nucleo/catalogo.js';
 
 export class Paginas {
     // Linha com lista de opções ligada a uma chave string.

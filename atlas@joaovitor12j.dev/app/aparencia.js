@@ -2,7 +2,7 @@
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import {PACOTES, TEMAS} from '../catalogo.js';
+import {PACOTES, TEMAS} from '../nucleo/catalogo.js';
 import {appsDaPrevia, desenharMiniDoca, retanguloArredondado} from './previa.js';
 
 function cor(cr, css) {

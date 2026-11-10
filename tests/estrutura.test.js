@@ -1,9 +1,10 @@
 // Confere a consistência entre o catálogo, o schema e os temas, que o compilador não pega.
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PASSEIOS, SPRITES, temaDecorado} from '../atlas@joaovitor12j.dev/logica.js';
-import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import test from 'node:test';
+import {PASSEIOS, SPRITES} from '../atlas@joaovitor12j.dev/logica.js';
+import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/nucleo/catalogo.js';
+import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
 import {fonte, modulos} from './auxiliar.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);

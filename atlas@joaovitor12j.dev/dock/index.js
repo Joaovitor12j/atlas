@@ -2,23 +2,26 @@
 // Mutter não aceita layer-shell, então o dock é um actor "chrome" desenhado pelo próprio Shell.
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
-import Meta from 'gi://Meta';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import {TEMAS, WIDGETS} from '../catalogo.js';
-import {Mascotes} from '../mascotes.js';
-import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, temaEfetivo, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from '../logica.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import {appsDoAmbiente, decidirDnd, deveAvisarDnd, escolherAmbiente, normalizarAmbientes} from '../ambientes/logica.js';
+import {pararClima} from '../clima/servico.js';
 import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../decoracao.js';
+import {Mascotes} from '../mascotes.js';
+import {TEMAS, WIDGETS} from '../nucleo/catalogo.js';
+import {agendar, perfilar} from '../nucleo/perf.js';
+import {pararPonte} from '../nucleo/ponte.js';
+import {geometriaTema, temaEfetivo} from '../temas/logica.js';
 import {criarWidget, pararClipboard} from '../widgets.js';
-import {pararPonte} from '../ponte.js';
-import {pararClima} from '../clima.js';
-import {agendar, perfilar} from '../perf.js';
+import {escalaLente} from './lente.js';
+import {definirAutoTodas, ordemTelas, resolverTelas, todasAuto} from './telas.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 
