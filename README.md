@@ -229,7 +229,7 @@ Estrutura (tudo em `atlas@joaovitor12j.dev/`):
 
 O `extension.js` do repositório é só para desenvolvimento; o `pack.sh` o troca por `empacotar/extension.js` (import direto) dentro do zip.
 
-Recarregar depois de editar qualquer módulo ou `temas.css`:
+Recarregar depois de editar qualquer módulo ou `temas/temas.css`:
 ```bash
 gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas@joaovitor12j.dev
 ```
@@ -243,7 +243,7 @@ gjs -m tests/previa-cuco.js /tmp/cuco.png                             # prévia 
 ```
 O CI (GitHub Actions) roda a checagem de sintaxe de cada módulo, o schema em modo estrito e os testes a cada PR.
 
-Ao adicionar tema, widget, mascote ou chave de configuração, atualize todos os lados (o `tests/estrutura.test.js` confere): entrada no `catalogo.js`, `<choice>` ou `<key>` no schema, regras em `temas.css`, classe em `widgets.js`. Mais contexto em [CLAUDE.md](CLAUDE.md) e em [docs/](docs).
+Ao adicionar tema, widget, mascote ou chave de configuração, atualize todos os lados (o `tests/estrutura.test.js` confere): entrada no `catalogo.js`, `<choice>` ou `<key>` no schema, regras em `temas/temas.css`, classe em `widgets.js`. Mais contexto em [CLAUDE.md](CLAUDE.md) e em [docs/](docs).
 
 O código, os comentários e os commits são em português.
 

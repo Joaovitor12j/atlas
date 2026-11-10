@@ -13,7 +13,7 @@ import {fonte, modulos, RAIZ} from './auxiliar.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
-const css = readFileSync(new URL('temas.css', raiz), 'utf8');
+const css = readFileSync(new URL('temas/temas.css', raiz), 'utf8');
 const widgetsJs = readFileSync(new URL('widgets/index.js', raiz), 'utf8');
 const mascotesJs = modulos('mascotes').map(fonte).join('\n');
 const ARQUIVOS_APP = ['paginas', 'aparencia', 'widgets', 'ambientes', 'mascotes', 'janela', 'previa'].map(n => `../atlas@joaovitor12j.dev/app/${n}.js`);

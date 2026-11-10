@@ -27,7 +27,7 @@ CI (`.github/workflows/ci.yml`): `node --check` em cada módulo, schema em modo 
 
 Tudo fica em `atlas@joaovitor12j.dev/`.
 
-- **`extension.js` é só um carregador.** O GJS guarda módulos em cache pela URL e ignora `?query`, então cada `enable()` copia todo `.js` (menos `extension.js`, `prefs.js`) para `.run-<timestamp>/`, importa `dock.js` de lá e apaga a pasta. Resultado: editar qualquer módulo ou `temas.css` vale com disable/enable; mudanças em `extension.js` e `metadata.json` exigem novo login (Wayland).
+- **`extension.js` é só um carregador.** O GJS guarda módulos em cache pela URL e ignora `?query`, então cada `enable()` copia todo `.js` (menos `extension.js`, `prefs.js`) para `.run-<timestamp>/`, importa `dock.js` de lá e apaga a pasta. Resultado: editar qualquer módulo ou `temas/temas.css` vale com disable/enable; mudanças em `extension.js` e `metadata.json` exigem novo login (Wayland).
 - **`dock.js`**: classe `Dock` (exportada, ciclo enable/disable, settings, ambientes, Não perturbe, menu do painel) e `DockView` (actors St/Clutter, lente, posição, auto-ocultar, prévia de janelas).
 - **`widgets.js`**: base `Widget` + uma classe por widget, registradas no mapa `CLASSES` e criadas por `criarWidget(id, ...)`. Estado de widgets com tempo (POMO, CRONO, TIMER, ATIV, REDE, CLIP) vive em objetos de módulo, compartilhado entre instâncias/ambientes.
 - **`mascotes.js`**: motor dos mascotes (um único temporizador agenda todos; actor efêmero, destruído ao fim da aparição). Spec e princípios em `docs/MASCOTES.md`.
@@ -42,7 +42,7 @@ Tudo fica em `atlas@joaovitor12j.dev/`.
 
 ### Consistência checada por `tests/estrutura.test.js`
 Ao adicionar tema, widget, mascote ou chave de settings, atualizar todos os lados:
-- tema: entrada em `TEMAS`, `<choice>` no schema, regras `.atlas-<id> .atlas-bg` e `.atlas-tooltip.atlas-<id>` em `temas.css`;
+- tema: entrada em `TEMAS`, `<choice>` no schema, regras `.atlas-<id> .atlas-bg` e `.atlas-tooltip.atlas-<id>` em `temas/temas.css`;
 - widget: entrada em `WIDGETS` + `<id>: Classe` em `CLASSES` de `widgets.js`;
 - toda chave lida com `get_/set_<tipo>('chave')` em dock/widgets/app/mascotes precisa existir no schema.
 

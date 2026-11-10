@@ -1689,7 +1689,7 @@ export class Dock {
 
     // O Shell só lê stylesheet.css no login; temas.css é carregado aqui para valer ao recarregar.
     _loadThemeCss() {
-        this._themeCss = this._dir().get_child('temas.css');
+        this._themeCss = this._dir().get_child('temas').get_child('temas.css');
         this._theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
         // Nunca duas entradas do mesmo arquivo no mesmo tema: descarregar uma delas deixa a outra
         // apontando para um GFile já liberado e o próximo Main.loadTheme() derruba o Shell.
