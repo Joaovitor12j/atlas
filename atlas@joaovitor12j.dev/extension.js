@@ -38,7 +38,12 @@ export default class AtlasLoader extends Extension {
             pasta.make_directory(null);
             for (const caminho of this._modulos()) {
                 const destino = caminho.reduce((d, parte) => d.get_child(parte), pasta);
-                destino.get_parent().make_directory_with_parents(null);
+                try {
+                    destino.get_parent().make_directory_with_parents(null);
+                } catch (e) {
+                    if (!e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.EXISTS))
+                        throw e;
+                }
                 caminho.reduce((d, parte) => d.get_child(parte), this.dir).copy(destino, Gio.FileCopyFlags.OVERWRITE, null, null);
             }
         } catch (e) {
