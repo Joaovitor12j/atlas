@@ -1,5 +1,7 @@
 # Mascotes do ATLAS: especificação
 
+> Os nomes de arquivos deste documento são do desenho original (`dock.js`, `logica.js`, `catalogo.js`...). A estrutura atual, uma pasta por funcionalidade, está no [CLAUDE.md](../CLAUDE.md).
+
 Status: implementado na branch `feat/mascotes` (motor + cuco). Faltam a conferência visual no Shell, a medição com `perf.js` e a revisão. Primeiro mascote: o **cuco**.
 
 ## Objetivo
