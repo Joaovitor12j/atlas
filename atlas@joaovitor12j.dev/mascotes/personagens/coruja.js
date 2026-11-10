@@ -3,7 +3,7 @@
 // Coruja marrom. `q` vem de quadroCoruja: {sobe, sono, olhos, cabeca}. Dormindo, os olhos viram traços e sobem "z".
 import {limitar01, rampa, VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {piscada, quadroSobeDesce} from '../movimento.js';
+import {passeio, piscada, quadroSobeDesce} from '../movimento.js';
 
 export function coruja(cr, w, h, q) {
     const gw = Math.min(w * 0.7, h * 0.75);
@@ -140,3 +140,26 @@ export function quadroCoruja(t, saida = 'cai') {
     const sonoOk = limitar01(sono);
     return {...q, sono: sonoOk, olhos: (1 - sonoOk) * piscada(t, 1700), cabeca: Math.sin(t / 650) * (1 - sonoOk)};
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'coruja-salta': {dur: 5200, fig: [1.2, 1.4], cabeca: 0.4, modo: 'salta', passoMs: 700, bob: 0.2, inclina: 0.07},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'coruja',
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
+            contexto: () => ({}),
+            duracao: () => duracaoCoruja(),
+            finais: ['cai', 'afunda', 'espia'],
+            quadro: (t, ctx) => quadroCoruja(t, ctx.saida),
+            desenhar: (cr, w, h, q) => coruja(cr, w, h, q),
+        },
+        'salta': passeio(PASSEIOS['coruja-salta'], coruja, q => ({sobe: 1, sono: 0, olhos: 1, cabeca: Math.sin(q.t / 500), olhar: q.olhar})),
+    },
+};

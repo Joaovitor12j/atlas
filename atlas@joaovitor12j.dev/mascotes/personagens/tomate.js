@@ -3,7 +3,7 @@
 // Tomate do pomodoro, comemorando com confete. `q` vem de quadroTomate: {sobe, pulo, confete}; `confete(i, n, s)` (logica.js).
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {quadroSobeDesce} from '../movimento.js';
+import {passeio, quadroSobeDesce} from '../movimento.js';
 
 export function tomate(cr, w, h, q) {
     const r = Math.min(w * 0.3, h * 0.28);
@@ -95,3 +95,26 @@ export function confete(i, n, s) {
     const vel = 0.9 + 0.5 * Math.abs(Math.sin(i * 78.233));
     return {x: Math.cos(ang) * vel * s, y: Math.sin(ang) * vel * s + 1.6 * s * s, giro: s * (4 + (i % 5)) * (i % 2 ? 1 : -1)};
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'tomate-pula': {dur: 4800, fig: [1.1, 1.1], cabeca: 0.5, modo: 'salta', passoMs: 600, bob: 0.25, inclina: 0.08},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'pomodoro',
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.8), h: Math.round(icone * 1.9)}),
+            contexto: () => ({}),
+            duracao: () => duracaoTomate(),
+            finais: ['cai', 'afunda', 'some'],
+            quadro: (t, ctx) => quadroTomate(t, ctx.saida),
+            desenhar: (cr, w, h, q) => tomate(cr, w, h, q),
+        },
+        'pula': passeio(PASSEIOS['tomate-pula'], tomate, q => ({sobe: 1, pulo: 0, confete: q.t / 1000 % 2.4, olhar: q.olhar})),
+    },
+};

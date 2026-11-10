@@ -4,6 +4,7 @@
 import {cor, retanguloArredondado} from '../../nucleo/desenho.js';
 import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, rampa, VOLTA} from '../../nucleo/matematica.js';
 import {comAlfa, easeIn, gota, rosto} from '../desenho.js';
+import {atravessa, movimento} from '../movimento.js';
 
 function solRosto(cr, cx, cy, r, giro, {oculos = true, boca = 'sorriso'} = {}) {
     cr.save();
@@ -331,3 +332,17 @@ export function quadroSolNasce(t) {
         altura = 1 - easeInCubic((t - iDesce) / SOL_NASCE.desce);
     return {x: 0.5, altura, giro: t / 700};
 }
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'clima',
+    variantes: {
+        'picole': movimento((a) => ({w: Math.round(a * 1.3), h: Math.round(a * 2.2), abaixo: Math.round(a * 0.7)}), duracaoPicole, t => quadroPicole(t), picole),
+        'sol-arco': movimento(atravessa(2), duracaoSolArco, quadroSolArco, solArco),
+        'sol-leque': movimento(atravessa(1.7), duracaoSolLeque, quadroSolLeque, solLeque),
+        'sol-corre': movimento(atravessa(1.7), duracaoSolCorre, quadroSolCorre, solLeque),
+        'sol-quica': movimento(atravessa(2), duracaoSolQuica, quadroSolQuica, solArco),
+        'sol-nasce': movimento(atravessa(2), duracaoSolNasce, t => quadroSolNasce(t), solArco),
+    },
+};

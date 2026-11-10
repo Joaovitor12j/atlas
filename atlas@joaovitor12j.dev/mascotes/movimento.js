@@ -5,8 +5,9 @@
 // antes de descer, uma preparação (sobe um pouco, encolhe) seguida da queda esticada.
 // Devolve {sobe, esmaga: {sx, sy}}: `sobe` de 0 a 1 (passa um pouco no overshoot) e `esmaga` é a escala em torno da
 // borda da doca. `t` fora de [0, duração) devolve o estado escondido.
-import {PASSEIOS} from '../logica.js';
 import {easeInCubic, easeInOut, limitar01, molaAmortecida, rampa} from '../nucleo/matematica.js';
+import {passear} from './desenho.js';
+import {quadroSprite, sprite, SPRITES} from './sprites.js';
 
 const FRAC_PREPARO = 0.22;
 
@@ -80,11 +81,8 @@ export function quadroSobeDesce(t, {sobe, fica, desce}, saida = 'cai') {
     return {...faseSobeDesce(t, {sobe, fica, desce}, saida), ativo: limitar01((t - sobe) / 250) * limitar01((fimFica - 150 - t) / 250)};
 }
 
-export const duracaoPasseio = chave => PASSEIOS[chave].dur;
-
-// Tamanho do actor de um passeio: a largura da doca inteira e a altura da figura mais a folga para pulos e voo.
-export function tamanhoPasseio(chave, icone, larguraDoca) {
-    const c = PASSEIOS[chave];
+// `c` é a configuração do passeio (PASSEIOS de cada personagem). Tamanho do actor de um passeio: a largura da doca inteira e a altura da figura mais a folga para pulos e voo.
+export function tamanhoPasseio(c, icone, larguraDoca) {
     return {w: Math.round(larguraDoca), h: Math.round(icone * c.fig[1] * (1 + c.cabeca + (c.altura ?? 0) + c.bob)), abaixo: 0};
 }
 
@@ -144,3 +142,38 @@ export const piscada = (t, periodo = 2100) => {
     const f = t % periodo;
     return f < 150 ? 1 - Math.sin((f / 150) * Math.PI) : 1;
 };
+
+// Construtores dos movimentos que os personagens declaram em `variantes` (ver personagens/): o motor (palco.js) usa
+// `tamanho`, `contexto`, `duracao`, `quadro` e `desenhar`; o desenho recebe `ctx.base` e `ctx.icone`.
+// Um movimento que atravessa a doca (calor, frio, cuco voando): `tamanho(icone, larguraDoca)`; `dir` sorteia o lado de onde vem.
+export const movimento = (tamanho, duracao, quadro, desenhar) => ({
+    tamanho: (icone, caixa) => tamanho(icone, caixa.w),
+    contexto: () => ({dir: Math.random() < 0.5 ? -1 : 1}),
+    duracao,
+    quadro: (t, ctx) => quadro(t, ctx.dir),
+    desenhar: (cr, w, h, q, ctx) => desenhar(cr, w, h, q, ctx),
+});
+
+// Um passeio (`cfg` vem do PASSEIOS do personagem): o mascote atravessa a doca. `quadroFig` converte o estado do passeio no estado do
+// desenho que sobe da doca (o mesmo desenho do mascote, só que andando, voando ou pulando).
+export const passeio = (cfg, desenhar, quadroFig, contexto = () => ({})) => ({
+    tamanho: (icone, caixa) => tamanhoPasseio(cfg, icone, caixa.w),
+    contexto: (settings, alvo) => ({dir: Math.random() < 0.5 ? -1 : 1, ...contexto(settings, alvo)}),
+    duracao: () => cfg.dur,
+    quadro: (t, ctx) => quadroPasseio(t, ctx.dir, cfg),
+    desenhar: (cr, w, h, q, ctx) => passear(cr, w, h, q, ctx, cfg.fig, desenhar, quadroFig),
+});
+
+// Um sprite que atravessa a doca (SPRITES, sprites.js): o actor tem a largura da doca e a altura do mascote. A imagem
+// é carregada pelo motor (`impl.sprite`) e chega ao desenho em `ctx.imagem`.
+export const andarSprite = (id, {velocidade, passo}) => ({
+    sprite: id,
+    tamanho: (icone, caixa) => ({w: Math.round(caixa.w), h: Math.round(icone * (SPRITES[id].altura * 1.05 + 0.25)), abaixo: Math.round(icone * 0.25)}),
+    contexto: () => ({dir: Math.random() < 0.5 ? -1 : 1, spec: SPRITES[id]}),
+    duracao: () => 0,
+    quadro: (t, ctx) => quadroSprite(t, ctx.dir, ctx.spec, {largura: ctx.largura, icone: ctx.icone, velocidade, passo}),
+    desenhar: (cr, w, h, q, ctx) => sprite(cr, w, h, q, ctx),
+});
+
+// Tamanho de um movimento que atravessa a doca: a largura dela e `altura` ícones de altura.
+export const atravessa = altura => (icone, larguraDoca) => ({w: Math.round(larguraDoca), h: Math.round(icone * altura), abaixo: 0});

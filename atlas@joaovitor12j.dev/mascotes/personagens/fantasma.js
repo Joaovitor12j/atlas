@@ -4,7 +4,7 @@
 // `q` vem de quadroFantasma (logica.js): {sobe, balanco, susto, fase}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {faseSobeDesce} from '../movimento.js';
+import {faseSobeDesce, passeio} from '../movimento.js';
 
 export function fantasma(cr, w, h, q) {
     const gw = w * 0.62, gh = h * 0.84, r = gw / 2;
@@ -92,3 +92,33 @@ export function quadroFantasma(t, saida = 'cai') {
     q.susto = limitar01((t - ini) / FANTASMA.susto) * limitar01((fimFica - 200 - t) / FANTASMA.susto);
     return q;
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'fantasma-flutua': {dur: 6200, fig: [1.4, 1.8], cabeca: 0.3, modo: 'flutua', passoMs: 1500, altura: 0.12, bob: 0.07, inclina: 0.1, pausa: {dur: 1500}},
+    'fantasma-zigue': {dur: 4600, fig: [1.4, 1.8], cabeca: 0.5, modo: 'flutua', passoMs: 900, altura: 0.3, bob: 0.22, inclina: 0.22},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'fantasma',
+    temporada: {ini: [9, 24], fim: [9, 31]}, // 24 a 31 de outubro
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.4), h: Math.round(icone * 1.8)}),
+            contexto: () => ({}),
+            duracao: () => duracaoFantasma(),
+            finais: ['cai', 'some', 'espia'],
+            quadro: (t, ctx) => quadroFantasma(t, ctx.saida),
+            desenhar: (cr, w, h, q) => fantasma(cr, w, h, q),
+        },
+        'flutua': passeio(PASSEIOS['fantasma-flutua'], fantasma, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 260), susto: q.parado, fase: q.t / 160, olhar: q.olhar,
+        })),
+        'zigue': passeio(PASSEIOS['fantasma-zigue'], fantasma, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 200), susto: 0.4 + 0.4 * Math.sin(q.t / 350), fase: q.t / 120, olhar: q.olhar,
+        })),
+    },
+};

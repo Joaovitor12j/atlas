@@ -4,7 +4,7 @@
 // `q` vem de quadroChama (logica.js): {sobe, fase, aflicao}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {faseSobeDesce} from '../movimento.js';
+import {faseSobeDesce, passeio} from '../movimento.js';
 
 export function chama(cr, w, h, q) {
     const gw = w * 0.74, gh = h * 0.88;
@@ -86,3 +86,28 @@ export function quadroChama(t, saida = 'cai') {
     q.aflicao = limitar01((t - CHAMA.sobe) / 600) * limitar01((fimFica - t) / 400);
     return q;
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'chama-salta': {dur: 4200, fig: [1.1, 1.5], cabeca: 0.5, modo: 'salta', passoMs: 600, bob: 0.3, inclina: 0.1},
+    'chama-corre': {dur: 3200, fig: [1.1, 1.5], cabeca: 0.2, modo: 'anda', passoMs: 200, bob: 0.08, inclina: 0.16},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'memoria',
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.1), h: Math.round(icone * 1.5)}),
+            contexto: () => ({}),
+            duracao: () => duracaoChama(),
+            finais: ['cai', 'some'],
+            quadro: (t, ctx) => quadroChama(t, ctx.saida),
+            desenhar: (cr, w, h, q) => chama(cr, w, h, q),
+        },
+        'salta': passeio(PASSEIOS['chama-salta'], chama, q => ({sobe: 1, fase: q.t / 90, aflicao: 1, olhar: q.olhar})),
+        'corre': passeio(PASSEIOS['chama-corre'], chama, q => ({sobe: 1, fase: q.t / 60, aflicao: 0.8, olhar: q.olhar})),
+    },
+};

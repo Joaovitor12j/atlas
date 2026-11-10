@@ -3,7 +3,7 @@
 // Satélite perdido procurando sinal. `q` vem de quadroSatelite: {sobe, giro, sinal, perdido}.
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {quadroSobeDesce} from '../movimento.js';
+import {passeio, quadroSobeDesce} from '../movimento.js';
 
 export function satelite(cr, w, h, q) {
     const s = Math.min(w * 0.45, h * 0.4);
@@ -86,3 +86,28 @@ export function quadroSatelite(t, saida = 'cai') {
         return null;
     return {...q, giro: Math.sin(t / 520) * 0.5, sinal: (t % 1300) / 1300, perdido: q.ativo};
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'satelite-deriva': {dur: 6400, fig: [1.3, 1.3], cabeca: 0.4, modo: 'flutua', passoMs: 1800, altura: 0.25, bob: 0.12, inclina: 0.14},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'rede',
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.8), h: Math.round(icone * 2.1)}),
+            contexto: () => ({}),
+            duracao: () => duracaoSatelite(),
+            finais: ['cai', 'some'],
+            quadro: (t, ctx) => quadroSatelite(t, ctx.saida),
+            desenhar: (cr, w, h, q) => satelite(cr, w, h, q),
+        },
+        'deriva': passeio(PASSEIOS['satelite-deriva'], satelite, q => ({
+            sobe: 1, giro: Math.sin(q.t / 520) * 0.5, sinal: (q.t % 1300) / 1300, perdido: 1, olhar: q.olhar,
+        })),
+    },
+};

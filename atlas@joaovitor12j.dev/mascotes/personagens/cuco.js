@@ -2,6 +2,7 @@
 import {arco, cor, poligono} from '../../nucleo/desenho.js';
 import {easeInCubic, easeInOut, easeOutBack, easeOutCubic, limitar01, VOLTA} from '../../nucleo/matematica.js';
 import {TOPO} from '../desenho.js';
+import {atravessa, movimento, passeio} from '../movimento.js';
 
 const MADEIRA = {
     telhado: '#5b3417', telha: '#7a4a24', friso: '#b88a52', corpo: '#b9773f', tabua: '#96602f',
@@ -237,7 +238,8 @@ export function batidasDoDisparo(hora, minuto, max = 3) {
     return Math.min(hora % 12 || 12, max);
 }
 
-export const CUCO = {sobe: 300, porta: 200, batida: 700, saida: 200, canto: 300, fecha: 200, desce: 300};
+const CUCO = {sobe: 300, porta: 200, batida: 700, saida: 200, canto: 300, fecha: 200, desce: 300};
+CUCO.inicio = CUCO.sobe + CUCO.porta;
 
 export const duracaoCuco = batidas => CUCO.inicio + CUCO.batida * batidas + CUCO.fecha + CUCO.desce;
 
@@ -296,3 +298,33 @@ export function quadroCucoVoa(t, dir = 1) {
         dir: dir < 0 ? -1 : 1,
     };
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'cuco-passeia': {dur: 8200, fig: [1.6, 2], cabeca: 0.1, modo: 'anda', passoMs: 460, bob: 0.015, inclina: 0.05, pausa: {dur: 3600}},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'cuco',
+    variantes: {
+        'casa': {
+            tamanho: icone => ({w: Math.round(icone * 1.6), h: Math.round(icone * 2)}),
+            contexto: (settings, alvo) => ({
+                batidas: batidasDoDisparo(alvo.hora, alvo.minuto, settings.get_int('cuco-max-batidas')),
+                hora: alvo.hora,
+                minuto: alvo.minuto,
+            }),
+            duracao: ctx => duracaoCuco(ctx.batidas),
+            quadro: (t, ctx) => quadroCuco(t, ctx.batidas),
+            desenhar: (cr, w, h, q, ctx) => cuco(cr, w, h, q, ctx),
+        },
+        'passeia': passeio(PASSEIOS['cuco-passeia'], cuco, q => ({
+            casa: 1, porta: q.parado, passaro: q.parado * Math.abs(Math.sin(q.t / 480)), bico: Math.abs(Math.sin(q.t / 160)) * q.parado,
+            inclina: Math.sin(q.t / 240) * q.parado,
+        }), (settings, alvo) => ({hora: alvo.hora, minuto: alvo.minuto})),
+        'voa': movimento(atravessa(2.4), duracaoCucoVoa, quadroCucoVoa, cucoVoa),
+    },
+};

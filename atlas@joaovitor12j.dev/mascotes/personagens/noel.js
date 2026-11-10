@@ -3,7 +3,7 @@
 // Papai Noel no retângulo (0, 0, w, h): sobe de trás da borda de baixo, acena e ri com a barriga.
 // `q` vem de quadroNoel (logica.js): {sobe, balanco, aceno, riso}. Quem chama recorta no retângulo.
 import {olhar} from '../desenho.js';
-import {quadroSobeDesce} from '../movimento.js';
+import {passeio, quadroSobeDesce} from '../movimento.js';
 
 export function noel(cr, w, h, q) {
     const alt = h * 0.92;
@@ -129,3 +129,33 @@ export function quadroNoel(t, saida = 'cai') {
         riso: Math.abs(Math.sin(t / 210)) * b.ativo,
     };
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'noel-passeia': {dur: 7000, fig: [1.3, 1.8], cabeca: 0.1, modo: 'anda', passoMs: 420, bob: 0.03, inclina: 0.06, pausa: {dur: 2200}},
+    'noel-pula': {dur: 5600, fig: [1.3, 1.8], cabeca: 0.4, modo: 'salta', passoMs: 800, bob: 0.22, inclina: 0.05},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'noel',
+    temporada: {ini: [11, 1], fim: [11, 25]}, // 1 a 25 de dezembro
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.3), h: Math.round(icone * 1.8)}),
+            contexto: () => ({}),
+            duracao: () => duracaoNoel(),
+            finais: ['cai', 'afunda', 'espia'],
+            quadro: (t, ctx) => quadroNoel(t, ctx.saida),
+            desenhar: (cr, w, h, q) => noel(cr, w, h, q),
+        },
+        'passeia': passeio(PASSEIOS['noel-passeia'], noel, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 210) * 0.7, aceno: q.acena, riso: Math.abs(Math.sin(q.t / 210)) * q.parado, olhar: q.olhar,
+        })),
+        'pula': passeio(PASSEIOS['noel-pula'], noel, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 400) * 0.5, aceno: Math.sin(q.t / 150), riso: Math.abs(Math.sin(q.t / 260)), olhar: q.olhar,
+        })),
+    },
+};

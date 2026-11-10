@@ -4,6 +4,7 @@
 import {cor, poligono, retanguloArredondado} from '../../nucleo/desenho.js';
 import {easeInCubic, easeOutBack, easeOutCubic, limitar01, rampa, sorteioFixo, VOLTA} from '../../nucleo/matematica.js';
 import {comAlfa, rosto} from '../desenho.js';
+import {atravessa, movimento} from '../movimento.js';
 
 export function pinguim(cr, w, h, q, {base, icone}) {
     const a = icone;
@@ -356,3 +357,17 @@ export function quadroPinguimAnda(t, dir = 1) {
         dir: dir < 0 ? -1 : 1,
     };
 }
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'clima',
+    variantes: {
+        'pinguim': movimento(atravessa(1.3), duracaoPinguim, quadroPinguim, pinguim),
+        'pinguim-pula': movimento(atravessa(1.3), duracaoPinguimPula, quadroPinguimPula, pinguim),
+        'pinguim-anda': movimento(atravessa(1.3), duracaoPinguimAnda, quadroPinguimAnda, pinguim),
+        'neve': movimento(a => ({w: Math.round(a * 2.6), h: Math.round(a * 3.2), abaixo: 0}), duracaoNeve, t => quadroNeve(t),
+            (cr, w, h, q, ctx) => neve(cr, w, h, q, {...ctx, flocos: flocosDeNeve(q.t)})),
+        'pendurado': movimento(a => ({w: Math.round(a * 1.6), h: Math.round(a * 2.4), abaixo: Math.round(a * 1.8)}), duracaoPendurado, t => quadroPendurado(t), pendurado),
+    },
+};

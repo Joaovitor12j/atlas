@@ -1,6 +1,5 @@
-// Gatilho de memória alta (chama): o amostrador de /proc/meminfo e as regras puras de quando chamar o mascote.
+// Regras puras do gatilho de memória alta: lê o uso do /proc/meminfo e decide quando chamar a chama (sem gi://).
 
-// Uso de memória em % (0 a 100) a partir do texto de /proc/meminfo; null se não der para ler.
 export function usoMemoria(texto) {
     const total = Number(/MemTotal:\s+(\d+)/.exec(texto)?.[1]);
     const livre = Number(/MemAvailable:\s+(\d+)/.exec(texto)?.[1]);

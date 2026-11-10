@@ -3,7 +3,7 @@
 //   gjs -m tests/previa-temas.js /pasta/de/saida
 import cairo from 'gi://cairo';
 import System from 'system';
-import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../atlas@joaovitor12j.dev/decoracao.js';
+import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../atlas@joaovitor12j.dev/temas/decoracao.js';
 import {geometriaTema, TEMAS_MATERIAIS, TEMAS_PIXEL} from '../atlas@joaovitor12j.dev/temas/logica.js';
 
 const pasta = System.programArgs[0] ?? '/tmp';

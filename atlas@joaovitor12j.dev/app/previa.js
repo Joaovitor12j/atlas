@@ -7,7 +7,7 @@ import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {escolherAmbiente, normalizarAmbientes} from '../ambientes/logica.js';
 import {iconeTempo} from '../clima/desenho.js';
-import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../decoracao.js';
+import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../temas/decoracao.js';
 import {escalaLente} from '../dock/lente.js';
 import {CORES_TEMA, TEMAS, WIDGETS} from '../nucleo/catalogo.js';
 import {anel, anelDeTile, relogioAnalogico} from '../nucleo/desenho.js';

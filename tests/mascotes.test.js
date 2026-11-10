@@ -1,21 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {PASSEIOS} from '../atlas@joaovitor12j.dev/logica.js';
-import {avaliarDisparo, esperaAte, naJanela, naTemporada, proximoDisparo} from '../atlas@joaovitor12j.dev/mascotes/agenda.js';
-import {bateriaPedeAparicao, rearmarBateria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/bateria.js';
-import {memoriaPedeAparicao, rearmarMemoria, usoMemoria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/memoria.js';
-import {duracaoPasseio, faseSobeDesce, FINAIS, quadroPasseio, tamanhoPasseio} from '../atlas@joaovitor12j.dev/mascotes/movimento.js';
-import {deslocamentoAleatorio, deslocamentosLado, escolherAparicao, posicionarMascote} from '../atlas@joaovitor12j.dev/mascotes/palco.js';
+import {bateriaPedeAparicao, rearmarBateria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/bateria/logica.js';
+import {avaliarDisparo, esperaAte, naJanela, naTemporada, proximoDisparo} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/horario/logica.js';
+import {memoriaPedeAparicao, rearmarMemoria, usoMemoria} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/memoria/logica.js';
+import {faseSobeDesce, FINAIS, quadroPasseio, tamanhoPasseio} from '../atlas@joaovitor12j.dev/mascotes/movimento.js';
 import {duracaoBoneco, quadroBoneco} from '../atlas@joaovitor12j.dev/mascotes/personagens/boneco.js';
 import {duracaoChama, quadroChama} from '../atlas@joaovitor12j.dev/mascotes/personagens/chama.js';
 import {duracaoCoruja, quadroCoruja} from '../atlas@joaovitor12j.dev/mascotes/personagens/coruja.js';
 import {batidasDoDisparo, duracaoCuco, quadroCuco} from '../atlas@joaovitor12j.dev/mascotes/personagens/cuco.js';
 import {duracaoEsqueleto, quadroEsqueleto} from '../atlas@joaovitor12j.dev/mascotes/personagens/esqueleto.js';
 import {duracaoFantasma, quadroFantasma} from '../atlas@joaovitor12j.dev/mascotes/personagens/fantasma.js';
+import {PASSEIOS} from '../atlas@joaovitor12j.dev/mascotes/personagens/index.js';
 import {duracaoNoel, quadroNoel} from '../atlas@joaovitor12j.dev/mascotes/personagens/noel.js';
 import {duracaoPilha, quadroPilha} from '../atlas@joaovitor12j.dev/mascotes/personagens/pilha.js';
 import {duracaoSatelite, quadroSatelite} from '../atlas@joaovitor12j.dev/mascotes/personagens/satelite.js';
 import {confete, duracaoTomate, quadroTomate} from '../atlas@joaovitor12j.dev/mascotes/personagens/tomate.js';
+import {deslocamentoAleatorio, deslocamentosLado, escolherAparicao, posicionarMascote} from '../atlas@joaovitor12j.dev/mascotes/posicao.js';
 import {quadroAguaViva} from '../atlas@joaovitor12j.dev/mascotes/residentes/agua-viva.js';
 import {quadroBonecoIlustrado} from '../atlas@joaovitor12j.dev/mascotes/residentes/boneco-ilustrado.js';
 import {proximoEstadoResidente} from '../atlas@joaovitor12j.dev/mascotes/residentes/estado.js';
@@ -303,9 +303,8 @@ test('quadroPasseio: atravessa a doca, para quando tem pausa e termina fora dela
         const meio = quadroPasseio(c.dur / 2, 1, c);
         if (c.pausa)
             assert.ok(Math.abs(meio.x - 0.5) < 1e-9 && meio.parado > 0.99, `${chave} para no meio`);
-        const t = tamanhoPasseio(chave, 50, 800);
+        const t = tamanhoPasseio(c, 50, 800);
         assert.ok(t.w === 800 && t.h >= 50 * c.fig[1], `${chave} cabe a figura`);
-        assert.equal(duracaoPasseio(chave), c.dur);
     }
 });
 
@@ -365,7 +364,7 @@ test('os passeios novos atravessam a doca', () => {
         assert.ok(c, chave);
         assert.ok(quadroPasseio(c.dur / 2, 1, c));
         assert.equal(quadroPasseio(c.dur, 1, c), null);
-        assert.ok(tamanhoPasseio(chave, 48, 600).w === 600);
+        assert.ok(tamanhoPasseio(c, 48, 600).w === 600);
     }
 });
 

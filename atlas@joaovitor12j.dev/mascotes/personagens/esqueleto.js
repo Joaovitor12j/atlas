@@ -4,7 +4,7 @@
 // `q` vem de quadroEsqueleto (logica.js): {sobe, balanco, aceno, mandibula}. Quem chama recorta no retângulo.
 import {limitar01} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {faseSobeDesce} from '../movimento.js';
+import {faseSobeDesce, passeio} from '../movimento.js';
 
 export function esqueleto(cr, w, h, q) {
     const alt = h * 0.9;
@@ -117,3 +117,33 @@ export function quadroEsqueleto(t, saida = 'cai') {
     q.mandibula = Math.abs(Math.sin(t / 95)) * rampa;
     return q;
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'esqueleto-caminha': {dur: 7000, fig: [1.2, 1.9], cabeca: 0.1, modo: 'anda', passoMs: 380, bob: 0.03, inclina: 0.07, pausa: {dur: 1900}},
+    'esqueleto-danca': {dur: 6600, fig: [1.2, 1.9], cabeca: 0.3, modo: 'salta', passoMs: 520, bob: 0.1, inclina: 0.14, pausa: {dur: 3600}},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'esqueleto',
+    temporada: {ini: [9, 24], fim: [9, 31]},
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.9)}),
+            contexto: () => ({}),
+            duracao: () => duracaoEsqueleto(),
+            finais: ['cai', 'afunda', 'espia'],
+            quadro: (t, ctx) => quadroEsqueleto(t, ctx.saida),
+            desenhar: (cr, w, h, q) => esqueleto(cr, w, h, q),
+        },
+        'caminha': passeio(PASSEIOS['esqueleto-caminha'], esqueleto, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 190) * 0.8, aceno: q.acena, mandibula: Math.abs(Math.sin(q.t / 95)) * q.parado, olhar: q.olhar,
+        })),
+        'danca': passeio(PASSEIOS['esqueleto-danca'], esqueleto, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 260), aceno: Math.sin(q.t / 130), mandibula: Math.abs(Math.sin(q.t / 130)), olhar: q.olhar,
+        })),
+    },
+};

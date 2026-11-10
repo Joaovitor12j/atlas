@@ -3,7 +3,7 @@
 // Boneco de neve no retângulo (0, 0, w, h): sobe de trás da borda de baixo e balança ao vento.
 // `q` vem de quadroBoneco (logica.js): {sobe, balanco, vento}. Quem chama recorta no retângulo.
 import {olhar} from '../desenho.js';
-import {quadroSobeDesce} from '../movimento.js';
+import {passeio, quadroSobeDesce} from '../movimento.js';
 
 export function boneco(cr, w, h, q) {
     const alt = h * 0.92;
@@ -96,3 +96,33 @@ export function quadroBoneco(t, saida = 'cai') {
         return null;
     return {sobe: b.sobe, esmaga: b.esmaga, alfa: b.alfa, balanco: Math.sin(t / 420) * 0.5, vento: Math.sin(t / 230) * (0.4 + 0.6 * b.ativo)};
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'boneco-desliza': {dur: 5200, fig: [1.2, 1.8], cabeca: 0.1, modo: 'flutua', passoMs: 700, altura: 0.012, bob: 0.012, inclina: 0.16},
+    'boneco-pula': {dur: 5400, fig: [1.2, 1.8], cabeca: 0.4, modo: 'salta', passoMs: 700, bob: 0.2, inclina: 0.05},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    prefixo: 'boneco',
+    temporada: {ini: [11, 1], fim: [11, 25]},
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.8)}),
+            contexto: () => ({}),
+            duracao: () => duracaoBoneco(),
+            finais: ['cai', 'afunda'],
+            quadro: (t, ctx) => quadroBoneco(t, ctx.saida),
+            desenhar: (cr, w, h, q) => boneco(cr, w, h, q),
+        },
+        'desliza': passeio(PASSEIOS['boneco-desliza'], boneco, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 350) * 0.4, vento: Math.sin(q.t / 150), olhar: q.olhar,
+        })),
+        'pula': passeio(PASSEIOS['boneco-pula'], boneco, q => ({
+            sobe: 1, balanco: Math.sin(q.t / 350) * 0.5, vento: Math.sin(q.t / 230), olhar: q.olhar,
+        })),
+    },
+};

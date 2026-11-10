@@ -3,7 +3,7 @@
 // Pilha cansada pedindo tomada. `q` vem de quadroPilha: {sobe, nivel, cansaco, suspiro}.
 import {VOLTA} from '../../nucleo/matematica.js';
 import {olhar} from '../desenho.js';
-import {quadroSobeDesce} from '../movimento.js';
+import {passeio, quadroSobeDesce} from '../movimento.js';
 
 export function pilha(cr, w, h, q) {
     const pw = Math.min(w * 0.55, h * 0.5), ph = pw * 1.55;
@@ -87,3 +87,28 @@ export function quadroPilha(t, saida = 'cai') {
         suspiro: 0.5 + 0.5 * Math.sin(t / 900),
     };
 }
+
+// Passeios (atravessar a doca): `dur` em ms, `fig` [largura, altura] da figura em múltiplos do ícone, `cabeca` (folga
+// acima da figura), `modo` (`flutua`, `anda` ou `salta`), `passoMs`, `altura`, `bob`, `inclina` e `pausa` opcional.
+export const PASSEIOS = {
+    'pilha-arrasta': {dur: 7400, fig: [1, 1.5], cabeca: 0.1, modo: 'anda', passoMs: 760, bob: 0.02, inclina: 0.06, pausa: {dur: 2000}},
+};
+
+// Como o motor (index.js) usa o mascote: `prefixo` das chaves do schema, `gatilho` (sem ele, dispara por horário), `temporada`,
+// e `variantes` (movimentos) com tamanho, contexto, duração, quadro e desenho.
+export const personagem = {
+    gatilho: 'bateria',
+    variantes: {
+        'sobe': {
+            tamanho: icone => ({w: Math.round(icone * 1.2), h: Math.round(icone * 1.8)}),
+            contexto: () => ({}),
+            duracao: () => duracaoPilha(),
+            finais: ['cai', 'afunda'],
+            quadro: (t, ctx) => quadroPilha(t, ctx.saida),
+            desenhar: (cr, w, h, q) => pilha(cr, w, h, q),
+        },
+        'arrasta': passeio(PASSEIOS['pilha-arrasta'], pilha, q => ({
+            sobe: 1, nivel: 0.1 + 0.05 * Math.abs(Math.sin(q.t / 420)), cansaco: Math.sin(q.t / 380) * 0.8, suspiro: 0.5 + 0.5 * Math.sin(q.t / 600), olhar: q.olhar,
+        })),
+    },
+};

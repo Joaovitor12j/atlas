@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {mascoteDoClima} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/clima.js';
-import {escolherVariante, posicionarMascote} from '../atlas@joaovitor12j.dev/mascotes/palco.js';
+import {mascoteDoClima} from '../atlas@joaovitor12j.dev/mascotes/gatilhos/clima/logica.js';
 import {
     duracaoPicole, duracaoSolArco, duracaoSolLeque, quadroPicole, quadroSolArco, quadroSolLeque,
 } from '../atlas@joaovitor12j.dev/mascotes/personagens/calor.js';
 import {
     duracaoNeve, duracaoPendurado, duracaoPinguim, flocosDeNeve, quadroNeve, quadroPendurado, quadroPinguim,
 } from '../atlas@joaovitor12j.dev/mascotes/personagens/frio.js';
+import {escolherVariante, posicionarMascote} from '../atlas@joaovitor12j.dev/mascotes/posicao.js';
 
 const HORA = 3_600_000;
 const ligados = {frio: true, calor: true};
