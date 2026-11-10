@@ -11,6 +11,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### Corrigido
 - **Restaurar padrões** (app) esvaziava a chave `telas` e a extensão só a regravava no próximo `enable`: o app mostrava todas as telas desligadas e ligar uma apagava a doca das outras. A extensão agora regrava a chave na hora.
+- Mascote residente e efeito de época seguiam o tema global mesmo quando o ambiente atual tinha tema próprio; agora seguem o tema que a doca mostra e reagem à troca de ambiente.
 - Mascote residente do tema nascia com o tamanho de um ícone de 48 px (era criado antes da doca) e não acompanhava a mudança do tamanho dos ícones.
 - Mexer nas opções dos mascotes Calor e Frio, no mascote residente ou no efeito de época reconstruía a doca inteira sem necessidade.
 - Widget do Slack: um aviso da bandeja que chegasse no meio de uma leitura era descartado e o selo só se corrigia no ciclo de 30 s.

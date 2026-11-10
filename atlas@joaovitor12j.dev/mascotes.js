@@ -3,6 +3,7 @@
 // Em repouso o custo é um único temporizador (no máximo a cada 15 min) e só com um mascote ligado; o actor só
 // existe durante a aparição. A lógica de horários e a linha do tempo estão em logica.js, o desenho em desenho.js.
 import Cairo from 'gi://cairo';
+import {TEMAS} from './catalogo.js';
 import {EFEITOS_TEMA} from './decoracao.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -13,7 +14,7 @@ import {AO_CONCLUIR_FOCO} from './eventos.js';
 import {CLIMA, buscarClima} from './clima.js';
 import {agendar, agora, registrar} from './perf.js';
 import {
-    avaliarDisparo, bateriaPedeAparicao, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
+    avaliarDisparo, bateriaPedeAparicao, escolherAmbiente, normalizarAmbientes, temaEfetivo, batidasDoDisparo, duracaoCoruja, SPRITES, quadroSprite, duracaoPilha, duracaoSatelite, duracaoTomate,
     quadroCoruja, quadroPilha, quadroSatelite, quadroTomate, rearmarBateria, deslocamentoAleatorio, deslocamentosLado, duracaoBoneco, duracaoChama, duracaoCuco,
     duracaoEsqueleto, duracaoFantasma, duracaoNeve, duracaoNoel, duracaoPendurado, duracaoPicole, duracaoPinguim,
     duracaoCucoVoa, duracaoPasseio, duracaoPinguimAnda, duracaoPinguimPula, duracaoSolCorre, duracaoSolNasce, duracaoSolQuica,
@@ -386,9 +387,14 @@ export class Mascotes {
         for (const chave of ['mascotes-ativos', 'clima-cidade', ...HORARIOS.map(id => `${IMPL[id].prefixo}-intervalo`)])
             this._sinais.push([st, st.connect(`changed::${chave}`, () => this._reagendar())]);
         this._sinais.push([st, st.connect('changed::mascote-teste', () => this._teste())]);
-        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarResidente())]);
+        // o tema pode vir do ambiente atual, então trocar de ambiente (ou editar o tema dele) também reavalia
+        for (const chave of ['tema', 'ambiente-atual', 'ambientes']) {
+            this._sinais.push([st, st.connect(`changed::${chave}`, () => {
+                this._atualizarResidente();
+                this._atualizarEfeito();
+            })]);
+        }
         this._sinais.push([st, st.connect('changed::mascote-residente-ativo', () => this._atualizarResidente())]);
-        this._sinais.push([st, st.connect('changed::tema', () => this._atualizarEfeito())]);
         this._sinais.push([st, st.connect('changed::efeito-epoca-ativo', () => this._atualizarEfeito())]);
         this._sinais.push([Main.overview, Main.overview.connect('showing', () => this._encerrar())]);
         this._reagendar();
@@ -817,9 +823,16 @@ export class Mascotes {
         this._atuais = [];
     }
 
+    // O tema que a doca está mostrando: o do ambiente atual, quando ele tem um; senão o global (como em dock.js).
+    _tema() {
+        const st = this._settings;
+        const amb = escolherAmbiente(normalizarAmbientes(st.get_string('ambientes')), st.get_string('ambiente-atual'));
+        return temaEfetivo(amb, st.get_string('tema'), TEMAS.map(t => t[0]));
+    }
+
     // Religa ou desliga o mascote residente ao trocar de tema ou de chave; o tema atual decide qual (ou nenhum).
     _atualizarResidente() {
-        const spec = RESIDENTES[this._settings.get_string('tema')];
+        const spec = RESIDENTES[this._tema()];
         if (!spec || !this._settings.get_boolean('mascote-residente-ativo')) {
             this._pararResidente();
             return;
@@ -909,7 +922,7 @@ export class Mascotes {
 
     // Religa ou desliga o efeito de época ao trocar de tema ou de chave; cobre todo o vidro da doca (não a tela).
     _atualizarEfeito() {
-        const desenhar = EFEITOS[this._settings.get_string('tema')];
+        const desenhar = EFEITOS[this._tema()];
         if (!desenhar || !this._settings.get_boolean('efeito-epoca-ativo')) {
             this._pararEfeito();
             return;

@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import {TEMAS, WIDGETS} from './catalogo.js';
 import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
+import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, temaEfetivo, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
 import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from './decoracao.js';
 import {criarWidget, pararClipboard} from './widgets.js';
 import {pararPonte} from './ponte.js';
@@ -313,8 +313,7 @@ class DockView {
         [c.dotW, c.dotH] = c.indicador === 'barra' ? (vertical ? [3, 16] : [16, 3]) : [6, 6];
         c.widgetsAntes = (st?.get_string('widgets-posicao') ?? 'depois') === 'antes';
         // tema do ambiente atual, quando definido e válido; senão o global
-        const doAmb = c.amb?.tema;
-        c.tema = TEMAS.some(t => t[0] === doAmb) ? doAmb : (st?.get_string('tema') ?? 'noite');
+        c.tema = temaEfetivo(c.amb, st?.get_string('tema') ?? 'noite', TEMAS.map(t => t[0]));
         // temas de pacote: medidas do protótipo (margens, espaço, indicador) e espaço para o que passa do vidro
         c.geo = geometriaTema(c.tema, c.iconSize);
         c.sobra = 0;
