@@ -4,8 +4,8 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {agendar, agora, registrar} from '../nucleo/perf.js';
-import {EFEITOS_TEMA} from '../temas/decoracao.js';
 import {temaDaDoca} from '../temas/atual.js';
+import {EFEITOS_TEMA} from '../temas/decoracao/efeitos.js';
 import {QUADRO_MS} from './residente.js';
 
 export class EfeitoEpoca {

@@ -7,6 +7,7 @@ import Gtk from 'gi://Gtk';
 import Soup from 'gi://Soup?version=3.0';
 import {lerLocais, urlBuscaLocal} from '../clima/logica.js';
 import {definirTela, lerTelas} from '../dock/telas.js';
+import {MOVIMENTOS} from '../mascotes/catalogo.js';
 import {boneco, quadroBoneco} from '../mascotes/personagens/boneco.js';
 import {quadroSolArco, solArco} from '../mascotes/personagens/calor.js';
 import {chama, quadroChama} from '../mascotes/personagens/chama.js';
@@ -20,7 +21,6 @@ import {pilha, quadroPilha} from '../mascotes/personagens/pilha.js';
 import {quadroSatelite, satelite} from '../mascotes/personagens/satelite.js';
 import {quadroTomate, tomate} from '../mascotes/personagens/tomate.js';
 import {sprite, SPRITES} from '../mascotes/sprites.js';
-import {MOVIMENTOS} from '../nucleo/catalogo.js';
 
 export class Paginas {
     // Linha com lista de opções ligada a uma chave string.

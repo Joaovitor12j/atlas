@@ -1,12 +1,14 @@
 // Confere a consistência entre o catálogo, o schema e os temas, que o compilador não pega.
 import assert from 'node:assert/strict';
-import {PASSEIOS, PERSONAGENS} from '../atlas@joaovitor12j.dev/mascotes/personagens/index.js';
 import {existsSync, readFileSync} from 'node:fs';
-import test from 'node:test';
-import {SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
-import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/nucleo/catalogo.js';
-import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
 import {dirname, relative, resolve} from 'node:path';
+import test from 'node:test';
+import {MASCOTES, MOVIMENTOS} from '../atlas@joaovitor12j.dev/mascotes/catalogo.js';
+import {PASSEIOS, PERSONAGENS} from '../atlas@joaovitor12j.dev/mascotes/personagens/index.js';
+import {SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
+import {CORES_TEMA, TEMAS} from '../atlas@joaovitor12j.dev/temas/catalogo.js';
+import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
+import {WIDGETS} from '../atlas@joaovitor12j.dev/widgets/catalogo.js';
 import {fonte, modulos, RAIZ} from './auxiliar.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
