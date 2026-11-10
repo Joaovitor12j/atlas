@@ -11,14 +11,14 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import {TEMAS, WIDGETS} from './catalogo.js';
-import {Mascotes} from './mascotes.js';
-import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, temaEfetivo, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from './logica.js';
-import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from './decoracao.js';
-import {criarWidget, pararClipboard} from './widgets.js';
-import {pararPonte} from './ponte.js';
-import {pararClima} from './clima.js';
-import {agendar, perfilar} from './perf.js';
+import {TEMAS, WIDGETS} from '../catalogo.js';
+import {Mascotes} from '../mascotes.js';
+import {appsDoAmbiente, decidirDnd, definirAutoTodas, deveAvisarDnd, escalaLente, escolherAmbiente, geometriaTema, temaEfetivo, normalizarAmbientes, ordemTelas, resolverTelas, todasAuto} from '../logica.js';
+import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../decoracao.js';
+import {criarWidget, pararClipboard} from '../widgets.js';
+import {pararPonte} from '../ponte.js';
+import {pararClima} from '../clima.js';
+import {agendar, perfilar} from '../perf.js';
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.atlas';
 

@@ -15,9 +15,13 @@ jobs:
           node-version: 22
       - name: Sintaxe dos módulos
         run: |
-          for f in atlas@joaovitor12j.dev/*.js atlas@joaovitor12j.dev/app/*.js; do
+          while IFS= read -r f; do
             node --check --input-type=module < "$f" || { echo "erro de sintaxe em $f"; exit 1; }
-          done
+          done < <(find atlas@joaovitor12j.dev -name '*.js' -not -path '*/.run-*')
+      - name: Imports e variáveis (eslint)
+        run: |
+          npm ci
+          npm run lint
       - name: Schema do GSettings
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq libglib2.0-bin
