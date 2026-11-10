@@ -1,8 +1,8 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import {
     climaVencido, descreverTempo, diaCurto, formatarTemp, lerClima, lerLocais, urlBuscaLocal, urlClima,
-} from '../atlas@joaovitor12j.dev/logica.js';
+} from '../atlas@joaovitor12j.dev/clima/logica.js';
 
 // Recorte de uma resposta real do Open-Meteo (Fortaleza, 22/10/2026).
 const RESPOSTA = {

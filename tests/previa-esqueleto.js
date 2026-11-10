@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-esqueleto.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {esqueleto} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoEsqueleto, quadroEsqueleto} from '../atlas@joaovitor12j.dev/logica.js';
+import {duracaoEsqueleto, esqueleto, quadroEsqueleto} from '../atlas@joaovitor12j.dev/mascotes/personagens/esqueleto.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-esqueleto.png';
 const ICONE = 64;

@@ -1,10 +1,10 @@
 // Aba Widgets: grade de cartões por ambiente (toque liga/desliga) e opções gerais em cartões.
 import Adw from 'gi://Adw';
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {CORES_TEMA, WIDGETS} from '../catalogo.js';
-import {diasAte} from '../logica.js';
+import {CORES_TEMA} from '../temas/catalogo.js';
+import {WIDGETS} from '../widgets/catalogo.js';
+import {diasAte} from '../widgets/contagem/logica.js';
 import {cartao} from './aparencia.js';
 import {desenharPapelDeParede, desenharWidget} from './previa.js';
 

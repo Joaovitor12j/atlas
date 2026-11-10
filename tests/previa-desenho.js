@@ -2,7 +2,7 @@
 //   gjs -m tests/previa-desenho.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {anel, barra, cor, grafico, relogioAnalogico} from '../atlas@joaovitor12j.dev/desenho.js';
+import {anel, barra, cor, grafico, relogioAnalogico} from '../atlas@joaovitor12j.dev/nucleo/desenho.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-previa.png';
 const T = 96;                 // lado de um tile

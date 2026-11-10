@@ -1,5 +1,7 @@
 # App de configuração do ATLAS
 
+> Os nomes de arquivos deste documento são do desenho original (`dock.js`, `logica.js`, `catalogo.js`...). A estrutura atual, uma pasta por funcionalidade, está no [CLAUDE.md](../CLAUDE.md).
+
 Plano para tirar as preferências de dentro do app Extensões e fazer delas um aplicativo próprio, com a identidade visual do ATLAS. Rascunho, nada implementado.
 
 ## É possível?

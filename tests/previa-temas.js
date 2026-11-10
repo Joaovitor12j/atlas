@@ -3,8 +3,10 @@
 //   gjs -m tests/previa-temas.js /pasta/de/saida
 import cairo from 'gi://cairo';
 import System from 'system';
-import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../atlas@joaovitor12j.dev/decoracao.js';
-import {geometriaTema, TEMAS_MATERIAIS, TEMAS_PIXEL} from '../atlas@joaovitor12j.dev/logica.js';
+import {desenharDoca, fracaoIcone} from '../atlas@joaovitor12j.dev/temas/decoracao/index.js';
+import {desenharIndicador} from '../atlas@joaovitor12j.dev/temas/decoracao/indicador.js';
+import {desenharTile} from '../atlas@joaovitor12j.dev/temas/decoracao/tile.js';
+import {geometriaTema, TEMAS_MATERIAIS, TEMAS_PIXEL} from '../atlas@joaovitor12j.dev/temas/logica.js';
 
 const pasta = System.programArgs[0] ?? '/tmp';
 // tile do protótipo: 58 px nos materiais; nos pixel, 20 px da arte numa tela de 1000 px para 210 de arte

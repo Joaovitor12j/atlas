@@ -1,15 +1,21 @@
 // Confere a consistência entre o catálogo, o schema e os temas, que o compilador não pega.
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {PASSEIOS, SPRITES, temaDecorado} from '../atlas@joaovitor12j.dev/logica.js';
-import {CORES_TEMA, MASCOTES, MOVIMENTOS, TEMAS, WIDGETS} from '../atlas@joaovitor12j.dev/catalogo.js';
+import {existsSync, readFileSync} from 'node:fs';
+import {dirname, relative, resolve} from 'node:path';
+import test from 'node:test';
+import {MASCOTES, MOVIMENTOS} from '../atlas@joaovitor12j.dev/mascotes/catalogo.js';
+import {PASSEIOS, PERSONAGENS} from '../atlas@joaovitor12j.dev/mascotes/personagens/index.js';
+import {SPRITES} from '../atlas@joaovitor12j.dev/mascotes/sprites.js';
+import {CORES_TEMA, TEMAS} from '../atlas@joaovitor12j.dev/temas/catalogo.js';
+import {temaDecorado} from '../atlas@joaovitor12j.dev/temas/logica.js';
+import {WIDGETS} from '../atlas@joaovitor12j.dev/widgets/catalogo.js';
+import {fonte, modulos, RAIZ} from './auxiliar.js';
 
 const raiz = new URL('../atlas@joaovitor12j.dev/', import.meta.url);
 const schema = readFileSync(new URL('schemas/org.gnome.shell.extensions.atlas.gschema.xml', raiz), 'utf8');
-const css = readFileSync(new URL('temas.css', raiz), 'utf8');
-const widgetsJs = readFileSync(new URL('widgets.js', raiz), 'utf8');
-const mascotesJs = readFileSync(new URL('mascotes.js', raiz), 'utf8');
+const css = readFileSync(new URL('temas/temas.css', raiz), 'utf8');
+const widgetsJs = readFileSync(new URL('widgets/index.js', raiz), 'utf8');
+const mascotesJs = modulos('mascotes').map(fonte).join('\n');
 const ARQUIVOS_APP = ['paginas', 'aparencia', 'widgets', 'ambientes', 'mascotes', 'janela', 'previa'].map(n => `../atlas@joaovitor12j.dev/app/${n}.js`);
 const paginasJs = ARQUIVOS_APP.map(a => readFileSync(new URL(a, import.meta.url), 'utf8')).join('\n');
 
@@ -37,9 +43,11 @@ test('as cores de widgets e do botão de apps (prévia) batem com temas.css', ()
     }
 });
 
-test('todo widget do catálogo tem classe em widgets.js', () => {
-    for (const [id] of WIDGETS)
-        assert.match(widgetsJs, new RegExp(`\\b${id}: [A-Z]`), `widgets.js sem a classe de ${id}`);
+test('todo widget do catálogo tem pasta própria e entrada no registro (widgets/index.js)', () => {
+    for (const [id] of WIDGETS) {
+        assert.match(widgetsJs, new RegExp(`\\b${id}: [A-Z]`), `widgets/index.js sem a classe de ${id}`);
+        assert.ok(existsSync(new URL(`widgets/${id}/index.js`, raiz)), `falta widgets/${id}/index.js`);
+    }
 });
 
 test('ids de temas e widgets são únicos', () => {
@@ -52,16 +60,16 @@ test('as chaves que o código lê existem no schema', () => {
     // de schemas do GNOME, não do ATLAS: favoritos (prefs), Não perturbe (dock) e papel de parede (palco do app)
     for (const externa of ['favorite-apps', 'show-banners', 'picture-uri', 'picture-uri-dark'])
         chaves.add(externa);
-    for (const arq of ['dock.js', 'widgets.js', 'mascotes.js', 'clima.js', ...ARQUIVOS_APP]) {
-        const src = readFileSync(new URL(arq, raiz), 'utf8');
+    for (const arq of modulos()) {
+        const src = fonte(arq);
         for (const m of src.matchAll(/(?:get|set)_(?:string|boolean|int|double|strv)\('([a-z0-9-]+)'/g))
             assert.ok(chaves.has(m[1]), `${arq} usa a chave ${m[1]}, que não está no schema`);
     }
 });
 
-test('todo mascote do catálogo tem implementação em mascotes.js', () => {
+test('todo mascote do catálogo tem implementação em mascotes/personagens/', () => {
     for (const [id] of MASCOTES)
-        assert.match(mascotesJs, new RegExp(`\\b${id}: \\{`), `mascotes.js sem o mascote ${id}`);
+        assert.ok(PERSONAGENS[id], `mascotes/personagens/index.js sem o mascote ${id}`);
     assert.equal(new Set(MASCOTES.map(m => m[0])).size, MASCOTES.length);
 });
 
@@ -101,10 +109,8 @@ test('os movimentos de cada mascote batem entre catálogo, schema e motor', () =
         assert.ok(chave, `schema sem ${id}-movimento`);
         const valores = [...chave[1].matchAll(/<choice value="([^"]+)"/g)].map(m => m[1]);
         assert.deepEqual(valores, ['sortear', ...movs.map(m => m[0])], `escolhas de ${id}-movimento`);
-        const bloco = mascotesJs.match(new RegExp(`\\n    ${id}: \\{[\\s\\S]*?\\n    \\},\\n`));
-        assert.ok(bloco, `mascotes.js sem ${id}`);
-        for (const [mov] of movs)
-            assert.ok(bloco[0].includes(`'${mov}'`), `mascotes.js: ${id} sem o movimento ${mov}`);
+        assert.ok(PERSONAGENS[id], `sem o mascote ${id}`);
+        assert.deepEqual(Object.keys(PERSONAGENS[id].variantes).sort(), movs.map(m => m[0]).sort(), `movimentos de ${id}`);
     }
 });
 
@@ -114,4 +120,21 @@ test('as folhas de sprites existem e batem com SPRITES', () => {
         assert.equal(png.readUInt32BE(16), spec.fw * spec.quadros, `${id}: largura da tira`);
         assert.equal(png.readUInt32BE(20), spec.fh, `${id}: altura`);
     }
+});
+
+test('o que o app de configuração importa não depende do Shell (ele roda em GTK, fora do Shell)', () => {
+    const visitados = new Set();
+    const visitar = arq => {
+        if (visitados.has(arq))
+            return;
+        visitados.add(arq);
+        const src = fonte(arq);
+        assert.doesNotMatch(src, /from 'gi:\/\/(St|Clutter|Meta|Shell)\b/, `${arq} importa algo do Shell`);
+        assert.doesNotMatch(src, /from 'resource:\/\/\/org\/gnome\/shell/, `${arq} importa algo do Shell`);
+        for (const m of src.matchAll(/from '(\.[^']+)'/g))
+            visitar(relative(RAIZ, resolve(RAIZ, dirname(arq), m[1])));
+    };
+    for (const arq of modulos('app'))
+        visitar(arq);
+    assert.ok(visitados.size > 10);
 });

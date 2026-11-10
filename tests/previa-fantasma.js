@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-fantasma.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {fantasma} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoFantasma, quadroFantasma} from '../atlas@joaovitor12j.dev/logica.js';
+import {duracaoFantasma, fantasma, quadroFantasma} from '../atlas@joaovitor12j.dev/mascotes/personagens/fantasma.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-fantasma.png';
 const ICONE = 64;

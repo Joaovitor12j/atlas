@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-noel.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {noel} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoNoel, quadroNoel} from '../atlas@joaovitor12j.dev/logica.js';
+import {duracaoNoel, noel, quadroNoel} from '../atlas@joaovitor12j.dev/mascotes/personagens/noel.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-noel.png';
 const ICONE = 64;

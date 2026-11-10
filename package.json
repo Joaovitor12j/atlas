@@ -3,6 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "node --test \"tests/**/*.test.js\"",
+    "lint": "eslint atlas@joaovitor12j.dev"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.31.0"
   }
 }

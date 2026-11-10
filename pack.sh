@@ -14,9 +14,9 @@ cp "$RAIZ/empacotar/extension.js" "$TMP/$UUID/extension.js"
 rm -rf "$TMP/$UUID"/.run-* "$TMP/$UUID/schemas/gschemas.compiled"
 find "$TMP/$UUID" -name '__pycache__' -prune -exec rm -rf {} +
 
-for f in "$TMP/$UUID"/*.js "$TMP/$UUID"/app/*.js; do
+while IFS= read -r f; do
     node --check --input-type=module < "$f" || { echo "erro de sintaxe em $f" >&2; exit 1; }
-done
+done < <(find "$TMP/$UUID" -name '*.js')
 glib-compile-schemas --strict --dry-run "$TMP/$UUID/schemas"
 [[ "${1:-}" == "--ego" ]] || glib-compile-schemas "$TMP/$UUID/schemas"
 

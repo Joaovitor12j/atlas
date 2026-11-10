@@ -4,7 +4,7 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {CATEGORIAS_MASCOTE, MASCOTES} from '../catalogo.js';
+import {CATEGORIAS_MASCOTE, MASCOTES} from '../mascotes/catalogo.js';
 import {retanguloArredondado} from './previa.js';
 
 export function criarMascotes(settings, p, win) {

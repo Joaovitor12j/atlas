@@ -2,8 +2,7 @@
 //   gjs -m tests/previa-cuco.js /caminho/saida.png
 import cairo from 'gi://cairo';
 import System from 'system';
-import {cuco} from '../atlas@joaovitor12j.dev/desenho.js';
-import {duracaoCuco, quadroCuco} from '../atlas@joaovitor12j.dev/logica.js';
+import {cuco, duracaoCuco, quadroCuco} from '../atlas@joaovitor12j.dev/mascotes/personagens/cuco.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-cuco.png';
 const ICONE = 64; // maior que o real (42 a 52) para ver os detalhes

@@ -5,10 +5,16 @@ import GdkPixbuf from 'gi://GdkPixbuf';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {CORES_TEMA, TEMAS, WIDGETS} from '../catalogo.js';
-import {anel, anelDeTile, iconeTempo, relogioAnalogico} from '../desenho.js';
-import {escalaLente, escolherAmbiente, geometriaTema, normalizarAmbientes} from '../logica.js';
-import {desenharDoca, desenharIndicador, desenharTile, fracaoIcone} from '../decoracao.js';
+import {escolherAmbiente, normalizarAmbientes} from '../ambientes/logica.js';
+import {iconeTempo} from '../clima/desenho.js';
+import {escalaLente} from '../dock/lente.js';
+import {anel, anelDeTile, relogioAnalogico} from '../nucleo/desenho.js';
+import {CORES_TEMA, TEMAS} from '../temas/catalogo.js';
+import {desenharDoca, fracaoIcone} from '../temas/decoracao/index.js';
+import {desenharIndicador} from '../temas/decoracao/indicador.js';
+import {desenharTile} from '../temas/decoracao/tile.js';
+import {geometriaTema} from '../temas/logica.js';
+import {WIDGETS} from '../widgets/catalogo.js';
 
 const ALTURA = 218;
 // Mesmos valores do dock real (FIXED em dock.js).

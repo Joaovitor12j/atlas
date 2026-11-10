@@ -2,12 +2,14 @@
 //   gjs -m tests/previa-mascotes-clima.js /caminho/saida.png
 // Cada linha é um movimento; a faixa escura embaixo de cada quadro é a doca.
 import cairo from 'gi://cairo';
+import {PERSONAGENS} from '../atlas@joaovitor12j.dev/mascotes/personagens/index.js';
 import System from 'system';
-import {neve, pendurado, picole, pinguim, solArco, solLeque} from '../atlas@joaovitor12j.dev/desenho.js';
 import {
-    duracaoNeve, duracaoPendurado, duracaoPicole, duracaoPinguim, duracaoSolArco, duracaoSolLeque, flocosDeNeve,
-    quadroNeve, quadroPendurado, quadroPicole, quadroPinguim, quadroSolArco, quadroSolLeque, tamanhoMascoteClima,
-} from '../atlas@joaovitor12j.dev/logica.js';
+    duracaoPicole, duracaoSolArco, duracaoSolLeque, picole, quadroPicole, quadroSolArco, quadroSolLeque, solArco, solLeque,
+} from '../atlas@joaovitor12j.dev/mascotes/personagens/calor.js';
+import {
+    duracaoNeve, duracaoPendurado, duracaoPinguim, flocosDeNeve, neve, pendurado, pinguim, quadroNeve, quadroPendurado, quadroPinguim,
+} from '../atlas@joaovitor12j.dev/mascotes/personagens/frio.js';
 
 const saida = System.programArgs[0] ?? '/tmp/atlas-mascotes-clima.png';
 const ICONE = 48;
@@ -22,7 +24,7 @@ const LINHAS = [
     ['neve', duracaoNeve(), t => quadroNeve(t), neve],
     ['pendurado', duracaoPendurado(), t => quadroPendurado(t), pendurado],
 ];
-const tams = LINHAS.map(([v]) => tamanhoMascoteClima(v, ICONE, DOCA));
+const tams = LINHAS.map(([v]) => (PERSONAGENS[v.startsWith('sol') || v === 'picole' ? 'calor' : 'frio'].variantes[v]).tamanho(ICONE, {w: DOCA}));
 const colunas = Math.max(...tams.map(t => t.w));
 const alturas = tams.map(t => Math.max(t.h, t.h - t.abaixo + ICONE * 1.3));
 const W = M + N * (colunas + M), H = M + alturas.reduce((s, h) => s + h + M, 0);

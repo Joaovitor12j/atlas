@@ -2,9 +2,8 @@
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {TEMAS} from '../catalogo.js';
+import {TEMAS} from '../temas/catalogo.js';
 import {cartao} from './aparencia.js';
 
 const COR_PADRAO = '#E8A93A';

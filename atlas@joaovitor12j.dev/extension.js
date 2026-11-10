@@ -1,17 +1,30 @@
 // Carregador do ATLAS. O GJS ignora query string no import e guarda cada módulo em cache pela URL, então
-// cada enable() copia os módulos (todo .js, menos extension.js e prefs.js) para uma pasta com nome único e importa
-// de lá. Assim, editar qualquer um deles e fazer disable/enable aplica a mudança sem novo login (Wayland).
+// cada enable() copia os módulos (todo .js das pastas de funcionalidade, menos extension.js, prefs.js e app/) para
+// uma pasta com nome único e importa de lá. Assim, editar qualquer um deles e fazer disable/enable aplica a mudança
+// sem novo login (Wayland). Entrada do dock: dock/index.js.
 import Gio from 'gi://Gio';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-// Tudo o que o dock importa; extension.js e os arquivos das preferências ficam de fora.
-const FORA = new Set(['extension.js', 'prefs.js']);
+// Tudo o que o dock importa; extension.js, prefs.js e o app de configuração (processo próprio) ficam de fora.
+const FORA_NA_RAIZ = new Set(['extension.js', 'prefs.js']);
+const PASTAS_FORA = new Set(['app', 'schemas', 'icons', 'sprites']);
+
+function filhos(pasta) {
+    const lista = [];
+    const it = pasta.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
+    for (let info = it.next_file(null); info; info = it.next_file(null))
+        lista.push({nome: info.get_name(), pasta: info.get_file_type() === Gio.FileType.DIRECTORY});
+    return lista;
+}
 
 function apagarPasta(pasta) {
     try {
-        const filhos = pasta.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
-        for (let info = filhos.next_file(null); info; info = filhos.next_file(null))
-            pasta.get_child(info.get_name()).delete(null);
+        for (const f of filhos(pasta)) {
+            if (f.pasta)
+                apagarPasta(pasta.get_child(f.nome));
+            else
+                pasta.get_child(f.nome).delete(null);
+        }
         pasta.delete(null);
     } catch (_e) { /* já removida */ }
 }
@@ -23,19 +36,27 @@ export default class AtlasLoader extends Extension {
         const pasta = this.dir.get_child(`.run-${Date.now()}`);
         try {
             pasta.make_directory(null);
-            for (const nome of this._modulos())
-                this.dir.get_child(nome).copy(pasta.get_child(nome), Gio.FileCopyFlags.OVERWRITE, null, null);
+            for (const caminho of this._modulos()) {
+                const destino = caminho.reduce((d, parte) => d.get_child(parte), pasta);
+                try {
+                    destino.get_parent().make_directory_with_parents(null);
+                } catch (e) {
+                    if (!e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.EXISTS))
+                        throw e;
+                }
+                caminho.reduce((d, parte) => d.get_child(parte), this.dir).copy(destino, Gio.FileCopyFlags.OVERWRITE, null, null);
+            }
         } catch (e) {
             console.error(`[atlas] não consegui copiar os módulos: ${e}`);
             apagarPasta(pasta);
             return;
         }
-        import(pasta.get_child('dock.js').get_uri()).then(mod => {
+        import(pasta.get_child('dock').get_child('index.js').get_uri()).then(mod => {
             if (this._token !== token)
                 return; // desativada enquanto importava
             this._dock = new mod.Dock(this.dir);
             this._dock.enable();
-        }).catch(e => console.error(`[atlas] falha ao carregar dock.js: ${e}\n${e.stack}`))
+        }).catch(e => console.error(`[atlas] falha ao carregar dock/index.js: ${e}\n${e.stack}`))
         .finally(() => apagarPasta(pasta)); // os módulos já estão em memória
     }
 
@@ -45,24 +66,31 @@ export default class AtlasLoader extends Extension {
         this._dock = null;
     }
 
+    // Caminhos (lista de partes) de todo .js a copiar, varrendo as pastas de funcionalidade.
     _modulos() {
-        const nomes = [];
-        const filhos = this.dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
-        for (let info = filhos.next_file(null); info; info = filhos.next_file(null)) {
-            const nome = info.get_name();
-            if (nome.endsWith('.js') && !nome.startsWith('.') && !FORA.has(nome))
-                nomes.push(nome);
-        }
-        return nomes;
+        const caminhos = [];
+        const varrer = (pasta, partes) => {
+            for (const f of filhos(pasta)) {
+                if (f.nome.startsWith('.'))
+                    continue;
+                if (f.pasta) {
+                    if (partes.length || !PASTAS_FORA.has(f.nome))
+                        varrer(pasta.get_child(f.nome), [...partes, f.nome]);
+                } else if (f.nome.endsWith('.js') && (partes.length || !FORA_NA_RAIZ.has(f.nome))) {
+                    caminhos.push([...partes, f.nome]);
+                }
+            }
+        };
+        varrer(this.dir, []);
+        return caminhos;
     }
 
     // Pastas de uma sessão que travou no meio do carregamento.
     _limparSobras() {
         try {
-            const filhos = this.dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
-            for (let info = filhos.next_file(null); info; info = filhos.next_file(null)) {
-                if (info.get_name().startsWith('.run-'))
-                    apagarPasta(this.dir.get_child(info.get_name()));
+            for (const f of filhos(this.dir)) {
+                if (f.nome.startsWith('.run-'))
+                    apagarPasta(this.dir.get_child(f.nome));
             }
         } catch (_e) { /* sem sobras */ }
     }

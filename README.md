@@ -208,28 +208,26 @@ O ATLAS é leve: cerca de **0,14% de um núcleo** em uso normal (**~0,03%** com 
 | Extensão com erro em outra versão do GNOME | Abra uma issue com os logs e a versão (`gnome-shell --version`) |
 
 ## Desenvolvimento
-Estrutura (tudo em `atlas@joaovitor12j.dev/`):
+Estrutura: uma pasta por funcionalidade (tudo em `atlas@joaovitor12j.dev/`). Cada pasta cuida de uma coisa e as funcionalidades só se conhecem pelo que o `dock/` junta.
 
-| Arquivo | Papel |
+| Pasta | Papel |
 |---|---|
-| `extension.js` | Carregador de desenvolvimento (copia os módulos para `.run-<timestamp>/` a cada enable, para recarregar sem relogin) |
-| `dock.js` | Classes `Dock` (enable/disable, ambientes, Não perturbe, menu do painel) e `DockView` (actors, lente, posição, auto-ocultar, prévia de janelas) |
-| `widgets.js` | Base `Widget` e uma classe por widget |
-| `mascotes.js` | Motor dos mascotes |
-| `decoracao.js` | Vidro, tiles, indicadores e efeitos dos temas de pacote |
-| `desenho.js` | Desenho Cairo puro (anéis, gráficos, relógio, mascotes) |
-| `logica.js` | Lógica pura, testável com Node |
-| `catalogo.js` | Listas de temas, widgets e mascotes compartilhadas com o app |
-| `clima.js` | Previsão do tempo (Open-Meteo), dividida entre o widget Clima e os mascotes de frio e calor |
-| `perf.js` | Medidor opt-in (`perfil-ativo`) e o `agendar()` usado pelos temporizadores |
-| `eventos.js` | Avisos entre módulos (fim de foco do Pomodoro para o mascote do tomate) |
-| `ponte.js`, `protocolo.js` | Cliente e contrato D-Bus do daemon do app nativo (fase 0, `app/daemon.js`) |
-| `app/` | App de configuração (gjs + GTK4 + libadwaita), em processo próprio |
+| `extension.js` | Carregador de desenvolvimento (copia os módulos, em qualquer pasta, para `.run-<timestamp>/` a cada enable, para recarregar sem relogin) |
+| `dock/` | Gerente (`index.js`: uma doca por tela, painel, mascotes) e a doca de um monitor (`doca.js`, com `itens`, `previa`, `menus`, `posicao` e `ampliacao`); `lente.js` e `telas.js` são contas puras |
+| `ambientes/` | Ambientes: ler e trocar (`acoes`), atalhos, roda do mouse, janelas e Não perturbe que seguem o ambiente (`seguir`); regras puras em `logica.js` |
+| `widgets/` | Uma pasta por widget (`index.js` com a classe, `logica.js` com as contas puras), mais a base, o `catalogo.js` e o registro |
+| `mascotes/` | Motor (`index.js`, `palco`, `efeito`, `residente`, `posicao`), `gatilhos/` (horário, clima, bateria...), `personagens/` e `residentes/` (um arquivo por mascote) |
+| `temas/` | Catálogo e regras dos temas, `temas.css`, vidro, tiles, indicadores e efeitos dos temas de pacote (`decoracao/`) |
+| `clima/` | Previsão do tempo (Open-Meteo), dividida entre o widget Clima e os mascotes de frio e calor |
+| `nucleo/` | O que todos usam e não conhece funcionalidade alguma: `perf` (medidor e `agendar()`), `eventos`, `ponte` e `protocolo` (D-Bus do daemon do app nativo), `matematica`, `desenho` (Cairo puro) |
+| `app/` | App de configuração (gjs + GTK4 + libadwaita), em processo próprio, sem dependência do Shell |
 | `schemas/` | Schema GSettings `org.gnome.shell.extensions.atlas` |
+
+Quem pode importar quem fica em `PODE`, no `eslint.config.js` (`npm run lint` barra import quebrado, ciclo e dependência fora do mapa). Arquivos `logica.js` são puros: sem `gi://`, testáveis com Node.
 
 O `extension.js` do repositório é só para desenvolvimento; o `pack.sh` o troca por `empacotar/extension.js` (import direto) dentro do zip.
 
-Recarregar depois de editar qualquer módulo ou `temas.css`:
+Recarregar depois de editar qualquer módulo ou `temas/temas.css`:
 ```bash
 gnome-extensions disable atlas@joaovitor12j.dev && gnome-extensions enable atlas@joaovitor12j.dev
 ```
@@ -238,12 +236,13 @@ Mudanças em `extension.js` e `metadata.json` só valem depois de um novo login 
 Testes e verificações:
 ```bash
 npm test                                                              # lógica pura e consistência de catálogo, schema e temas
+npm run lint                                                          # imports, variáveis, ciclos e fronteiras entre pastas
 glib-compile-schemas --strict --dry-run atlas@joaovitor12j.dev/schemas   # valida o schema
 gjs -m tests/previa-cuco.js /tmp/cuco.png                             # prévia PNG de um desenho Cairo (tests/previa-*.js)
 ```
 O CI (GitHub Actions) roda a checagem de sintaxe de cada módulo, o schema em modo estrito e os testes a cada PR.
 
-Ao adicionar tema, widget, mascote ou chave de configuração, atualize todos os lados (o `tests/estrutura.test.js` confere): entrada no `catalogo.js`, `<choice>` ou `<key>` no schema, regras em `temas.css`, classe em `widgets.js`. Mais contexto em [CLAUDE.md](CLAUDE.md) e em [docs/](docs).
+Ao adicionar tema, widget, mascote ou chave de configuração, atualize todos os lados (o `tests/estrutura.test.js` confere): entrada no catálogo da área (`temas/`, `widgets/` ou `mascotes/catalogo.js`), `<choice>` ou `<key>` no schema, regras em `temas/temas.css`, registro em `widgets/index.js` ou `mascotes/personagens/index.js`. Mais contexto em [CLAUDE.md](CLAUDE.md) e em [docs/](docs).
 
 O código, os comentários e os commits são em português.
 

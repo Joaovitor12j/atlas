@@ -2,9 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {INTERFACE, NOME, VERSAO, XML} from '../atlas@joaovitor12j.dev/protocolo.js';
+import {INTERFACE, NOME, VERSAO, XML} from '../atlas@joaovitor12j.dev/nucleo/protocolo.js';
 
-const ponte = readFileSync(new URL('../atlas@joaovitor12j.dev/ponte.js', import.meta.url), 'utf8');
+const ponte = readFileSync(new URL('../atlas@joaovitor12j.dev/nucleo/ponte.js', import.meta.url), 'utf8');
 const daemon = readFileSync(new URL('../atlas@joaovitor12j.dev/app/daemon.js', import.meta.url), 'utf8');
 
 const metodos = [...XML.matchAll(/<method name="(\w+)"/g)].map(m => m[1]);
@@ -30,6 +30,6 @@ test('todo método e sinal que a ponte usa existe no protocolo', () => {
 });
 
 test('a ponte e o protocolo não importam o Shell', () => {
-    for (const src of [ponte, readFileSync(new URL('../atlas@joaovitor12j.dev/protocolo.js', import.meta.url), 'utf8')])
+    for (const src of [ponte, readFileSync(new URL('../atlas@joaovitor12j.dev/nucleo/protocolo.js', import.meta.url), 'utf8')])
         assert.doesNotMatch(src, /resource:\/\/\/org\/gnome\/shell|gi:\/\/(St|Clutter|Meta|Shell)\b/);
 });
